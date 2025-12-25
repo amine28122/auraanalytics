@@ -28,9 +28,15 @@ function AuthenticationContent() {
   }
 
   return (
-    <div className="w-full flex flex-col items-center space-y-6">
-        <AuraAcademyLogo />
-        <SocialSignInButtons />
+    <div className="w-full flex flex-col items-center text-center">
+        <div className="space-y-2 mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight">Welcome to Aura</h1>
+            <p className="text-sm text-muted-foreground">Sign in to unlock your full potential</p>
+        </div>
+        <AuraAcademyLogo iconOnly className="h-12" />
+        <div className="w-full mt-8">
+          <SocialSignInButtons />
+        </div>
     </div>
   );
 }
