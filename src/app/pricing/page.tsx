@@ -25,7 +25,8 @@ const translations = {
     copy: 'Copy',
     copied: 'Copied!',
     cardTitle: 'Pay with Bank Card',
-    cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must sign up or log in to submit your proof for manual activation.',
+    cardDescription: 'Card payment is not yet available. Please use the crypto payment option.',
+    comingSoon: 'Coming Soon',
     payNow: 'Pay Now ($50)',
     loginToSubmit: 'Log In to Submit Proof',
     loginRequired: 'Login Required',
@@ -40,7 +41,7 @@ const translations = {
   // Add other languages if needed
 };
 
-const WALLET_ADDRESS = "TBEJ333HrfBnsdJqWn3x2tV5GZ3hY3g5R7";
+const WALLET_ADDRESS = "TVucHVCkqCvk2mB1KJi2uvyBd3dkhzCvPx";
 const OFFER_END_DATE = '2026-01-01T00:00:00Z';
 
 
@@ -86,29 +87,11 @@ function CryptoPaymentInfo({ t }: { t: any }) {
 
 
 function CardPaymentInfo({ t }: { t: any }) {
-    const handlePayNowClick = () => {
-        const paymentUrl = 'https://tawk.to/youssef.bennani99';
-        const width = 600;
-        const height = 800;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
-        window.open(paymentUrl, 'paymentWindow', `toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=${width}, height=${height}, top=${top}, left=${left}`);
-    };
 
     return (
         <div className="space-y-4 text-center">
             <p>{t.cardDescription}</p>
-            <Button onClick={handlePayNowClick} className="w-full">{t.payNow}</Button>
-             <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>{t.loginRequired}</AlertTitle>
-                <AlertDescription>
-                 {t.loginRequiredDesc}
-                </AlertDescription>
-            </Alert>
-            <Button asChild className="w-full" variant="secondary">
-                <Link href="/auth">{t.loginToSubmit}</Link>
-            </Button>
+            <Button disabled className="w-full">{t.comingSoon}</Button>
         </div>
     );
 }
