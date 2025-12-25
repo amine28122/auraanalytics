@@ -91,17 +91,23 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
     }
 
     promptParts.push(
-        { text: `\n\nBased on your integrated analysis, provide the following:
-        1.  A detailed technical analysis summary. If using multi-timeframe, explain how the large timeframe context justifies the entry on the small timeframe. The summary MUST reflect the user's chosen analysis schools if provided.
-        2.  Identify key support and resistance levels from the main chart.
-        3.  **You MUST attempt to generate at least one trading signal (BUY or SELL).** If multiple opportunities exist, provide them. If the chart quality is good but the setup is not high-probability, generate the best signal you can find and reflect the uncertainty in the 'confidenceLevel' and 'analysisSummary'.
-            - For each signal, determine if it's a 'Market' order or a 'Pending' order.
-            - Specify the entry price. Use 'Current Price' for Market orders.
-            - Provide at least one take-profit (TP) level.
-            - Provide a tight stop-loss (SL) level to minimize potential risk.
-        4.  A confidence level (a number between 0 and 1) for the overall analysis. This should be higher if the setup is very clear. If the setup is weak, provide a lower confidence level.
+        { text: `\n\nBased on your integrated analysis, provide the following output in a valid JSON format.\n\n**CRITICAL FORMATTING RULES:**
+- Every signal in the \"signals\" array **MUST** have a \"type\" field with a value of either \"BUY\" or \"SELL\". This is mandatory.
+- All price values (entryPrice, takeProfit, stopLoss) **MUST** be formatted as **strings**. For example: \"1.2345\".
 
-        Format your output as a JSON object matching the requested schema. Provide specific price points for all signals. Ensure stop losses are reasonably tight. **If no valid trading setup can be identified at all, you may return an empty \"signals\" array, but you MUST explain why in the \"analysisSummary\".** If validation fails, only populate the 'imageValidation' object.`}
+**Response Schema:**
+1.  **analysisSummary**: A detailed technical analysis summary. Explain your reasoning based on the chosen analysis school.
+2.  **supportLevels**: An array of key support level strings (e.g., [\"150.00\", \"148.50\"])
+3.  **resistanceLevels**: An array of key resistance level strings (e.g., [\"152.00\", \"153.50\"])
+4.  **signals**: An array of signal objects. **You MUST attempt to generate at least one signal.** If the setup is weak, reflect it in the confidenceLevel and summary. A signal object has the following structure:
+    - **type**: MANDATORY. Must be \"BUY\" or \"SELL\".
+    - **orderType**: \"Market\" or \"Pending\".
+    - **entryPrice**: The entry price as a string (e.g., \"1.12345\"). Use \"Current Price\" for Market orders.
+    - **takeProfit**: An array of take-profit levels as strings (e.g., [\"1.12500\", \"1.12750\"]).
+    - **stopLoss**: The stop-loss level as a string (e.g., \"1.12000\").
+5.  **confidenceLevel**: A number between 0 and 1 representing your confidence in the analysis.
+
+**Final Instruction**: Generate the JSON output. If no valid trading setup can be identified at all, you may return an empty \"signals\" array, but you MUST explain why in the \"analysisSummary\". If validation fails, only populate the 'imageValidation' object.`}
     );
 
     const generationConfig = {
