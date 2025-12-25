@@ -40,7 +40,7 @@ const translations = {
     cardTitle: 'Pay with Bank Card',
     cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must submit proof for manual activation.',
     payNow: 'Pay Now ($50)',
-    paymentProofNote: 'After successful payment, please come back and submit the proof via the "Pay with Crypto" option, using your payment receipt screenshot.',
+    paymentProofNote: 'After successful payment, please come back and submit the proof via the \"Pay with Crypto\" option, using your payment receipt screenshot.',
     selectPayment: 'Select Payment Method',
     selectPaymentDesc: 'Choose how you would like to pay for the Premium plan.',
     requestPending: 'Request Pending',
@@ -69,7 +69,7 @@ const translations = {
     cardTitle: 'الدفع بالبطاقة البنكية',
     cardDescription: 'انقر على الزر أدناه للمتابعة إلى الدفع عبر شريكنا الآمن. بعد الدفع، يجب عليك تقديم إثبات للتفعيل اليدوي.',
     payNow: 'ادفع الآن (50$)',
-    paymentProofNote: 'بعد الدفع بنجاح، يرجى العودة وتقديم الإثبات عبر خيار "الدفع بالعملات الرقمية"، باستخدام لقطة شاشة من إيصال الدفع.',
+    paymentProofNote: 'بعد الدفع بنجاح، يرجى العودة وتقديم الإثبات عبر خيار \"الدفع بالعملات الرقمية\"، باستخدام لقطة شاشة من إيصال الدفع.',
     selectPayment: 'اختر طريقة الدفع',
     selectPaymentDesc: 'اختر كيف ترغب في الدفع مقابل الخطة المميزة.',
     requestPending: 'الطلب قيد المراجعة',
@@ -98,7 +98,7 @@ const translations = {
     cardTitle: 'Pagar con Tarjeta Bancaria',
     cardDescription: 'Haga clic en el botón de abajo para proceder con el pago a través de nuestro socio seguro. Después del pago, debe presentar una prueba para la activación manual.',
     payNow: 'Pagar Ahora ($50)',
-    paymentProofNote: 'Después de un pago exitoso, por favor regrese y presente la prueba a través de la opción "Pagar con Criptomonedas", usando la captura de pantalla de su recibo de pago.',
+    paymentProofNote: 'Después de un pago exitoso, por favor regrese y presente la prueba a través de la opción \"Pagar con Criptomonedas\", usando la captura de pantalla de su recibo de pago.',
     selectPayment: 'Seleccione el Método de Pago',
     selectPaymentDesc: 'Elija cómo le gustaría pagar el plan Premium.',
     requestPending: 'Solicitud Pendiente',
@@ -112,7 +112,7 @@ const translations = {
   },
 };
 
-const WALLET_ADDRESS = "TBEJ333HrfBnsdJqWn3x2tV5GZ3hY3g5R7";
+const WALLET_ADDRESS = "TVucHVCkqCvk2mB1KJi2uvyBd3dkhzCvPx";
 const OFFER_END_DATE = '2026-01-01T00:00:00Z';
 
 function SubmitButton({ t, isEnabled }: { t: any, isEnabled: boolean }) {
