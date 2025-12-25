@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Share } from 'lucide-react';
+import { Download, Share, MoreVertical } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,13 +17,10 @@ import {
 export function InstallPwaButton() {
   const [prompt, setPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
-  const [isIos, setIsIos] = useState(false);
-  const [showIosInstructions, setShowIosInstructions] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        setIsIos(/iPhone|iPad|iPod/i.test(navigator.userAgent));
-
         if (window.matchMedia('(display-mode: standalone)').matches) {
             setIsAppInstalled(true);
         }
@@ -48,6 +45,8 @@ export function InstallPwaButton() {
   }, []);
 
   const handleInstallClick = async () => {
+    if(isAppInstalled) return;
+
     if (prompt) {
       prompt.prompt();
       const { outcome } = await prompt.userChoice;
@@ -56,8 +55,8 @@ export function InstallPwaButton() {
       } else {
         console.log('User dismissed the PWA install prompt');
       }
-    } else if (isIos) {
-        setShowIosInstructions(true);
+    } else {
+      setShowInstructions(true);
     }
   };
 
@@ -70,41 +69,34 @@ export function InstallPwaButton() {
     );
   }
 
-  // PWA is installable via prompt, or it's iOS (manual install)
-  if (prompt || isIos) {
-      return (
-        <>
-            <Button onClick={handleInstallClick} aria-label="Get The App" size="lg" className="futuristic-button group">
-                <Download className="mr-2 h-5 w-5 cta-icon" />
-                <span>Install App</span>
-            </Button>
-
-            <AlertDialog open={showIosInstructions} onOpenChange={setShowIosInstructions}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Install on iPhone</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            To install the app, tap the Share button and then select 'Add to Home Screen'.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="py-4 text-center">
-                       <p className="text-sm text-muted-foreground">1. Tap the <Share className="inline h-4 w-4 mx-1"/> icon in the browser menu.</p>
-                       <p className="text-sm text-muted-foreground mt-2">2. Scroll down and tap 'Add to Home Screen'.</p>
-                    </div>
-                    <AlertDialogFooter>
-                        <AlertDialogAction>Got It</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </>
-      );
-  }
-
-  // Fallback for non-supported browsers (that are not iOS)
   return (
-    <Button disabled size="lg" className="futuristic-button group">
-        <Download className="mr-2 h-5 w-5" />
-        <span>Install Not Supported</span>
-    </Button>
+    <>
+        <Button onClick={handleInstallClick} aria-label="Get The App" size="lg" className="futuristic-button group">
+            <Download className="mr-2 h-5 w-5 cta-icon" />
+            <span>Install App</span>
+        </Button>
+
+        <AlertDialog open={showInstructions} onOpenChange={setShowInstructions}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>How to Install</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You can install this app on your device for a better experience. Follow the instructions for your browser.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4 space-y-3">
+                   <p className="text-sm text-muted-foreground">
+                      <strong>On iPhone/iPad:</strong> Tap the <Share className="inline h-4 w-4 mx-1"/> icon, then scroll down and tap 'Add to Home Screen'.
+                   </p>
+                   <p className="text-sm text-muted-foreground">
+                      <strong>On Android/Other:</strong> Tap the <MoreVertical className="inline h-4 w-4 mx-1"/> menu icon in your browser and look for an 'Install app' or 'Add to Home Screen' option.
+                   </p>
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogAction>Got It</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    </>
   );
 }
