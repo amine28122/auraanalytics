@@ -83,10 +83,10 @@ export function ShareableImage({ result, theme }: ShareableImageProps) {
     if (!result.data) return null;
 
     const { signals, supportLevels, resistanceLevels, confidenceLevel, analysisSummary, chartImage } = result.data;
-    const lang = analysisSummary.match(/[\u0600-\u06FF]/) ? 'ar' : 'en';
+    const lang = analysisSummary?.match(/[\u0600-\u06FF]/) ? 'ar' : 'en';
     const t = translations[lang];
     const dir = lang === 'ar' ? 'rtl' : 'ltr';
-    const confidence = Math.round(confidenceLevel * 100);
+    const confidence = confidenceLevel != null ? Math.round(confidenceLevel * 100) : null;
 
     const isLight = theme === 'light';
     const containerClasses = isLight 
@@ -107,10 +107,10 @@ export function ShareableImage({ result, theme }: ShareableImageProps) {
                         <AuraAcademyLogo iconOnly className="h-20 w-20" />
                         <span className="font-headline text-4xl font-bold tracking-wider">AURA</span>
                     </div>
-                    <div className="flex flex-col items-center">
+                    {confidence != null && <div className="flex flex-col items-center">
                         <p className={`text-lg font-medium ${mutedTextClass}`}>{t.confidence}</p>
                         <p className="text-5xl font-bold text-primary">{confidence}%</p>
-                    </div>
+                    </div>}
                 </header>
 
                 <main className="mt-8 grid flex-grow grid-cols-5 gap-8">
@@ -121,7 +121,7 @@ export function ShareableImage({ result, theme }: ShareableImageProps) {
                                  <img src={chartImage} alt="Chart" className="h-full w-full object-cover" />
                             </div>
                         )}
-                        <div className="flex flex-col gap-4">
+                         {(signals && signals.length > 0) && <div className="flex flex-col gap-4">
                             <h3 className={`flex items-center gap-3 text-2xl font-headline`}>
                                 <Target className="h-6 w-6 text-primary" />
                                 {t.signals}
@@ -129,17 +129,17 @@ export function ShareableImage({ result, theme }: ShareableImageProps) {
                             <div className="grid grid-cols-1 gap-4">
                                 {signals.slice(0, 2).map((signal, i) => <SignalCard key={i} signal={signal} t={t} theme={theme} />)}
                             </div>
-                        </div>
+                        </div>}
                     </div>
 
                     {/* Right Column */}
                     <div className={`col-span-2 flex flex-col gap-8 rounded-2xl p-6 border ${cardBgClass} ${cardBorderClass}`}>
-                        <div className="space-y-2">
+                        {analysisSummary && <div className="space-y-2">
                             <h3 className={`text-2xl font-headline`}>{t.technicalSummary}</h3>
                             <p className={`text-base leading-relaxed line-clamp-[11] ${mutedTextClass}`}>{analysisSummary}</p>
-                        </div>
+                        </div>}
                          
-                        <div className="space-y-4">
+                        {(supportLevels && supportLevels.length > 0) && <div className="space-y-4">
                              <h3 className={`flex items-center gap-3 font-semibold text-lg ${headingTextClass}`}>
                                 <TrendingDown className="h-5 w-5 text-green-400" />
                                 {t.support}
@@ -147,8 +147,8 @@ export function ShareableImage({ result, theme }: ShareableImageProps) {
                             <div className="flex flex-wrap gap-2">
                                 {supportLevels.map((level, i) => <Badge key={i} className="border-green-500/50 bg-green-500/10 text-green-300 font-mono text-base px-3 py-1">{level}</Badge>)}
                             </div>
-                        </div>
-                        <div className="space-y-4">
+                        </div>}
+                        {(resistanceLevels && resistanceLevels.length > 0) && <div className="space-y-4">
                              <h3 className={`flex items-center gap-3 font-semibold text-lg ${headingTextClass}`}>
                                 <TrendingUp className="h-5 w-5 text-red-400" />
                                 {t.resistance}
@@ -156,7 +156,7 @@ export function ShareableImage({ result, theme }: ShareableImageProps) {
                             <div className="flex flex-wrap gap-2">
                                 {resistanceLevels.map((level, i) => <Badge key={i} className="border-red-500/50 bg-red-500/10 text-red-300 font-mono text-base px-3 py-1">{level}</Badge>)}
                             </div>
-                        </div>
+                        </div>}
                     </div>
                 </main>
 

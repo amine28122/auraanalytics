@@ -167,7 +167,7 @@ export async function getTradeSignals(
     const error = e instanceof Error ? e : new Error('An unknown error occurred during AI generation.');
     console.error(`AI analysis failed: ${error.message}`);
     
-    return { data: null, error: `Analysis failed: The service is currently overloaded. Please try again in a moment.`, message: null };
+    return { data: null, error: `Analysis failed: ${error.message}`, message: null };
   }
 }
 

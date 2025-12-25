@@ -226,7 +226,7 @@ export function TradeSignals({ result }: { result: AnalysisFormState | void }) {
     );
   }
 
-  const confidencePercentage = Math.round(data.confidenceLevel * 100);
+  const confidencePercentage = data.confidenceLevel != null ? Math.round(data.confidenceLevel * 100) : null;
 
   return (
     <>
@@ -242,24 +242,24 @@ export function TradeSignals({ result }: { result: AnalysisFormState | void }) {
             </Button>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
+          {data.analysisSummary && <div>
             <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold">
               <Lightbulb className="h-5 w-5 text-primary" />
               {t.technicalSummary}
             </h3>
             <p className="text-sm text-muted-foreground">{data.analysisSummary}</p>
-          </div>
+          </div>}
 
-          <div>
+          {confidencePercentage != null && <div>
             <h3 className="mb-2 text-lg font-semibold">{t.confidenceLevel}</h3>
             <div className="flex items-center gap-4">
               <Progress value={confidencePercentage} className="w-full" />
               <span className="font-mono text-lg font-medium text-primary">{confidencePercentage}%</span>
             </div>
-          </div>
+          </div>}
           
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
+              {data.supportLevels && data.supportLevels.length > 0 && <div>
                   <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold">
                       <TrendingDown className="h-5 w-5 text-green-400" />
                       {t.supportLevels}
@@ -267,8 +267,8 @@ export function TradeSignals({ result }: { result: AnalysisFormState | void }) {
                   <div className="flex flex-wrap gap-2">
                       {data.supportLevels.map((level, i) => <Badge key={i} variant="outline" className="font-mono">{level}</Badge>)}
                   </div>
-              </div>
-              <div>
+              </div>}
+              {data.resistanceLevels && data.resistanceLevels.length > 0 && <div>
                   <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold">
                       <TrendingUp className="h-5 w-5 text-red-400" />
                       {t.resistanceLevels}
@@ -276,7 +276,7 @@ export function TradeSignals({ result }: { result: AnalysisFormState | void }) {
                   <div className="flex flex-wrap gap-2">
                       {data.resistanceLevels.map((level, i) => <Badge key={i} variant="outline" className="font-mono">{level}</Badge>)}
                   </div>
-              </div>
+              </div>}
           </div>
 
           <div>
@@ -284,7 +284,7 @@ export function TradeSignals({ result }: { result: AnalysisFormState | void }) {
                   <Target className="h-5 w-5 text-primary" />
                   {t.actionableSignals}
               </h3>
-              {data.signals.length > 0 ? (
+              {data.signals && data.signals.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       {data.signals.map((signal, index) => (
                           <SignalCard key={index} signal={signal} lang={lang} />

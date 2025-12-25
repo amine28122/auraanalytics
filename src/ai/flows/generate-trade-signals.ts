@@ -1,135 +1,124 @@
 'use server';
 
-/**
- * @fileOverview Generates trade signals based on market chart analysis.
- *
- * - generateTradeSignals - A function that generates trade signals.
- * - GenerateTradeSignalsInput - The input type for the generateTradeSignals function.
- * - GenerateTradeSignalsOutput - The return type for the generateTradeSignals function.
- */
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, Part } from '@google/generative-ai';
+import { z } from 'zod';
 
-import { ai } from '@/ai/init';
-import {z} from 'genkit';
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+  throw new Error("GEMINI_API_KEY is not found in environment variables.");
+}
+
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 const GenerateTradeSignalsInputSchema = z.object({
-  chartDataLarge: z
-    .string()
-    .describe(
-      'The main chart data for a large timeframe (e.g., H4, Daily) as a data URI. Must include a MIME type and use Base64 encoding.'
-    ),
-  chartDataSmall: z
-    .string()
-    .optional()
-    .describe(
-      'Optional: Chart data for a smaller timeframe (e.g., M15, M5) for precise entry, as a data URI.'
-    ),
-  language: z.enum(['en', 'ar', 'es']).default('en').describe('The language for the analysis output.'),
-  analysisSchools: z.array(z.string()).optional().describe('A list of specific technical analysis schools to focus on (e.g., ["ICT", "RSI"]).'),
+  chartDataLarge: z.string(),
+  chartDataSmall: z.string().optional(),
+  language: z.enum(['en', 'ar', 'es']).default('en'),
+  analysisSchools: z.array(z.string()).optional(),
 });
 export type GenerateTradeSignalsInput = z.infer<typeof GenerateTradeSignalsInputSchema>;
 
 const TradeSignalSchema = z.object({
-    type: z.enum(['BUY', 'SELL']).describe('The type of the signal (BUY or SELL).'),
-    orderType: z.enum(['Market', 'Pending']).describe("'Market' for immediate execution at current price, 'Pending' for a future entry point."),
-    entryPrice: z.string().describe("The recommended entry price. Should be 'Current Price' for Market orders."),
-    takeProfit: z.array(z.string()).describe('An array of take-profit target prices.'),
-    stopLoss: z.string().describe('The recommended stop-loss price. This should be a tight stop loss.'),
+    type: z.enum(['BUY', 'SELL']),
+    orderType: z.enum(['Market', 'Pending']),
+    entryPrice: z.string(),
+    takeProfit: z.array(z.string()),
+    stopLoss: z.string(),
 });
 
 const GenerateTradeSignalsOutputSchema = z.object({
   imageValidation: z.object({
-    isChart: z.boolean().describe("Set to true if the image is a financial chart. If it's not a chart (e.g., a photo of an animal), set to false and provide a validationError."),
-    isClear: z.boolean().describe("Set to true if the chart is clear and readable. If it's too blurry or the numbers are unreadable, set to false and provide a validationError."),
-    validationError: z.string().optional().describe("If isChart or isClear is false, provide a user-friendly error message in the requested language. E.g., 'The uploaded image is not a financial chart.' or 'The chart image is too blurry to analyze.'"),
-  }).describe('Result of the initial image validation.'),
-  signals: z.array(TradeSignalSchema).optional().describe('An array of potential trading signals, both buy and sell.'),
-  supportLevels: z.array(z.string()).optional().describe('Key support price levels identified from the chart.'),
-  resistanceLevels: z.array(z.string()).optional().describe('Key resistance price levels identified from the chart.'),
-  confidenceLevel: z
-    .number()
-    .min(0)
-    .max(1)
-    .optional()
-    .describe('Confidence level of the signals (0 to 1).'),
-  analysisSummary: z.string().optional().describe('A detailed summary of the technical analysis, including identified patterns, trend direction, and rationale for the signals.'),
+    isChart: z.boolean(),
+    isClear: z.boolean(),
+    validationError: z.string().optional().nullable(),
+  }),
+  signals: z.array(TradeSignalSchema).optional(),
+  supportLevels: z.array(z.string()).optional(),
+  resistanceLevels: z.array(z.string()).optional(),
+  confidenceLevel: z.preprocess(
+    (val) => {
+        if (typeof val === 'string') {
+            const num = parseFloat(val);
+            return isNaN(num) ? undefined : num;
+        }
+        return val;
+    },
+    z.number().optional()
+  ),
+  analysisSummary: z.string().optional(),
 });
 export type GenerateTradeSignalsOutput = z.infer<typeof GenerateTradeSignalsOutputSchema>;
 export type TradeSignal = z.infer<typeof TradeSignalSchema>;
 
-
-export async function generateTradeSignals(input: GenerateTradeSignalsInput): Promise<GenerateTradeSignalsOutput> {
-  return generateTradeSignalsFlow(input);
+function dataUriToGoogleGenerativePart(dataUri: string): Part {
+  const [mimeTypePart, base64Part] = dataUri.split(';base64,');
+  const mimeType = mimeTypePart.split(':')[1];
+  return {
+    inlineData: {
+      mimeType,
+      data: base64Part,
+    },
+  };
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateTradeSignalsPrompt',
-  model: 'gemini-2.5-flash',
-  input: {schema: GenerateTradeSignalsInputSchema},
-  output: {schema: GenerateTradeSignalsOutputSchema},
-  prompt: `You are a professional trading analyst specializing in multi-timeframe technical analysis. Your task is to analyze the provided chart image(s) and generate actionable, structured trading signals.
+export async function generateTradeSignals(input: GenerateTradeSignalsInput): Promise<GenerateTradeSignalsOutput> {
+    const validatedInput = GenerateTradeSignalsInputSchema.parse(input);
 
-  **IMPORTANT FIRST STEP: Image Validation**
-  1.  First, analyze the image provided in 'chartDataLarge'.
-  2.  Determine if the image is a financial chart. If it is NOT a financial chart (e.g., it's a picture of a car, an animal, a person, etc.), you MUST set 'isChart' to false and provide an appropriate error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.
-  3.  If it IS a chart, determine if it is clear enough to be analyzed. If the chart is too blurry, pixelated, or the numbers and candlesticks are unreadable, you MUST set 'isClear' to false and provide an error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.
-  4.  If the image is a clear financial chart, set both 'isChart' and 'isClear' to true and proceed with the full analysis below.
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  The user's preferred language is {{language}}. ALL text in your response, especially in the 'analysisSummary' and 'validationError' fields, MUST be in this language.
+    const promptParts: Part[] = [
+        { text: `You are a professional trading analyst. Your task is to analyze the provided chart image(s) and generate actionable, structured trading signals.\n\n        **IMPORTANT FIRST STEP: Image Validation**\n        1.  First, analyze the image provided in 'chartDataLarge'.\n        2.  Determine if the image is a financial chart. If it is NOT a financial chart (e.g., it's a picture of a car, an animal, a person, etc.), you MUST set 'isChart' to false and provide an appropriate error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        3.  If it IS a chart, determine if it is clear enough to be analyzed. If the chart is too blurry, pixelated, or the numbers and candlesticks are unreadable, you MUST set 'isClear' to false and provide an error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        4.  If the image is a clear financial chart, set both 'isChart' and 'isClear' to true and proceed with the full analysis below.\n\n        The user's preferred language is ${validatedInput.language}. ALL text in your response, especially in the 'analysisSummary' and 'validationError' fields, MUST be in this language.\n\n`},
+        {
+            text: validatedInput.analysisSchools && validatedInput.analysisSchools.length > 0 ?
+            `For this analysis, you MUST adopt the persona of a world-class specialist ONLY in the following trading schools/concepts: **${validatedInput.analysisSchools.join(', ')}**. Your ENTIRE analysis, from identifying levels to generating signals and writing the summary, MUST be conducted *exclusively* through the lens of this/these methodologies. Do not use concepts from other schools unless they are directly part of the requested ones. Your persona is that of a master analyst who is a leading expert in the selected schools. If the chart does not present a clear setup according to these specific schools, you must state that in the analysis summary and lower the confidence level accordingly.`
+            :
+            `Your persona is that of a comprehensive technical analyst. Your analysis MUST be holistic and draw upon a variety of powerful technical analysis schools, including:\n- ICT / SMC (Inner Circle Trader / Smart Money Concepts)\n- Elliott Wave Theory\n- Support & Resistance\n- Trend Lines & Channels\n- Chart Patterns (e.g., head and shoulders, double tops/bottoms, triangles)\n- Japanese Candlesticks\n- RSI (Relative Strength Index)\n- MACD (Moving Average Convergence Divergence)\n- Fibonacci\n- Quantitative Analysis`
+        },
+        { text: `\n\nAnalyze the following chart data:\n        `},
+        dataUriToGoogleGenerativePart(validatedInput.chartDataLarge),
+    ];
 
-  {{#if analysisSchools.length}}
-  The user has requested to focus the analysis primarily on the following schools/concepts: **{{#each analysisSchools}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}**.
-  Your analysis should prioritize these methods. If other powerful patterns are present, you may mention them, but the core rationale should stem from the user's selected schools. If the selected schools are not applicable to the provided chart, state that in the summary.
-  {{else}}
-  Your analysis MUST be comprehensive and draw upon a variety of powerful technical analysis schools, including:
-  - ICT / SMC (Inner Circle Trader / Smart Money Concepts)
-  - Elliott Wave Theory
-  - Support & Resistance
-  - Trend Lines & Channels
-  - Chart Patterns (e.g., head and shoulders, double tops/bottoms, triangles)
-  - Japanese Candlesticks
-  - RSI (Relative Strength Index)
-  - MACD (Moving Average Convergence Divergence)
-  - Fibonacci
-  - Quantitative Analysis
-  {{/if}}
-  
+    if (validatedInput.chartDataSmall) {
+        promptParts.push(
+            { text: '\n\nEntry Chart (Small Timeframe):\n' },
+            dataUriToGoogleGenerativePart(validatedInput.chartDataSmall),
+            { text: `\n\n**Analysis Instructions (Multi-Timeframe):**\n            1.  Use the Main Chart (Large Timeframe) to determine the overall market context, trend direction, and key higher-timeframe support/resistance zones. This chart dictates the STRATEGY (i.e., are we looking for buys or sells?).\n            2.  Use the Entry Chart (Small Timeframe) to find a precise, low-risk entry point that aligns with the strategy from the large timeframe. Look for confirmation patterns (e.g., candlestick patterns, break of structure) on this smaller chart.\n            3.  The final signal(s) must be based on a confluence between BOTH timeframes. If they conflict, state that in the summary and lower the confidence.`}
+        );
+    } else {
+        promptParts.push(
+            { text: `\n\n**Analysis Instructions (Single Timeframe):**\n            1.  Perform a full analysis based on the single chart provided. Identify the trend, key levels, and any potential patterns to form your conclusion.`}
+        );
+    }
 
-  Analyze the following chart data:
+    promptParts.push(
+        { text: `\n\nBased on your integrated analysis, provide the following:
+        1.  A detailed technical analysis summary. If using multi-timeframe, explain how the large timeframe context justifies the entry on the small timeframe. The summary MUST reflect the user's chosen analysis schools if provided.
+        2.  Identify key support and resistance levels from the main chart.
+        3.  **You MUST attempt to generate at least one trading signal (BUY or SELL).** If multiple opportunities exist, provide them. If the chart quality is good but the setup is not high-probability, generate the best signal you can find and reflect the uncertainty in the 'confidenceLevel' and 'analysisSummary'.
+            - For each signal, determine if it's a 'Market' order or a 'Pending' order.
+            - Specify the entry price. Use 'Current Price' for Market orders.
+            - Provide at least one take-profit (TP) level.
+            - Provide a tight stop-loss (SL) level to minimize potential risk.
+        4.  A confidence level (a number between 0 and 1) for the overall analysis. This should be higher if the setup is very clear. If the setup is weak, provide a lower confidence level.
 
-  Main Chart (Large Timeframe): {{media url=chartDataLarge}}
-  {{#if chartDataSmall}}
-  Entry Chart (Small Timeframe): {{media url=chartDataSmall}}
-  
-  **Analysis Instructions (Multi-Timeframe):**
-  1.  Use the Main Chart (Large Timeframe) to determine the overall market context, trend direction, and key higher-timeframe support/resistance zones. This chart dictates the STRATEGY (i.e., are we looking for buys or sells?).
-  2.  Use the Entry Chart (Small Timeframe) to find a precise, low-risk entry point that aligns with the strategy from the large timeframe. Look for confirmation patterns (e.g., candlestick patterns, break of structure) on this smaller chart.
-  3.  The final signal(s) must be based on a confluence between BOTH timeframes. If they conflict, state that in the summary and lower the confidence.
-  {{else}}
-  **Analysis Instructions (Single Timeframe):**
-  1.  Perform a full analysis based on the single chart provided. Identify the trend, key levels, and any potential patterns to form your conclusion.
-  {{/if}}
+        Format your output as a JSON object matching the requested schema. Provide specific price points for all signals. Ensure stop losses are reasonably tight. **If no valid trading setup can be identified at all, you may return an empty \"signals\" array, but you MUST explain why in the \"analysisSummary\".** If validation fails, only populate the 'imageValidation' object.`}
+    );
 
-  Based on your integrated analysis, provide the following:
-  1.  A detailed technical analysis summary. If using multi-timeframe, explain how the large timeframe context justifies the entry on the small timeframe. The summary MUST reflect the user's chosen analysis schools if provided.
-  2.  Identify key support and resistance levels from the main chart.
-  3.  Generate potential trading signals (both buy and sell if applicable).
-      - For each signal, determine if it's a 'Market' order or a 'Pending' order.
-      - Specify the entry price. Use 'Current Price' for Market orders.
-      - Provide at least one take-profit (TP) level.
-      - Provide a tight stop-loss (SL) level to minimize potential risk.
-  4.  A confidence level for the overall analysis. This should be higher if both timeframes are in alignment.
+    const generationConfig = {
+        response_mime_type: "application/json",
+    };
 
-  Format your output as a JSON object matching the requested schema. Provide specific price points for all signals. Ensure stop losses are reasonably tight. If validation fails, only populate the 'imageValidation' object.`,
-});
+    const safetySettings = [
+      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  ];
 
-const generateTradeSignalsFlow = ai.defineFlow(
-  {
-    name: 'generateTradeSignalsFlow',
-    inputSchema: GenerateTradeSignalsInputSchema,
-    outputSchema: GenerateTradeSignalsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+    const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig, safetySettings });
+    const responseText = result.response.text();
+    
+    const parsedOutput = JSON.parse(responseText);
+
+    return GenerateTradeSignalsOutputSchema.parse(parsedOutput);
+}
