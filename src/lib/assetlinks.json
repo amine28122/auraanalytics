@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.aura_academy_nine.twa",
+      "sha256_cert_fingerprints": ["8D:2B:63:73:2E:E2:B3:36:13:9D:C2:5A:6A:8B:12:0A:41:43:2D:34:39:B4:4D:43:94:4B:8A:23:42:0E:3C:D9"]
+    }
+  }
+]
