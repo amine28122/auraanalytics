@@ -111,7 +111,7 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
     );
 
     const generationConfig = {
-        response_mime_type: "application/json",
+        responseMimeType: "application/json",
     };
 
     const safetySettings = [
