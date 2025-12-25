@@ -47,15 +47,11 @@ export function InstallPwaButton() {
       } else {
         console.log('User dismissed the PWA install prompt');
       }
-    } else {
-      // Fallback for browsers that don't support PWA install prompt (like iOS Safari)
-      // or if the prompt is not available. Revert to the original APK download.
-      window.location.href = '/Aura.apk';
     }
   };
 
-  // Only hide the button if the app is already installed.
-  if (isAppInstalled) {
+  // Only show the button if PWA installation is possible and the app isn't installed yet.
+  if (!prompt || isAppInstalled) {
     return null;
   }
 
@@ -67,8 +63,7 @@ export function InstallPwaButton() {
       className="futuristic-button group"
     >
       <Download className="mr-2 h-5 w-5 cta-icon" />
-      {/* If PWA is possible, show "Install App". Otherwise, show the original APK download text. */}
-      <span>{prompt ? 'Install App' : 'Download AURA.apk'}</span>
+      <span>Install App</span>
     </Button>
   );
 }
