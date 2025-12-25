@@ -11,14 +11,19 @@ export function InstallPwaButton() {
   useEffect(() => {
     // This check is important to prevent errors during server-side rendering
     if (typeof window !== 'undefined') {
-        // Check if the app is already installed
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            setIsAppInstalled(true);
-        }
+        const checkInstalled = () => {
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                setIsAppInstalled(true);
+            }
+        };
+        checkInstalled();
 
         const handleBeforeInstallPrompt = (event: Event) => {
             event.preventDefault();
-            setPrompt(event);
+            // Only set the prompt if the app is not already installed
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                setPrompt(event);
+            }
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -49,21 +54,35 @@ export function InstallPwaButton() {
       }
     }
   };
+  
+  // Determine button properties based on state
+  let buttonText: string;
+  let buttonDisabled: boolean;
+  let onClickHandler: () => void = () => {};
 
-  // Only show the button if PWA installation is possible and the app isn't installed yet.
-  if (!prompt || isAppInstalled) {
-    return null;
+  if (isAppInstalled) {
+      buttonText = 'Installed';
+      buttonDisabled = true;
+  } else if (prompt) {
+      buttonText = 'Install App';
+      buttonDisabled = false;
+      onClickHandler = handleInstallClick;
+  } else {
+      // This state is shown initially, and for unsupported browsers.
+      buttonText = 'Install Not Supported';
+      buttonDisabled = true;
   }
 
   return (
     <Button
-      onClick={handleInstallClick}
+      onClick={onClickHandler}
+      disabled={buttonDisabled}
       aria-label="Get The App"
       size="lg"
       className="futuristic-button group"
     >
       <Download className="mr-2 h-5 w-5 cta-icon" />
-      <span>Install App</span>
+      <span>{buttonText}</span>
     </Button>
   );
 }
