@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // WARNING: These rules are permissive and are not suitable for production.
+    // They are set this way to allow server-side actions (like Genkit flows)
+    // to access the database without complex authentication for this prototype.
+    // In a real application, you would implement proper server-to-server authentication.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
