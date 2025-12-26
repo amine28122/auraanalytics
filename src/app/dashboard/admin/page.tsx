@@ -55,6 +55,8 @@ type UserProfile = {
   activeReferrals?: number;
   totalEarnings?: number;
   pendingEarnings?: number;
+  referredBy?: string;
+  affiliateCommissionPaid?: boolean;
 }
 
 const PLAN_LIMITS = {
@@ -340,6 +342,10 @@ function AdminDashboard() {
   const [balanceAmount, setBalanceAmount] = useState('0');
   const [adjustingBalance, setAdjustingBalance] = useState(false);
 
+  // Network Detail State
+  const [isNetworkDialogOpen, setIsNetworkDialogOpen] = useState(false);
+  const [referringUser, setReferringUser] = useState<UserProfile | null>(null);
+
   useEffect(() => {
     if (!firestore) {
       setLoading(false);
@@ -612,6 +618,18 @@ function AdminDashboard() {
     );
   };
 
+  const getReferrerInfo = (referredById?: string) => {
+    if (!referredById) return <span className="text-muted-foreground opacity-30 italic text-[10px]">Direct</span>;
+    const referrer = users.find(u => u.uid === referredById);
+    if (!referrer) return <span className="text-amber-500 text-[10px] font-mono">{referredById.substring(0, 5)}...</span>;
+    return (
+      <div className="flex flex-col">
+        <span className="text-[10px] font-bold text-foreground/80">{referrer.displayName}</span>
+        <span className="text-[9px] text-muted-foreground leading-none">{referrer.email}</span>
+      </div>
+    );
+  };
+
 
   if (loading) {
     return (
@@ -795,6 +813,7 @@ function AdminDashboard() {
                       <TableHead>Plan</TableHead>
                       <TableHead>Usage</TableHead>
                       <TableHead>Premium Status</TableHead>
+                      <TableHead>Referred By</TableHead>
                       <TableHead>Joined</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -812,6 +831,7 @@ function AdminDashboard() {
                           <TableCell>{getPlanBadge(user.plan)}</TableCell>
                           <TableCell>{getUsageInfo(user)}</TableCell>
                           <TableCell>{getPremiumStatus(user)}</TableCell>
+                          <TableCell>{getReferrerInfo(user.referredBy)}</TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             {user.joined && user.joined.toDate ? formatDistanceToNow(user.joined.toDate(), { addSuffix: true }) : 'N/A'}
                           </TableCell>
@@ -824,7 +844,7 @@ function AdminDashboard() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           No users found matching "{searchQuery}"
                         </TableCell>
                       </TableRow>
@@ -872,10 +892,17 @@ function AdminDashboard() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-bold">{user.totalReferrals || 0}</span>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              className="h-auto p-1 flex items-center gap-2 hover:bg-primary/10 transition-colors rounded-lg group"
+                              onClick={() => {
+                                setReferringUser(user);
+                                setIsNetworkDialogOpen(true);
+                              }}
+                            >
+                              <Users className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                              <span className="font-bold underline decoration-dotted underline-offset-4 group-hover:text-primary transition-colors">{user.totalReferrals || 0}</span>
+                            </Button>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col gap-1">
@@ -1025,6 +1052,74 @@ function AdminDashboard() {
               {adjustingBalance ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <DollarSign className="h-4 w-4 mr-2" />}
               Update Balance
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Network Details Dialog */}
+      <Dialog open={isNetworkDialogOpen} onOpenChange={setIsNetworkDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Referral Network: {referringUser?.displayName}</DialogTitle>
+            <DialogDescriptionComponent>
+              Complete list of users referred by this partner and their reward status.
+            </DialogDescriptionComponent>
+          </DialogHeader>
+
+          <div className="flex-grow overflow-auto mt-4 px-1">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                <TableRow>
+                  <TableHead>User Email</TableHead>
+                  <TableHead>Current Plan</TableHead>
+                  <TableHead className="text-right">Bonus Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.filter(u => u.referredBy === referringUser?.uid).length > 0 ? (
+                  users.filter(u => u.referredBy === referringUser?.uid).map((refUser) => (
+                    <TableRow key={refUser.uid}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{refUser.email}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            Joined: {refUser.joined?.toDate ? refUser.joined.toDate().toLocaleDateString() : 'Direct'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn(
+                          "text-[10px] px-2 py-0",
+                          refUser.plan !== 'Free' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" : "opacity-50"
+                        )}>
+                          {refUser.plan}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {refUser.affiliateCommissionPaid ? (
+                          <Badge className="bg-emerald-500 text-white gap-1 text-[10px] px-2 py-0.5">
+                            <Check className="h-2 w-2" /> Paid
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                            Pending
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground italic">
+                      No referrals found for this user.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsNetworkDialogOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

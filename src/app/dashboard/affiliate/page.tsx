@@ -46,6 +46,7 @@ type ReferredUser = {
     email: string;
     plan: string;
     joined: any;
+    affiliateCommissionPaid?: boolean;
 };
 
 export default function AffiliatePage() {
@@ -311,37 +312,52 @@ export default function AffiliatePage() {
                                 <TableBody>
                                     {referredUsers.length > 0 ? (
                                         referredUsers.map((refUser) => {
-                                            const isPaid = refUser.plan !== 'Free';
-                                            const commission = refUser.plan === 'Aura Plan' ? 25 : (refUser.plan === 'Premium' ? 10 : 0);
+                                            const isPaid = refUser.plan !== 'Free' || refUser.affiliateCommissionPaid;
+                                            const commission = refUser.plan === 'Aura Plan' ? 25 : (refUser.plan === 'Premium' ? 10 : (refUser.affiliateCommissionPaid ? 10 : 0));
 
                                             return (
                                                 <TableRow key={refUser.uid} className="hover:bg-muted/10 transition-colors group">
                                                     <TableCell className="py-4 px-6">
                                                         <div className="flex flex-col">
                                                             <span className="text-sm font-medium group-hover:text-primary transition-colors">{refUser.email}</span>
-                                                            <span className="text-[10px] text-muted-foreground">
+                                                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                                                                 Joined: {refUser.joined?.toDate ? refUser.joined.toDate().toLocaleDateString() : 'N/A'}
+                                                                {refUser.affiliateCommissionPaid && (
+                                                                    <span className="text-emerald-500 font-bold ml-2 flex items-center gap-0.5">
+                                                                        <Check className="h-2 w-2" /> Verified
+                                                                    </span>
+                                                                )}
                                                             </span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="py-4 px-6">
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "text-[10px] font-bold px-2 py-0 border-primary/20",
-                                                                isPaid ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" : "bg-muted text-muted-foreground border-transparent"
+                                                        <div className="flex flex-col gap-1">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "text-[10px] font-bold px-2 py-0 border-primary/20",
+                                                                    refUser.plan !== 'Free' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" : "bg-muted text-muted-foreground border-transparent"
+                                                                )}
+                                                            >
+                                                                {refUser.plan}
+                                                            </Badge>
+                                                            {refUser.affiliateCommissionPaid && refUser.plan === 'Free' && (
+                                                                <span className="text-[9px] text-emerald-500/70 font-medium">Reward Collected</span>
                                                             )}
-                                                        >
-                                                            {refUser.plan}
-                                                        </Badge>
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="py-4 px-6 text-right">
-                                                        <span className={cn(
-                                                            "font-mono font-bold text-lg",
-                                                            isPaid ? "text-emerald-500" : "text-muted-foreground/40"
-                                                        )}>
-                                                            ${commission.toFixed(2)}
-                                                        </span>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className={cn(
+                                                                "font-mono font-bold text-lg leading-tight",
+                                                                isPaid ? "text-emerald-500" : "text-muted-foreground/40"
+                                                            )}>
+                                                                ${commission.toFixed(2)}
+                                                            </span>
+                                                            {refUser.affiliateCommissionPaid && (
+                                                                <span className="text-[9px] text-muted-foreground uppercase tracking-tighter">Approved</span>
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             );
