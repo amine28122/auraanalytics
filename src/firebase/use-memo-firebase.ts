@@ -4,7 +4,7 @@ import { useMemo, DependencyList } from 'react';
 // This is crucial to prevent infinite loops in `useCollection` and `useDoc` hooks.
 export function useMemoFirebase<T>(
   factory: () => T,
-  deps: DependencyList | undefined
+  deps: DependencyList = []
 ): T {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(factory, deps);
