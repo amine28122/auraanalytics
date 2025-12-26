@@ -272,9 +272,18 @@ export async function approveActivationRequest(requestId: string, userId: string
 
       const userData = userDoc.data();
       const planName = requestData.planName || 'Premium';
+      const referredBy = userData.referredBy;
+
+      let referrerDoc = null;
+      if (referredBy) {
+        const referrerDocRef = doc(firestore, 'users', referredBy);
+        referrerDoc = await transaction.get(referrerDocRef);
+      }
 
       const startDate = Timestamp.now();
       const endDate = new Timestamp(startDate.seconds + 30 * 24 * 60 * 60, startDate.nanoseconds);
+
+      // --- ALL WRITES START HERE ---
 
       transaction.update(userDocRef, {
         plan: planName,
@@ -285,30 +294,17 @@ export async function approveActivationRequest(requestId: string, userId: string
         learningProgress: userData.learningProgress || {},
       });
 
-      // Affiliate System: Credit the referrer
-      const referredBy = userData.referredBy;
-      console.log(`[Approve] User ${userId} referred by: ${referredBy}`);
+      if (referrerDoc && referrerDoc.exists()) {
+        const normalizedPlan = planName.trim();
+        const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
 
-      if (referredBy) {
-        const referrerDocRef = doc(firestore, 'users', referredBy);
-        const referrerDoc = await transaction.get(referrerDocRef);
+        console.log(`[Approve] Awarding $${commission} to referrer ${referredBy}`);
 
-        if (referrerDoc.exists()) {
-          // Commission: Aura Plan ($25), Premium ($10)
-          // Normalize plan name for comparison
-          const normalizedPlan = planName.trim();
-          const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
-
-          console.log(`[Approve] Awarding $${commission} to referrer ${referredBy}`);
-
-          transaction.update(referrerDocRef, {
-            activeReferrals: increment(1),
-            totalEarnings: increment(commission),
-            pendingEarnings: increment(commission),
-          });
-        } else {
-          console.warn(`[Approve] Referrer document ${referredBy} not found`);
-        }
+        transaction.update(referrerDoc.ref, {
+          activeReferrals: increment(1),
+          totalEarnings: increment(commission),
+          pendingEarnings: increment(commission),
+        });
       }
 
       transaction.update(requestDocRef, {
@@ -337,6 +333,13 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
       }
 
       const userData = userDoc.data();
+      const referredBy = userData.referredBy;
+
+      let referrerDoc = null;
+      if (userData.plan === 'Free' && newPlan !== 'Free' && referredBy) {
+        const referrerDocRef = doc(firestore, 'users', referredBy);
+        referrerDoc = await transaction.get(referrerDocRef);
+      }
 
       // Determine dates
       let planStartDate = null;
@@ -350,6 +353,8 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
         planEndDate = endDate;
       }
 
+      // --- ALL WRITES START HERE ---
+
       // Update User
       transaction.update(userDocRef, {
         plan: newPlan,
@@ -360,29 +365,17 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
       });
 
       // Affiliate Commission logic (only if upgrading from Free to something paid)
-      if (userData.plan === 'Free' && newPlan !== 'Free') {
-        const referredBy = userData.referredBy;
-        console.log(`[ManualUpdate] User ${userId} referred by: ${referredBy}`);
+      if (referrerDoc && referrerDoc.exists()) {
+        const normalizedPlan = newPlan.trim();
+        const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
 
-        if (referredBy) {
-          const referrerDocRef = doc(firestore, 'users', referredBy);
-          const referrerDoc = await transaction.get(referrerDocRef);
+        console.log(`[ManualUpdate] Awarding $${commission} to referrer ${referredBy}`);
 
-          if (referrerDoc.exists()) {
-            const normalizedPlan = newPlan.trim();
-            const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
-
-            console.log(`[ManualUpdate] Awarding $${commission} to referrer ${referredBy}`);
-
-            transaction.update(referrerDocRef, {
-              activeReferrals: increment(1),
-              totalEarnings: increment(commission),
-              pendingEarnings: increment(commission),
-            });
-          } else {
-            console.warn(`[ManualUpdate] Referrer document ${referredBy} not found`);
-          }
-        }
+        transaction.update(referrerDoc.ref, {
+          activeReferrals: increment(1),
+          totalEarnings: increment(commission),
+          pendingEarnings: increment(commission),
+        });
       }
     });
 
