@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Copy, Users, DollarSign, TrendingUp, CheckCircle2, Info, Loader2, Wallet, History, AlertCircle } from 'lucide-react';
+import { Copy, Users, DollarSign, TrendingUp, CheckCircle2, Check, Info, Loader2, Wallet, History, AlertCircle } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
