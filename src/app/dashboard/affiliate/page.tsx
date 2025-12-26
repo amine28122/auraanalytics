@@ -41,12 +41,20 @@ type WithdrawRequest = {
     createdAt: any;
 };
 
+type ReferredUser = {
+    uid: string;
+    email: string;
+    plan: string;
+    joined: any;
+};
+
 export default function AffiliatePage() {
     const { user } = useAuth();
     const { firestore } = useFirebase();
     const { toast } = useToast();
     const [affiliateData, setAffiliateData] = useState<AffiliateData | null>(null);
     const [withdrawHistory, setWithdrawHistory] = useState<WithdrawRequest[]>([]);
+    const [referredUsers, setReferredUsers] = useState<ReferredUser[]>([]);
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [walletAddress, setWalletAddress] = useState('');
@@ -92,9 +100,20 @@ export default function AffiliatePage() {
                 setWithdrawHistory(history.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds));
             });
 
+            // Referred Users Listener
+            const qRef = query(collection(firestore, 'users'), where('referredBy', '==', user.uid));
+            const unsubRef = onSnapshot(qRef, (snapshot) => {
+                const refs = snapshot.docs.map(doc => ({
+                    uid: doc.id,
+                    ...doc.data()
+                })) as ReferredUser[];
+                setReferredUsers(refs.sort((a, b) => (b.joined?.seconds || 0) - (a.joined?.seconds || 0)));
+            });
+
             return () => {
                 unsubStats();
                 unsubHistory();
+                unsubRef();
             };
         }
     }, [user, firestore]);
@@ -268,29 +287,77 @@ export default function AffiliatePage() {
 
             {/* System Guide & Payout */}
             <div className="grid gap-8 lg:grid-cols-2">
-                <Card className="border-blue-500/10 shadow-lg">
-                    <CardHeader className="bg-blue-500/[0.02]">
+                {/* Referral List */}
+                <Card className="border-primary/10 shadow-lg overflow-hidden flex flex-col">
+                    <CardHeader className="bg-primary/[0.02]">
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-2xl bg-blue-500/10 shadow-inner"><Info className="h-6 w-6 text-blue-500" /></div>
-                            <CardTitle className="text-xl font-bold">How the Engine Works</CardTitle>
+                            <div className="p-2.5 rounded-2xl bg-primary/10 shadow-inner"><Users className="h-6 w-6 text-primary" /></div>
+                            <div>
+                                <CardTitle className="text-xl font-bold">Your Referral Network</CardTitle>
+                                <CardDescription>List of users who joined using your link</CardDescription>
+                            </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="pt-8">
-                        <div className="relative border-l-2 border-primary/10 ml-4 space-y-10">
-                            {[
-                                { t: 'Strategic Tracking', d: 'Our tracking engine uses session signatures to identify your referrals even before they sign up.' },
-                                { t: 'Permanence Link', d: 'Once a user registers via your link, they are tied to your ID permanently in our secure database.' },
-                                { t: 'Payment Verification', d: "Our analysts verify the payment transaction ID and screenshot within 2-24 hours." },
-                                { t: 'Automated Settlement', d: 'Upon plan approval, the commission is instantly computed and credited to your partner balance.' }
-                            ].map((step, i) => (
-                                <div key={i} className="relative pl-10">
-                                    <div className="absolute -left-[13px] top-0 flex items-center justify-center w-6 h-6 bg-background border-2 border-primary rounded-full z-10">
-                                        <div className="w-2 h-2 bg-primary rounded-full" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-foreground/90 mb-1">{step.t}</h3>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">{step.d}</p>
-                                </div>
-                            ))}
+                    <CardContent className="p-0 flex-grow">
+                        <div className="max-h-[500px] overflow-y-auto">
+                            <Table>
+                                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                                    <TableRow className="bg-muted/5">
+                                        <TableHead className="py-4 px-6 text-[10px] uppercase font-bold tracking-widest text-muted-foreground italic">Email</TableHead>
+                                        <TableHead className="py-4 px-6 text-[10px] uppercase font-bold tracking-widest text-muted-foreground italic">Plan</TableHead>
+                                        <TableHead className="py-4 px-6 text-[10px] uppercase font-bold tracking-widest text-muted-foreground italic text-right">Commission</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {referredUsers.length > 0 ? (
+                                        referredUsers.map((refUser) => {
+                                            const isPaid = refUser.plan !== 'Free';
+                                            const commission = refUser.plan === 'Aura Plan' ? 25 : (refUser.plan === 'Premium' ? 10 : 0);
+
+                                            return (
+                                                <TableRow key={refUser.uid} className="hover:bg-muted/10 transition-colors group">
+                                                    <TableCell className="py-4 px-6">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium group-hover:text-primary transition-colors">{refUser.email}</span>
+                                                            <span className="text-[10px] text-muted-foreground">
+                                                                Joined: {refUser.joined?.toDate ? refUser.joined.toDate().toLocaleDateString() : 'N/A'}
+                                                            </span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="py-4 px-6">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "text-[10px] font-bold px-2 py-0 border-primary/20",
+                                                                isPaid ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" : "bg-muted text-muted-foreground border-transparent"
+                                                            )}
+                                                        >
+                                                            {refUser.plan}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="py-4 px-6 text-right">
+                                                        <span className={cn(
+                                                            "font-mono font-bold text-lg",
+                                                            isPaid ? "text-emerald-500" : "text-muted-foreground/40"
+                                                        )}>
+                                                            ${commission.toFixed(2)}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="h-64 text-center">
+                                                <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                                                    <Users className="h-12 w-12" />
+                                                    <p className="text-sm italic">You haven't referred anyone yet.</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
                     </CardContent>
                 </Card>

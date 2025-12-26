@@ -283,6 +283,15 @@ export async function approveActivationRequest(requestId: string, userId: string
       const startDate = Timestamp.now();
       const endDate = new Timestamp(startDate.seconds + 30 * 24 * 60 * 60, startDate.nanoseconds);
 
+      // Award commission only if NOT paid before
+      const shouldAwardCommission = referredBy && !userData.affiliateCommissionPaid;
+
+      if (shouldAwardCommission && !referrerDoc) {
+        // If for some reason referrerDoc isn't fetched yet (shouldn't happen with current logic but just in case)
+        const referrerDocRef = doc(firestore, 'users', referredBy);
+        referrerDoc = await transaction.get(referrerDocRef);
+      }
+
       // --- ALL WRITES START HERE ---
 
       transaction.update(userDocRef, {
@@ -292,9 +301,10 @@ export async function approveActivationRequest(requestId: string, userId: string
         planStartDate: startDate,
         planEndDate: endDate,
         learningProgress: userData.learningProgress || {},
+        affiliateCommissionPaid: shouldAwardCommission ? true : (userData.affiliateCommissionPaid || false)
       });
 
-      if (referrerDoc && referrerDoc.exists()) {
+      if (shouldAwardCommission && referrerDoc && referrerDoc.exists()) {
         const normalizedPlan = planName.trim();
         const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
 
@@ -336,7 +346,9 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
       const referredBy = userData.referredBy;
 
       let referrerDoc = null;
-      if (userData.plan === 'Free' && newPlan !== 'Free' && referredBy) {
+      const shouldAwardCommission = userData.plan === 'Free' && newPlan !== 'Free' && referredBy && !userData.affiliateCommissionPaid;
+
+      if (shouldAwardCommission) {
         const referrerDocRef = doc(firestore, 'users', referredBy);
         referrerDoc = await transaction.get(referrerDocRef);
       }
@@ -362,10 +374,11 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
         lastAnalysisDate: null,
         planStartDate,
         planEndDate,
+        affiliateCommissionPaid: shouldAwardCommission ? true : (userData.affiliateCommissionPaid || false)
       });
 
-      // Affiliate Commission logic (only if upgrading from Free to something paid)
-      if (referrerDoc && referrerDoc.exists()) {
+      // Affiliate Commission logic
+      if (shouldAwardCommission && referrerDoc && referrerDoc.exists()) {
         const normalizedPlan = newPlan.trim();
         const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
 
