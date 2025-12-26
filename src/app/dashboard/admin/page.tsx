@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { approveActivationRequest, approveWithdrawRequest, updateUserPlan } from '@/lib/actions';
+import { approveActivationRequest, approveWithdrawRequest, updateUserPlan, adjustUserBalance } from '@/lib/actions';
 import Image from 'next/image';
 
 type UserProfile = {
@@ -335,6 +335,11 @@ function AdminDashboard() {
   const [isResetting, setIsResetting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Balance Adjustment State
+  const [isBalanceDialogOpen, setIsBalanceDialogOpen] = useState(false);
+  const [balanceAmount, setBalanceAmount] = useState('0');
+  const [adjustingBalance, setAdjustingBalance] = useState(false);
+
   useEffect(() => {
     if (!firestore) {
       setLoading(false);
@@ -420,6 +425,36 @@ function AdminDashboard() {
       setIsDialogOpen(false);
     }
   }
+
+  const handleAdjustBalance = async () => {
+    if (!selectedUser || !balanceAmount) return;
+    setAdjustingBalance(true);
+
+    try {
+      const amount = parseFloat(balanceAmount);
+      if (isNaN(amount)) throw new Error("Invalid amount");
+
+      const result = await adjustUserBalance(selectedUser.uid, amount);
+      if (result.success) {
+        toast({
+          title: "Balance Adjusted",
+          description: `Successfully ${amount >= 0 ? 'added' : 'deducted'} $${Math.abs(amount).toFixed(2)} to ${selectedUser.displayName}'s balance.`,
+        });
+        setIsBalanceDialogOpen(false);
+        setBalanceAmount('0');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Adjustment Failed",
+        description: error.message,
+      });
+    } finally {
+      setAdjustingBalance(false);
+    }
+  };
 
   const handleResetAllUsers = async () => {
     if (!firestore || users.length === 0) {
@@ -880,6 +915,17 @@ function AdminDashboard() {
                                     <RefreshCw className="h-4 w-4 mr-1" /> Reset
                                   </Button>
                                 </AlertDialogTrigger>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-success text-success hover:bg-success hover:text-white"
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsBalanceDialogOpen(true);
+                                  }}
+                                >
+                                  <DollarSign className="h-4 w-4 mr-1" /> Adjust
+                                </Button>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Confirm Payout Reset</AlertDialogTitle>
@@ -947,6 +993,37 @@ function AdminDashboard() {
             <Button onClick={handleUpdatePlan} disabled={updatingPlan}>
               {updatingPlan && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Balance Adjustment Dialog */}
+      <Dialog open={isBalanceDialogOpen} onOpenChange={setIsBalanceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Partner Balance</DialogTitle>
+            <DialogDescriptionComponent>
+              Manually add or subtract funds from {selectedUser?.displayName}'s affiliate earnings.
+              Use negative numbers to subtract.
+            </DialogDescriptionComponent>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Current Balance: ${selectedUser?.pendingEarnings?.toFixed(2) || '0.00'}</label>
+              <Input
+                type="number"
+                placeholder="Amount (e.g. 10 or -10)"
+                value={balanceAmount}
+                onChange={(e) => setBalanceAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBalanceDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAdjustBalance} disabled={adjustingBalance}>
+              {adjustingBalance ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <DollarSign className="h-4 w-4 mr-2" />}
+              Update Balance
             </Button>
           </DialogFooter>
         </DialogContent>

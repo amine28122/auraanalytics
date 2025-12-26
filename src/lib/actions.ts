@@ -397,6 +397,22 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
     return { success: false, error: e.message };
   }
 }
+export async function adjustUserBalance(userId: string, amount: number) {
+  const { firestore } = initializeServerFirebase();
+  if (!firestore) return { success: false, error: 'Database unavailable' };
+
+  try {
+    const userDocRef = doc(firestore, 'users', userId);
+    await updateDoc(userDocRef, {
+      totalEarnings: increment(amount),
+      pendingEarnings: increment(amount)
+    });
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
 
 export async function submitWithdrawRequest(formData: { userId: string; email: string; amount: number; walletAddress: string }) {
   const validatedFields = withdrawSchema.safeParse(formData);
