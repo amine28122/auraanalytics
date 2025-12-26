@@ -213,7 +213,7 @@ export function Header() {
       <Link href={`/dashboard?lang=${lang}`} className="flex items-center gap-3">
         <AuraAcademyLogo iconOnly className="h-8 w-8" />
         <span className="font-headline text-xl font-bold text-foreground">
-          AURA
+          AURA ANALYTICS
         </span>
       </Link>
 
@@ -246,7 +246,7 @@ export function Header() {
                 <Link href={`/dashboard?lang=${lang}`} className="flex items-center gap-3">
                   <AuraAcademyLogo iconOnly className="h-10 w-10" />
                   <span className="font-headline text-xl font-bold text-sidebar-foreground">
-                    AURA
+                    AURA ANALYTICS
                   </span>
                 </Link>
               </SheetHeader>

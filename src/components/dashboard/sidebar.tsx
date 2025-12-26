@@ -199,7 +199,7 @@ export function Sidebar() {
         <Link href={`/dashboard?lang=${lang}`} className="flex items-center gap-3">
           <AuraAcademyLogo iconOnly className="h-10 w-10" />
           <span className="font-headline text-xl font-bold text-sidebar-foreground">
-            AURA
+            AURA ANALYTICS
           </span>
         </Link>
       </div>
