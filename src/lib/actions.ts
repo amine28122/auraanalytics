@@ -287,19 +287,27 @@ export async function approveActivationRequest(requestId: string, userId: string
 
       // Affiliate System: Credit the referrer
       const referredBy = userData.referredBy;
+      console.log(`[Approve] User ${userId} referred by: ${referredBy}`);
+
       if (referredBy) {
         const referrerDocRef = doc(firestore, 'users', referredBy);
         const referrerDoc = await transaction.get(referrerDocRef);
 
         if (referrerDoc.exists()) {
           // Commission: Aura Plan ($25), Premium ($10)
-          const commission = planName === 'Aura Plan' ? 25.00 : 10.00;
+          // Normalize plan name for comparison
+          const normalizedPlan = planName.trim();
+          const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
+
+          console.log(`[Approve] Awarding $${commission} to referrer ${referredBy}`);
 
           transaction.update(referrerDocRef, {
             activeReferrals: increment(1),
             totalEarnings: increment(commission),
             pendingEarnings: increment(commission),
           });
+        } else {
+          console.warn(`[Approve] Referrer document ${referredBy} not found`);
         }
       }
 
@@ -311,6 +319,76 @@ export async function approveActivationRequest(requestId: string, userId: string
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'An unknown error occurred.';
     return { success: false, error };
+  }
+}
+
+export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium' | 'Aura Plan') {
+  const { firestore } = initializeServerFirebase();
+  if (!firestore) return { success: false, error: 'Database not available' };
+
+  const userDocRef = doc(firestore, 'users', userId);
+
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const userDoc = await transaction.get(userDocRef);
+
+      if (!userDoc.exists()) {
+        throw new Error('User not found.');
+      }
+
+      const userData = userDoc.data();
+
+      // Determine dates
+      let planStartDate = null;
+      let planEndDate = null;
+
+      if (newPlan !== 'Free') {
+        const startDate = Timestamp.now();
+        const duration = 30 * 24 * 60 * 60; // 30 days
+        const endDate = new Timestamp(startDate.seconds + duration, startDate.nanoseconds);
+        planStartDate = startDate;
+        planEndDate = endDate;
+      }
+
+      // Update User
+      transaction.update(userDocRef, {
+        plan: newPlan,
+        analysisCount: 0,
+        lastAnalysisDate: null,
+        planStartDate,
+        planEndDate,
+      });
+
+      // Affiliate Commission logic (only if upgrading from Free to something paid)
+      if (userData.plan === 'Free' && newPlan !== 'Free') {
+        const referredBy = userData.referredBy;
+        console.log(`[ManualUpdate] User ${userId} referred by: ${referredBy}`);
+
+        if (referredBy) {
+          const referrerDocRef = doc(firestore, 'users', referredBy);
+          const referrerDoc = await transaction.get(referrerDocRef);
+
+          if (referrerDoc.exists()) {
+            const normalizedPlan = newPlan.trim();
+            const commission = normalizedPlan === 'Aura Plan' ? 25.00 : 10.00;
+
+            console.log(`[ManualUpdate] Awarding $${commission} to referrer ${referredBy}`);
+
+            transaction.update(referrerDocRef, {
+              activeReferrals: increment(1),
+              totalEarnings: increment(commission),
+              pendingEarnings: increment(commission),
+            });
+          } else {
+            console.warn(`[ManualUpdate] Referrer document ${referredBy} not found`);
+          }
+        }
+      }
+    });
+
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
   }
 }
 

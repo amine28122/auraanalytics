@@ -57,11 +57,23 @@ export default function AffiliatePage() {
         if (user && firestore) {
             // Stats Listener
             const userDocRef = doc(firestore, 'users', user.uid);
-            const unsubStats = onSnapshot(userDocRef, (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
+            const unsubStats = onSnapshot(userDocRef, async (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    const code = data.referralCode || user.uid.substring(0, 8).toUpperCase();
+
+                    // Proactively save code if missing for old users
+                    if (!data.referralCode) {
+                        try {
+                            const { updateDoc } = await import('firebase/firestore');
+                            await updateDoc(userDocRef, { referralCode: code });
+                        } catch (err) {
+                            console.error("Failed to auto-save referral code:", err);
+                        }
+                    }
+
                     setAffiliateData({
-                        referralCode: data.referralCode || user.uid.substring(0, 8).toUpperCase(),
+                        referralCode: code,
                         totalReferrals: data.totalReferrals || 0,
                         activeReferrals: data.activeReferrals || 0,
                         totalEarnings: data.totalEarnings || 0,

@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { approveActivationRequest, approveWithdrawRequest } from '@/lib/actions';
+import { approveActivationRequest, approveWithdrawRequest, updateUserPlan } from '@/lib/actions';
 import Image from 'next/image';
 
 type UserProfile = {
@@ -384,7 +384,7 @@ function AdminDashboard() {
   }, [users, searchQuery]);
 
   const filteredAffiliates = useMemo(() => {
-    return filteredUsers.filter(u => u.referralCode || u.totalReferrals);
+    return filteredUsers;
   }, [filteredUsers]);
 
 
@@ -398,37 +398,17 @@ function AdminDashboard() {
     if (!firestore || !selectedUser) return;
     setUpdatingPlan(true);
 
-    const userDocRef = doc(firestore, "users", selectedUser.uid);
-
-    const planData: {
-      plan: 'Free' | 'Premium' | 'Aura Plan',
-      planStartDate?: Timestamp | null,
-      planEndDate?: Timestamp | null,
-      analysisCount: number,
-      lastAnalysisDate: null | Timestamp
-    } = {
-      plan: newPlan,
-      analysisCount: 0,
-      lastAnalysisDate: null
-    };
-
-    if (newPlan === 'Premium') {
-      const startDate = Timestamp.now();
-      const endDate = new Timestamp(startDate.seconds + 30 * 24 * 60 * 60, startDate.nanoseconds);
-      planData.planStartDate = startDate;
-      planData.planEndDate = endDate;
-    } else {
-      // Clear dates if switching to Free or Aura Plan
-      planData.planStartDate = null;
-      planData.planEndDate = null;
-    }
-
     try {
-      await updateDoc(userDocRef, planData);
-      toast({
-        title: "Plan Updated",
-        description: `${selectedUser.displayName}'s plan has been updated to ${newPlan}.`,
-      });
+      const result = await updateUserPlan(selectedUser.uid, newPlan);
+
+      if (result.success) {
+        toast({
+          title: "Plan Updated",
+          description: `${selectedUser.displayName}'s plan has been updated to ${newPlan}. Affiliate rewards processed if applicable.`,
+        });
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -497,6 +477,51 @@ function AdminDashboard() {
         title: "Reset Failed",
         description: error.message,
       });
+    }
+  };
+
+  const handleGenerateMissingCodes = async () => {
+    if (!firestore || users.length === 0) return;
+    setIsResetting(true); // Using same loading state for simplicity or add new one
+
+    const batch = writeBatch(firestore);
+    let count = 0;
+
+    users.forEach(user => {
+      if (!user.referralCode) {
+        const userDocRef = doc(firestore, "users", user.uid);
+        batch.update(userDocRef, {
+          referralCode: user.uid.substring(0, 8).toUpperCase(),
+          totalReferrals: user.totalReferrals || 0,
+          activeReferrals: user.activeReferrals || 0,
+          totalEarnings: user.totalEarnings || 0,
+          pendingEarnings: user.pendingEarnings || 0,
+        });
+        count++;
+      }
+    });
+
+    try {
+      if (count > 0) {
+        await batch.commit();
+        toast({
+          title: "Referral Codes Generated",
+          description: `Successfully assigned unique codes to ${count} users.`,
+        });
+      } else {
+        toast({
+          title: "No Missing Codes",
+          description: "All users already have referral codes.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Operation Failed",
+        description: error.message,
+      });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -610,6 +635,10 @@ function AdminDashboard() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+              <Button variant="outline" onClick={handleGenerateMissingCodes} disabled={isResetting}>
+                {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeySquare className="mr-2 h-4 w-4" />}
+                Generate Missing Referral Codes
+              </Button>
               <Button asChild variant="outline">
                 <Link href="/dashboard">Return to Dashboard</Link>
               </Button>
@@ -799,7 +828,14 @@ function AdminDashboard() {
                               <span className="text-xs text-muted-foreground">{user.email}</span>
                             </div>
                           </TableCell>
-                          <TableCell><Badge variant="outline" className="font-mono bg-background">{user.referralCode || 'N/A'}</Badge></TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn(
+                              "font-mono bg-background",
+                              !user.referralCode && "text-muted-foreground opacity-50 border-dashed"
+                            )}>
+                              {user.referralCode || user.uid.substring(0, 8).toUpperCase()}
+                            </Badge>
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4 text-muted-foreground" />
