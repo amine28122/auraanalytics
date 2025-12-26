@@ -381,7 +381,7 @@ function AdminDashboard() {
     const freeUsers = users.filter(u => u.plan === 'Free').length;
     const auraPlanUsers = users.filter(u => u.plan === 'Aura Plan').length;
 
-    const totalRevenue = premiumUsers * 20;
+    const totalRevenue = (premiumUsers * 50) + (auraPlanUsers * 100);
     const totalAffiliateEarnings = users.reduce((acc, u) => acc + (u.totalEarnings || 0), 0);
 
     return { totalUsers, premiumUsers, freeUsers, auraPlanUsers, totalRevenue, totalAffiliateEarnings };
