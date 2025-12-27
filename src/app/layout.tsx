@@ -70,6 +70,12 @@ export default function RootLayout({
       <body className="font-body antialiased">
         {children}
         <Toaster />
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7139106139007097"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <Script id="tawk-to-script" strategy="lazyOnload">
           {`
             var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
