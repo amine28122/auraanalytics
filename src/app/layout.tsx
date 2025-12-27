@@ -7,16 +7,60 @@ import Script from 'next/script';
 const AURA_APP_URL = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://auraanalytics.vercel.app');
 
 export const metadata: Metadata = {
-  // Add the metadataBase to ensure all paths are absolute
   metadataBase: AURA_APP_URL,
-  title: 'AURA',
-  description: 'Trade Signal Analysis',
-  manifest: '/manifest.json', // Link to the PWA manifest
-  icons: {
-    icon: '/favicon.svg',
+  title: {
+    default: 'AURA | Institutional Grade Trade Signal Analysis',
+    template: '%s | AURA'
+  },
+  description: 'Master the markets with AURA. Advanced AI-powered trade signals using Elliott Wave Theory, ICT concepts, and Fibonacci levels. Unlock professional technical analysis for Crypto, Forex, and Stocks.',
+  keywords: ['trade signals', 'crypto analysis', 'forex signals', 'Elliott Wave Theory', 'ICT trading', 'technical analysis', 'AI trading', 'AURA analytics', 'financial markets'],
+  authors: [{ name: 'AURA Team' }],
+  creator: 'AURA Analytics',
+  publisher: 'AURA Analytics',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: 'AURA | Advanced Trade Signal Analysis',
+    description: 'Empowering traders with institutional-grade technical analysis and actionable trade signals.',
+    url: AURA_APP_URL.toString(),
+    siteName: 'AURA Analytics',
+    images: [
+      {
+        url: '/og-image.png', // Fallback or user should provide this
+        width: 1200,
+        height: 630,
+        alt: 'AURA Analytics Platform Preview',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AURA | Advanced Trade Signal Analysis',
+    description: 'Empowering traders with institutional-grade technical analysis and actionable trade signals.',
+    creator: '@aura_analytics',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   verification: {
     google: 'ayaRsLNq2Rjpax4pPS5uZURsoGnlhn1rkYEJ-Ffrr-E',
+  },
+  alternates: {
+    canonical: AURA_APP_URL.toString(),
   },
 };
 
