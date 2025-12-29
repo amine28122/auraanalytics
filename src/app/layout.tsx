@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'ayaRsLNq2Rjpax4pPS5uZURsoGnlhn1rkYEJ-Ffrr-E',
+    google: 'wroXjZruNWdxhL2KNmHUSmVGQJ6H-jXL0-D_TOrgIb4',
   },
   alternates: {
     canonical: AURA_APP_URL.toString(),
