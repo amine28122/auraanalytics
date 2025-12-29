@@ -153,7 +153,7 @@ export default function AffiliatePage() {
         }
     };
 
-    const PRODUCTION_URL = 'https://auraanalytics.vercel.app';
+    const PRODUCTION_URL = 'https://www.auraanalyticspro.com';
     const referralLink = affiliateData?.referralCode
         ? `${PRODUCTION_URL}?ref=${affiliateData.referralCode}`
         : '';
