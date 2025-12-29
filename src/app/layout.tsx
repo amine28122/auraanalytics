@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
 
 // IMPORTANT: Replace with your actual production URL
-const AURA_APP_URL = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://auraanalytics.vercel.app');
+const AURA_APP_URL = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.auraanalyticspro.com');
 
 export const metadata: Metadata = {
   metadataBase: AURA_APP_URL,
