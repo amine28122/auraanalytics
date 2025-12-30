@@ -16,7 +16,7 @@ export function AuraAcademyLogo({ className, iconOnly = false }: { className?: s
       <g>
         <path
           d="M4 18L9 12L14 18"
-          stroke="hsl(260 91% 60%)"
+          stroke="#7C3AED"
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -35,7 +35,7 @@ export function AuraAcademyLogo({ className, iconOnly = false }: { className?: s
   );
 
   if (iconOnly) {
-     return <SvgIcon className={className} />;
+    return <SvgIcon className={className} />;
   }
 
   return (
