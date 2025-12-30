@@ -16,6 +16,7 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartInstance = useRef<IChartApi | null>(null);
     const [series, setSeries] = useState<ISeriesApi<"Candlestick"> | null>(null);
+    const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const linesRef = useRef<any[]>([]);
     const dragInfo = useRef<{ id: string | number, type: 'sl' | 'tp' } | null>(null);
 
@@ -65,6 +66,7 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         });
 
         chartInstance.current = chart;
+        seriesRef.current = candlestickSeries;
         setSeries(candlestickSeries);
 
         // Fetch Historical Data
@@ -97,8 +99,9 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
 
         // Dragging Logic
         const handleMouseDown = (e: MouseEvent) => {
-            // Use refs for positions and selectedPositionId
-            if (!selectedPositionIdRef.current || !series || !chartContainerRef.current) return;
+            // Use refs for stable access in event listeners
+            if (!selectedPositionIdRef.current || !seriesRef.current || !chartContainerRef.current) return;
+            const seriesInstance = seriesRef.current;
             const pos = positionsRef.current.find((p: any) => p.id === selectedPositionIdRef.current);
             if (!pos || pos.symbol !== `${symbol}/USDT`) return;
 
@@ -109,8 +112,8 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             const slPrice = pos.sl || pos.entryPrice;
             const tpPrice = pos.tp || pos.entryPrice;
 
-            const slCoord = series.priceToCoordinate(slPrice);
-            const tpCoord = series.priceToCoordinate(tpPrice);
+            const slCoord = seriesInstance.priceToCoordinate(slPrice);
+            const tpCoord = seriesInstance.priceToCoordinate(tpPrice);
 
             const threshold = 15;
             if (slCoord !== null && Math.abs(y - slCoord) < threshold) {
@@ -123,10 +126,11 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         };
 
         const handleMouseMove = (e: MouseEvent) => {
-            if (!dragInfo.current || !series || !chartContainerRef.current) return;
+            if (!dragInfo.current || !seriesRef.current || !chartContainerRef.current) return;
+            const seriesInstance = seriesRef.current;
             const rect = chartContainerRef.current.getBoundingClientRect();
             const y = e.clientY - rect.top;
-            const price = series.coordinateToPrice(y);
+            const price = seriesInstance.coordinateToPrice(y);
             if (price === null) return;
 
             // Find the line and update visually
@@ -148,10 +152,11 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         };
 
         const handleMouseUp = (e: MouseEvent) => {
-            if (!dragInfo.current || !series || !chartContainerRef.current) return;
+            if (!dragInfo.current || !seriesRef.current || !chartContainerRef.current) return;
+            const seriesInstance = seriesRef.current;
             const rect = chartContainerRef.current.getBoundingClientRect();
             const y = e.clientY - rect.top;
-            const price = series.coordinateToPrice(y);
+            const price = seriesInstance.coordinateToPrice(y);
 
             // Use ref for onUpdatePosition
             if (price !== null && onUpdatePositionRef.current) {
@@ -171,7 +176,8 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         const container = chartContainerRef.current;
 
         const updateCursor = (e: MouseEvent) => {
-            if (!selectedPositionIdRef.current || !series || !container) return;
+            if (!selectedPositionIdRef.current || !seriesRef.current || !container) return;
+            const seriesInstance = seriesRef.current;
             const pos = positionsRef.current.find((p: any) => p.id === selectedPositionIdRef.current);
             if (!pos || pos.symbol !== `${symbol}/USDT`) {
                 container.style.cursor = 'default';
@@ -185,8 +191,8 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             const slPrice = pos.sl || pos.entryPrice;
             const tpPrice = pos.tp || pos.entryPrice;
 
-            const slCoord = series.priceToCoordinate(slPrice);
-            const tpCoord = series.priceToCoordinate(tpPrice);
+            const slCoord = seriesInstance.priceToCoordinate(slPrice);
+            const tpCoord = seriesInstance.priceToCoordinate(tpPrice);
 
             const threshold = 10;
             if ((slCoord !== null && Math.abs(y - slCoord) < threshold) ||

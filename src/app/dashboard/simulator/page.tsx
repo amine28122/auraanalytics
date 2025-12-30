@@ -478,15 +478,44 @@ export default function SimulatorPage() {
                                                 {history.reduce((s, p) => s + (p.pnl || 0), 0).toFixed(2)}$
                                             </span>
                                         </div>
-                                        {history.map((pos) => (
-                                            <div key={pos.id} className="p-3 opacity-75 flex justify-between">
-                                                <div>
-                                                    <div className="font-bold text-sm">{pos.symbol} {pos.type}</div>
-                                                    <div className="text-xs text-muted-foreground">Closed at: {pos.currentPrice?.toFixed(2)}</div>
+                                        {history.map((pos) => {
+                                            const closeDate = pos.closedAt?.toDate ? pos.closedAt.toDate() : new Date(pos.closedAt);
+                                            const timeStr = closeDate.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                                            return (
+                                                <div key={pos.id} className="p-3 opacity-90 hover:opacity-100 transition-opacity flex flex-col gap-1 border-b last:border-0 hover:bg-muted/30">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <div className="font-bold text-sm tracking-tight">
+                                                                {pos.symbol} <span className={pos.type === 'LONG' ? 'text-green-500' : 'text-red-500'}>{pos.type}</span>
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground font-medium uppercase">{timeStr}</div>
+                                                        </div>
+                                                        <div className={`font-bold text-sm ${pos.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                            {pos.pnl >= 0 ? '+' : ''}{pos.pnl.toFixed(2)}$
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[11px]">
+                                                        <div className="flex justify-between text-muted-foreground">
+                                                            <span>Entry:</span>
+                                                            <span className="font-mono text-foreground">{pos.entryPrice?.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-muted-foreground">
+                                                            <span>Exit:</span>
+                                                            <span className="font-mono text-foreground">{pos.currentPrice?.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-muted-foreground">
+                                                            <span>SL:</span>
+                                                            <span className="font-mono text-red-400/80">{pos.sl ? pos.sl.toLocaleString() : 'None'}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-muted-foreground">
+                                                            <span>TP:</span>
+                                                            <span className="font-mono text-green-400/80">{pos.tp ? pos.tp.toLocaleString() : 'None'}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className={`font-bold ${pos.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>{pos.pnl.toFixed(2)}$</div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )
                             )}
