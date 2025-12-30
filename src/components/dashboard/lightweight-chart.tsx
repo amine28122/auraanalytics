@@ -18,7 +18,7 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
     const [series, setSeries] = useState<ISeriesApi<"Candlestick"> | null>(null);
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const linesRef = useRef<any[]>([]);
-    const dragInfo = useRef<{ id: string | number, type: 'sl' | 'tp' } | null>(null);
+    const dragInfo = useRef<{ id: string | number, type: 'sl' | 'tp' | 'auto', initialPrice?: number } | null>(null);
 
     // Refs to avoid chart recreation while allowing access to latest props in event listeners
     const positionsRef = useRef(positions);
@@ -116,6 +116,14 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             const tpCoord = seriesInstance.priceToCoordinate(tpPrice);
 
             const threshold = 15;
+
+            // If both targets are at entry (unset), use 'auto' to decide based on direction
+            if (!pos.sl && !pos.tp && slCoord !== null && Math.abs(y - slCoord) < threshold) {
+                dragInfo.current = { id: pos.id, type: 'auto', initialPrice: pos.entryPrice };
+                chart.applyOptions({ handleScroll: false, handleScale: false });
+                return;
+            }
+
             if (slCoord !== null && Math.abs(y - slCoord) < threshold) {
                 dragInfo.current = { id: pos.id, type: 'sl' };
                 chart.applyOptions({ handleScroll: false, handleScale: false });
@@ -134,11 +142,36 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             if (price === null) return;
 
             // Find the line and update visually
-            const lineType = dragInfo.current.type;
-            const targetLine = linesRef.current.find((l: any) => l.__type === lineType && l.__posId === dragInfo.current?.id);
             const pos = positionsRef.current.find((p: any) => p.id === dragInfo.current?.id);
+            if (!pos) return;
 
-            if (targetLine && pos) {
+            let lineType = dragInfo.current.type;
+
+            // Auto-detect SL vs TP based on direction and position type
+            if (lineType === 'auto') {
+                const isLong = pos.type === 'LONG';
+                const isAbove = price > pos.entryPrice;
+                if (isLong) {
+                    lineType = isAbove ? 'tp' : 'sl';
+                } else {
+                    lineType = isAbove ? 'sl' : 'tp';
+                }
+
+                // Keep 'ghost' lines at entry visually unless it's the one we are dragging
+                linesRef.current.forEach((l: any) => {
+                    if (l.__posId === pos.id && (l.__type === 'sl' || l.__type === 'tp')) {
+                        if (l.__type === lineType) {
+                            l.applyOptions({ price: price });
+                        } else if (!pos[l.__type]) {
+                            l.applyOptions({ price: pos.entryPrice });
+                        }
+                    }
+                });
+            }
+
+            const targetLine = linesRef.current.find((l: any) => l.__type === lineType && l.__posId === dragInfo.current?.id);
+
+            if (targetLine) {
                 const diff = price - pos.entryPrice;
                 const projectedPnl = pos.type === 'LONG' ? diff * pos.lotSize : -diff * pos.lotSize;
                 const pnlText = projectedPnl >= 0 ? `+${projectedPnl.toFixed(2)}$` : `${projectedPnl.toFixed(2)}$`;
@@ -161,11 +194,25 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             // Use ref for onUpdatePosition
             if (price !== null && onUpdatePositionRef.current) {
                 const pos = positionsRef.current.find((p: any) => p.id === dragInfo.current?.id);
-                // Only save if it's actually moved from entry
-                if (pos && Math.abs(price - pos.entryPrice) > (pos.entryPrice * 0.0001)) {
-                    onUpdatePositionRef.current(dragInfo.current.id, {
-                        [dragInfo.current.type]: price
-                    });
+                if (pos) {
+                    let finalType = dragInfo.current.type as 'sl' | 'tp';
+
+                    if (dragInfo.current.type === 'auto') {
+                        const isLong = pos.type === 'LONG';
+                        const isAbove = price > pos.entryPrice;
+                        if (isLong) {
+                            finalType = isAbove ? 'tp' : 'sl';
+                        } else {
+                            finalType = isAbove ? 'sl' : 'tp';
+                        }
+                    }
+
+                    // Only save if it's actually moved from entry
+                    if (Math.abs(price - pos.entryPrice) > (pos.entryPrice * 0.0001)) {
+                        onUpdatePositionRef.current(dragInfo.current.id, {
+                            [finalType]: price
+                        });
+                    }
                 }
             }
 
