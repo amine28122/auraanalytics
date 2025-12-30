@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useActionState } from 'react';
+import imgCompression from 'browser-image-compression';
 import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -165,27 +166,30 @@ function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: Use
         }
     }, [state, t, toast, setDialogOpen]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (loadEvent) => {
-                const img = document.createElement('img');
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800;
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    setPreview(dataUrl);
-                    setScreenshotDataUrl(dataUrl);
-                };
-                img.src = loadEvent.target?.result as string;
+        if (!file) return;
+
+        try {
+            const options = {
+                maxSizeMB: 0.5,
+                maxWidthOrHeight: 1200,
+                useWebWorker: true,
             };
-            reader.readAsDataURL(file);
+
+            const compressedFile = await imgCompression(file, options);
+            const dataUrl = await imgCompression.getDataUrlFromFile(compressedFile);
+            setPreview(dataUrl);
+            setScreenshotDataUrl(dataUrl);
+        } catch (error) {
+            console.error("Payment image error:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Image Error',
+                description: 'Failed to process the screenshot. Please try again.',
+            });
+        } finally {
+            e.target.value = '';
         }
     };
 

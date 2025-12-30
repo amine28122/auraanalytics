@@ -8,6 +8,7 @@ import { Header } from '@/components/dashboard/header';
 import { Loader2 } from 'lucide-react';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Sidebar } from '@/components/dashboard/sidebar';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 function DashboardLayoutContent({
   children,
@@ -41,7 +42,9 @@ function DashboardLayoutContent({
 
         <div className="flex flex-1 flex-col overflow-hidden">
           <main className="flex-1 overflow-y-auto p-4 md:p-8">
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </main>
 
           <footer className="mt-auto border-t bg-background/50 p-4 text-center">

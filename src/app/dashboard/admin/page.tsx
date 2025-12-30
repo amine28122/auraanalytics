@@ -5,7 +5,11 @@ import { useFirebase } from '@/firebase';
 import { collection, onSnapshot, query, doc, updateDoc, Timestamp, writeBatch, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Edit, CalendarDays, RefreshCw, AlertCircle, Check, Paperclip, ExternalLink, Mail, KeySquare, Users, Crown, Gem, DollarSign, BarChart2, Search, Wallet } from 'lucide-react';
+import {
+  Loader2, Edit, CalendarDays, RefreshCw, AlertCircle, Check, Paperclip,
+  ExternalLink, Mail, KeySquare, Users, Crown, Gem, DollarSign,
+  BarChart2, Search, Wallet, Activity, TrendingUp
+} from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -57,6 +61,7 @@ type UserProfile = {
   pendingEarnings?: number;
   referredBy?: string;
   affiliateCommissionPaid?: boolean;
+  simulatorBalance?: number;
 }
 
 const PLAN_LIMITS = {
@@ -786,6 +791,10 @@ function AdminDashboard() {
                 <Wallet className="h-4 w-4" />
                 Withdrawals
               </TabsTrigger>
+              <TabsTrigger value="simulator" className="gap-2">
+                <Activity className="h-4 w-4" />
+                Simulator
+              </TabsTrigger>
             </TabsList>
 
             <div className="relative w-full max-w-sm">
@@ -989,6 +998,90 @@ function AdminDashboard() {
 
           <TabsContent value="withdrawals" className="space-y-6">
             <WithdrawalRequests users={users} />
+          </TabsContent>
+
+          <TabsContent value="simulator" className="space-y-6">
+            <Card className="card-glow border-blue-500/10 shadow-xl">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Simulator Analytics</CardTitle>
+                    <CardDescription>Monitor user performance and virtual equity in the trading simulator.</CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">Total Virtual Equity</p>
+                    <p className="text-2xl font-bold text-primary">
+                      ${users.reduce((acc, u) => acc + (u.simulatorBalance || 0), 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Trader</TableHead>
+                      <TableHead>Virtual Balance</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead className="text-right">Performance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.sort((a, b) => (b.simulatorBalance || 0) - (a.simulatorBalance || 0)).map((user) => {
+                        const balance = user.simulatorBalance ?? 10000;
+                        const pnl = balance - 10000;
+                        const isActive = balance !== 10000;
+
+                        return (
+                          <TableRow key={user.uid + "-sim"} className="hover:bg-blue-500/5 transition-colors">
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{user.displayName}</span>
+                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Wallet className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-mono font-bold text-lg">${balance.toLocaleString()}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {isActive ? (
+                                <Badge className="bg-emerald-500 text-white gap-1">
+                                  <TrendingUp className="h-3 w-3" /> Active
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="opacity-50">
+                                  Inactive
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{getPlanBadge(user.plan)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className={`font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}$
+                                <span className="text-[10px] ml-1 opacity-70">
+                                  ({((pnl / 10000) * 100).toFixed(2)}%)
+                                </span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                          No traders found matching your criteria.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

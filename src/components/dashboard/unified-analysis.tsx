@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { TradeSignals } from './trade-signals';
 import { useAuth, useFirebase } from '@/firebase';
 import { doc, onSnapshot, Unsubscribe, Timestamp, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import imageCompression from 'browser-image-compression';
+import imgCompression from 'browser-image-compression';
 
 const translations = {
   en: {
@@ -529,8 +529,8 @@ export function UnifiedAnalysis() {
           const blob = await response.blob();
           const file = new File([blob], "chart.jpg", { type: "image/jpeg" });
 
-          const compressedFile = await imageCompression(file, options);
-          const compressedBase64 = await imageCompression.getDataUrlFromFile(compressedFile);
+          const compressedFile = await imgCompression(file, options);
+          const compressedBase64 = await imgCompression.getDataUrlFromFile(compressedFile);
 
           await addDoc(collection(firestore, 'users', user.uid, 'analyses'), {
             pair: signal.pair,
@@ -552,31 +552,30 @@ export function UnifiedAnalysis() {
     }
   }, [state, toast, user, firestore, largeImageData]);
 
-  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<string | null>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<string | null>>) => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const img = document.createElement('img');
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
-
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compress to 70% quality JPEG
-          setter(dataUrl);
-        }
+    try {
+      const options = {
+        maxSizeMB: 0.5, // 500KB is plenty for analysis
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
       };
-      img.src = loadEvent.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = ''; // Reset file input
+
+      const compressedFile = await imgCompression(file, options);
+      const dataUrl = await imgCompression.getDataUrlFromFile(compressedFile);
+      setter(dataUrl);
+    } catch (error) {
+      console.error("Image processing error:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Image Error',
+        description: 'Failed to process the image. Please try a different one or reduce the size.',
+      });
+    } finally {
+      e.target.value = ''; // Always reset
+    }
   };
 
   const getUsageInfo = (profile: UserProfile | null) => {
@@ -604,11 +603,35 @@ export function UnifiedAnalysis() {
   const usageInfo = getUsageInfo(userProfile);
   const isLimitReached = userProfile?.plan !== 'Aura Plan' && usageInfo.used >= usageInfo.limit;
 
-  const handleCapture = (dataUrl: string) => {
-    if (cameraTarget === 'large') {
-      setLargeImageData(dataUrl);
-    } else if (cameraTarget === 'small') {
-      setSmallImageData(dataUrl);
+  const handleCapture = async (dataUrl: string) => {
+    try {
+      // Also compress camera captures
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imgCompression(file, options);
+      const finalDataUrl = await imgCompression.getDataUrlFromFile(compressedFile);
+
+      if (cameraTarget === 'large') {
+        setLargeImageData(finalDataUrl);
+      } else if (cameraTarget === 'small') {
+        setSmallImageData(finalDataUrl);
+      }
+    } catch (error) {
+      console.error("Capture compression error:", error);
+      // Fallback to original if compression fails
+      if (cameraTarget === 'large') {
+        setLargeImageData(dataUrl);
+      } else if (cameraTarget === 'small') {
+        setSmallImageData(dataUrl);
+      }
     }
   };
 

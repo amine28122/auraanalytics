@@ -11,6 +11,7 @@ import {
   Info,
   Calendar,
   History,
+  CandlestickChart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -28,6 +29,7 @@ const translations = {
     admin: 'Admin',
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
+    simulator: 'Simulator',
   },
   ar: {
     dashboard: 'لوحة التحكم',
@@ -41,6 +43,7 @@ const translations = {
     admin: 'الإدارة',
     privacy: 'سياسة الخصوصية',
     terms: 'شروط الخدمة',
+    simulator: 'المحاكي',
   },
   es: {
     dashboard: 'Dashboard',
@@ -54,6 +57,7 @@ const translations = {
     admin: 'Admin',
     privacy: 'Política de Privacidad',
     terms: 'Términos de Servicio',
+    simulator: 'Simulador',
   },
 };
 
@@ -71,6 +75,7 @@ export function SidebarNav({
     { href: `/dashboard/economic-calendar`, label: t.economicCalendar, icon: Calendar },
     { href: `/dashboard/news`, label: t.news, icon: Newspaper },
     { href: `/dashboard/history`, label: t.history, icon: History },
+    { href: `/dashboard/simulator`, label: t.simulator, icon: CandlestickChart },
     { href: `/dashboard/learning`, label: t.learning, icon: BookOpen },
     { href: `/dashboard/pricing`, label: t.pricing, icon: DollarSign },
   ];
