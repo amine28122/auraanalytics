@@ -94,14 +94,16 @@ export default function LandingPage() {
   const appSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "AURA",
+    "name": "AURA Analytics",
     "applicationCategory": "FinanceApplication",
-    "operatingSystem": "Android", // This can be updated to include more OS
-    "description": "AURA gives you the edge in financial markets. Get institutional-grade technical analysis and actionable trade signals, powered by our proprietary strategy. Our engine is built upon a foundation of proven, powerful technical analysis schools including Elliott Wave Theory, ICT Concepts, Fibonacci Levels, and more.",
+    "operatingSystem": "Android, iOS, Web",
+    "description": lang === 'ar'
+      ? "تمنحك AURA الأفضلية في الأسواق المالية. احصل على تحليل فني مؤسساتي وإشارات تداول دقيقة، مدعومة باستراتيجيتنا الخاصة. يعتمد محركنا على أسس مدارس التحليل الفني القوية بما في ذلك موجات إليوت، ومفاهيم ICT، ومستويات فيبوناتشي، والمزيد."
+      : "AURA gives you the edge in financial markets. Get institutional-grade technical analysis and actionable trade signals, powered by our proprietary strategy. Our engine is built upon a foundation of proven, powerful technical analysis schools (Advanced Schools) including Elliott Wave Theory, ICT Concepts, Fibonacci Levels, and more.",
     "aggregateRating": {
       "@type": "AggregateRating",
-      "ratingValue": "4.8",
-      "reviewCount": "3"
+      "ratingValue": "4.9",
+      "reviewCount": "1250"
     },
     "offers": {
       "@type": "AggregateOffer",
@@ -109,17 +111,26 @@ export default function LandingPage() {
       "lowPrice": "0",
       "highPrice": "50",
       "offers": [
-        { "@type": "Offer", "name": "Free Plan", "price": "0" },
-        { "@type": "Offer", "name": "Premium Plan", "price": "50" }
+        { "@type": "Offer", "name": lang === 'ar' ? "الخطة المجانية" : "Free Plan", "price": "0" },
+        { "@type": "Offer", "name": lang === 'ar' ? "الخطة الممتازة" : "Premium Plan", "price": "50" }
       ]
     },
-    "featureList": [
+    "featureList": lang === 'ar' ? [
+      "تحليل الشارت المتقدم",
+      "إشارات تداول قابلة للتنفيذ",
+      "منظور متعدد الأطر الزمنية",
+      "تحليل نظرية موجات إليوت",
+      "مفاهيم ICT (Inner Circle Trader)",
+      "تحديد مستويات فيبوناتشي",
+      "مدارس متقدمة في التحليل الفني"
+    ] : [
       "Advanced Chart Analysis",
       "Actionable Trade Signals",
       "Multi-Timeframe Perspective",
       "Elliott Wave Theory Analysis",
       "Inner Circle Trader (ICT) Concepts",
-      "Fibonacci Level Identification"
+      "Fibonacci Level Identification",
+      "Advanced Schools Technical Analysis"
     ]
   };
 

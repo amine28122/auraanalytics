@@ -13,8 +13,11 @@ export const metadata: Metadata = {
     default: 'AURA | Institutional Grade Trade Signal Analysis',
     template: '%s | AURA'
   },
-  description: 'Master the markets with AURA. Advanced schools trade signals using Elliott Wave Theory, ICT concepts, and Fibonacci levels. Unlock professional technical analysis for Crypto, Forex, and Stocks.',
-  keywords: ['trade signals', 'crypto analysis', 'forex signals', 'Elliott Wave Theory', 'ICT trading', 'technical analysis', 'Advanced Schools', 'AURA analytics', 'financial markets'],
+  description: 'Master the markets with AURA. Advanced schools trade signals using Elliott Wave Theory, ICT concepts, and Fibonacci levels. Unlock professional technical analysis for Crypto, Forex, and Stocks. استمتع بأفضل إشارات التداول والتحليل الفني المؤسساتي.',
+  keywords: [
+    'trade signals', 'crypto analysis', 'forex signals', 'Elliott Wave Theory', 'ICT trading', 'technical analysis', 'Advanced Schools', 'AURA analytics', 'financial markets',
+    'إشارات تداول', 'تحليل فني', 'سوق الكريبتو', 'فوركس', 'مدارس متقدمة', 'تحليل الأسواق', 'تداول العملات الرقمية'
+  ],
   authors: [{ name: 'AURA Team' }],
   creator: 'AURA Analytics',
   publisher: 'AURA Analytics',
@@ -25,12 +28,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'AURA | Advanced Trade Signal Analysis',
-    description: 'Empowering traders with institutional-grade technical analysis and actionable trade signals.',
+    description: 'Empowering traders with institutional-grade technical analysis and actionable trade signals. تحليل فني مؤسساتي متقدم.',
     url: AURA_APP_URL.toString(),
     siteName: 'AURA Analytics',
     images: [
       {
-        url: '/og-image.png', // Fallback or user should provide this
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'AURA Analytics Platform Preview',
@@ -62,6 +65,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: AURA_APP_URL.toString(),
+    languages: {
+      'en-US': '/en',
+      'ar-SA': '/ar',
+    },
   },
 };
 

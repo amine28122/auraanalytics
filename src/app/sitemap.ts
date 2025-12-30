@@ -15,6 +15,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
         lastModified: new Date(),
         changeFrequency: 'daily' as const,
         priority: route === '' ? 1 : 0.8,
+        languages: {
+            ar: `${baseUrl}${route}`,
+            en: `${baseUrl}${route}`,
+        },
     }));
 
     return routes;
