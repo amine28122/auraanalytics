@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
+import { LanguageProvider } from '@/context/LanguageContext';
 
 // IMPORTANT: Replace with your actual production URL
 const AURA_APP_URL = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.auraanalyticspro.com');
@@ -12,8 +13,8 @@ export const metadata: Metadata = {
     default: 'AURA | Institutional Grade Trade Signal Analysis',
     template: '%s | AURA'
   },
-  description: 'Master the markets with AURA. Advanced AI-powered trade signals using Elliott Wave Theory, ICT concepts, and Fibonacci levels. Unlock professional technical analysis for Crypto, Forex, and Stocks.',
-  keywords: ['trade signals', 'crypto analysis', 'forex signals', 'Elliott Wave Theory', 'ICT trading', 'technical analysis', 'AI trading', 'AURA analytics', 'financial markets'],
+  description: 'Master the markets with AURA. Advanced schools trade signals using Elliott Wave Theory, ICT concepts, and Fibonacci levels. Unlock professional technical analysis for Crypto, Forex, and Stocks.',
+  keywords: ['trade signals', 'crypto analysis', 'forex signals', 'Elliott Wave Theory', 'ICT trading', 'technical analysis', 'Advanced Schools', 'AURA analytics', 'financial markets'],
   authors: [{ name: 'AURA Team' }],
   creator: 'AURA Analytics',
   publisher: 'AURA Analytics',
@@ -110,12 +111,14 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Cairo:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
         <Toaster />
         <Script
           async

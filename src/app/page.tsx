@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { AuraAcademyLogo } from '@/components/logo';
-import { Download, Menu, X, ArrowUpRight, TrendingUp, Sun, Moon } from 'lucide-react';
+import { Download, Menu, X, ArrowUpRight, TrendingUp, Sun, Moon, Languages } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Script from 'next/script';
@@ -19,10 +19,12 @@ import FinancialTicker from '@/components/landing/financial-ticker';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { InstallPwaButton } from '@/components/install-pwa-button'; // Import the new component
+import { useLanguage } from '@/context/LanguageContext';
 
 type Theme = 'light' | 'dark';
 
 const navLinks = [
+  { href: "#aura-pro", label: "Aura Pro" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About Us" },
   { href: "/reviews", label: "Reviews" },
@@ -41,6 +43,14 @@ export default function LandingPage() {
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
   const [theme, setTheme] = useState<Theme>('dark');
+  const { lang, setLang, t } = useLanguage();
+
+  const currentNavLinks = [
+    { href: "#aura-pro", label: t.aura_pro },
+    { href: "/pricing", label: t.pricing },
+    { href: "/about", label: t.about },
+    { href: "/reviews", label: t.reviews },
+  ];
 
   useEffect(() => {
     // Set initial theme based on class applied by blocking script
@@ -114,14 +124,14 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground antialiased overflow-x-hidden">
+    <div className={cn("min-h-screen w-full bg-background text-foreground antialiased overflow-x-hidden transition-all duration-300", lang === 'ar' && "font-['Cairo']")} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <Script
         id="app-schema"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
       />
 
-      <div className={cn("fixed top-0 left-0 right-0 z-50 transition-transform duration-300", isHeaderVisible ? "translate-y-0" : "-translate-y-full")}>
+      <div className={cn("fixed top-0 left-0 right-0 z-50 transition-transform duration-300", isHeaderVisible ? "translate-y-0" : "-translate-y-full")} dir="ltr">
         <FinancialTicker theme={theme} />
       </div>
 
@@ -136,7 +146,7 @@ export default function LandingPage() {
         </div>
 
         <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map(link => (
+          {currentNavLinks.map(link => (
             <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
               {link.label}
             </Link>
@@ -144,6 +154,10 @@ export default function LandingPage() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className='text-foreground'>
+            <Languages className="h-5 w-5" />
+            <span className="sr-only">Toggle Language</span>
+          </Button>
           <Button variant="ghost" size="icon" onClick={toggleTheme} className='text-foreground'>
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -151,7 +165,7 @@ export default function LandingPage() {
           </Button>
           <Button size="sm" className="futuristic-button hidden md:inline-flex" asChild>
             <Link href="/auth">
-              <span>Sign In</span>
+              <span>{t.sign_in}</span>
             </Link>
           </Button>
           <Button size="icon" variant="ghost" className="md:hidden text-foreground" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -164,14 +178,14 @@ export default function LandingPage() {
       {isMobileMenuOpen && (
         <div className="fixed inset-0 top-16 z-40 bg-background/95 backdrop-blur-sm md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
           <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
-            {navLinks.map(link => (
+            {currentNavLinks.map(link => (
               <Link key={link.href} href={link.href} className="text-2xl font-bold text-foreground transition-colors hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
                 {link.label}
               </Link>
             ))}
             <Button size="lg" className="futuristic-button mt-8" asChild>
               <Link href="/auth">
-                <span>Sign In</span>
+                <span>{t.sign_in}</span>
               </Link>
             </Button>
           </div>
@@ -187,12 +201,11 @@ export default function LandingPage() {
 
           <div className="relative z-10 container mx-auto grid md:grid-cols-2 gap-8 items-center">
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
-              <h1 className="font-headline text-4xl md:text-6xl font-bold tracking-tight mb-6 max-w-2xl bg-clip-text text-transparent bg-gradient-to-b from-foreground to-muted-foreground">
-                Advanced AI Trade Signals & Institutional Market Analysis
+              <h1 className="font-headline text-4xl md:text-6xl font-bold tracking-tight mb-6 max-w-2xl bg-clip-text text-transparent bg-gradient-to-b from-foreground to-muted-foreground leading-tight">
+                {t.hero_title}
               </h1>
-
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl mb-10">
-                Join thousands of traders who trust AURA for its award-winning platform, providing institutional-grade analysis and actionable trade signals.
+                {t.hero_desc}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -205,11 +218,11 @@ export default function LandingPage() {
               <Card className="relative overflow-hidden border-4 border-border shadow-2xl shadow-primary/20 bg-background rounded-[2.5rem] aspect-[9/18.5]">
                 <Image
                   src="/1 (2).png"
-                  alt="AURA AI Trading Signal App Interface - Institutional Technical Analysis Chart"
+                  alt="AURA Trading Signal App Interface - Institutional Technical Analysis Chart"
                   width={400}
                   height={800}
                   className="h-full w-full object-cover"
-                  data-ai-hint="app interface"
+                  data-hint="app interface"
                   priority
                 />
               </Card>
@@ -238,6 +251,142 @@ export default function LandingPage() {
                   View Signal <ArrowUpRight className="ml-1 h-3 w-3" />
                 </Button>
               </FloatingCard>
+            </div>
+          </div>
+        </section>
+        {/* Aura Pro Roadmap Section */}
+        <section id="aura-pro" className="py-24 relative overflow-hidden bg-background">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-20">
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
+                {lang === 'en' ? 'The ' : ''}<span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500">{t.aura_pro}</span>{lang === 'en' ? ' Ecosystem' : ' المتكامل'}
+              </h2>
+              <p className="text-xl text-muted-foreground">
+                {t.roadmap_subtitle}
+              </p>
+            </div>
+
+            <div className="relative max-w-5xl mx-auto px-4 md:px-0">
+              {/* Vertical Line for Roadmap */}
+              <div className={cn(
+                "absolute top-0 bottom-0 w-px bg-gradient-to-b from-primary/50 via-purple-500/50 to-transparent -translate-x-1/2",
+                lang === 'ar' ? "right-6 md:right-1/2" : "left-6 md:left-1/2"
+              )} />
+
+              <div className="space-y-12 md:space-y-16">
+                {/* Step 1: Curriculum */}
+                <div className={cn("relative flex items-start md:items-center gap-6 md:gap-16", lang === 'ar' ? "flex-row-reverse" : "flex-row")}>
+                  <div className={cn("flex-1 hidden md:block", lang === 'ar' ? "text-left" : "text-right")}>
+                    <h3 className="text-2xl font-bold mb-2">{t.step1_title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {t.step1_desc}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 flex-shrink-0 rounded-full bg-primary flex items-center justify-center text-white font-bold relative z-10 shadow-[0_0_20px_rgba(124,58,237,0.5)]">
+                    01
+                  </div>
+                  <div className={cn("flex-1", lang === 'ar' ? "text-right" : "text-left")}>
+                    <Card className="p-5 md:p-6 bg-card/40 backdrop-blur-xl border-white/5 hover:border-primary/20 transition-all">
+                      <h3 className="text-lg md:text-xl font-bold mb-2">{t.step1_title}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 md:hidden">{t.step1_desc}</p>
+                      <ul className="space-y-2 text-xs text-muted-foreground">
+                        {t.step1_features.map((f, i) => <li key={i}>• {f}</li>)}
+                      </ul>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Step 2: Advanced Chart Analysis */}
+                <div className={cn("relative flex items-start md:items-center gap-6 md:gap-16", lang === 'ar' ? "flex-row" : "flex-row-reverse")}>
+                  <div className={cn("flex-1 hidden md:block", lang === 'ar' ? "text-right" : "text-left")}>
+                    <h3 className="text-2xl font-bold mb-2">{t.step2_title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {t.step2_desc}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 flex-shrink-0 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold relative z-10 shadow-[0_0_20px_rgba(59,130,246,0.5)]">
+                    02
+                  </div>
+                  <div className={cn("flex-1", lang === 'ar' ? "text-left" : "text-right")}>
+                    <Card className="p-5 md:p-6 bg-card/40 backdrop-blur-xl border-white/5 hover:border-blue-500/20 transition-all">
+                      <h3 className="text-lg md:text-xl font-bold mb-2">{t.step2_title}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 md:hidden">{t.step2_desc}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t.step2_desc}
+                      </p>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Step 3: Fundamental Intelligence */}
+                <div className={cn("relative flex items-start md:items-center gap-6 md:gap-16", lang === 'ar' ? "flex-row-reverse" : "flex-row")}>
+                  <div className={cn("flex-1 hidden md:block", lang === 'ar' ? "text-left" : "text-right")}>
+                    <h3 className="text-2xl font-bold mb-2">{t.step3_title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {t.step3_desc}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 flex-shrink-0 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold relative z-10 shadow-[0_0_20px_rgba(249,115,22,0.5)]">
+                    03
+                  </div>
+                  <div className={cn("flex-1", lang === 'ar' ? "text-right" : "text-left")}>
+                    <Card className="p-5 md:p-6 bg-card/40 backdrop-blur-xl border-white/5 hover:border-orange-500/20 transition-all">
+                      <h3 className="text-lg md:text-xl font-bold mb-2">{t.step3_title}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 md:hidden">{t.step3_desc}</p>
+                      <p className="text-xs text-muted-foreground">{t.step3_desc}</p>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Step 4: Virtual Capital Demo */}
+                <div className={cn("relative flex items-start md:items-center gap-6 md:gap-16", lang === 'ar' ? "flex-row" : "flex-row-reverse")}>
+                  <div className={cn("flex-1 hidden md:block", lang === 'ar' ? "text-right" : "text-left")}>
+                    <h3 className="text-2xl font-bold mb-2">{t.step4_title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {t.step4_desc}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 flex-shrink-0 rounded-full bg-green-500 flex items-center justify-center text-white font-bold relative z-10 shadow-[0_0_20px_rgba(34,197,94,0.5)]">
+                    04
+                  </div>
+                  <div className={cn("flex-1", lang === 'ar' ? "text-left" : "text-right")}>
+                    <Card className="p-5 md:p-6 bg-card/40 backdrop-blur-xl border-white/5 hover:border-green-500/20 transition-all">
+                      <h3 className="text-lg md:text-xl font-bold mb-2">{t.step4_title}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 md:hidden">{t.step4_desc}</p>
+                      <div className="p-2 border border-green-500/20 bg-green-500/5 rounded text-green-400 font-mono text-xs mb-2 inline-block">
+                        {t.balance}$10,000.00
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t.step4_desc}</p>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Step 5: Advanced Simulation */}
+                <div className={cn("relative flex items-start md:items-center gap-6 md:gap-16", lang === 'ar' ? "flex-row-reverse" : "flex-row")}>
+                  <div className={cn("flex-1 hidden md:block", lang === 'ar' ? "text-left" : "text-right")}>
+                    <h3 className="text-2xl font-bold mb-2">{t.step5_title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {t.step5_desc}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 flex-shrink-0 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold relative z-10 shadow-[0_0_20px_rgba(236,72,153,0.5)]">
+                    05
+                  </div>
+                  <div className={cn("flex-1", lang === 'ar' ? "text-right" : "text-left")}>
+                    <Card className="p-5 md:p-6 bg-card/40 backdrop-blur-xl border-white/5 hover:border-pink-500/20 transition-all">
+                      <h3 className="text-lg md:text-xl font-bold mb-2">{t.step5_title}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 md:hidden">{t.step5_desc}</p>
+                      <p className="text-xs text-muted-foreground">{t.step5_desc}</p>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-24 text-center">
+              <p className="text-muted-foreground text-sm uppercase tracking-[0.3em] font-medium mb-4">{t.standard_of_excellence}</p>
+              <div className="h-1 w-24 bg-gradient-to-r from-primary to-purple-500 mx-auto rounded-full" />
             </div>
           </div>
         </section>
@@ -351,6 +500,6 @@ export default function LandingPage() {
            animation: float 7s ease-in-out infinite 1s;
         }
       `}</style>
-    </div>
+    </div >
   );
 }
