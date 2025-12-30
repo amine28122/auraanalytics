@@ -266,6 +266,20 @@ export default function SimulatorPage() {
         }
     }, [editingPosition]);
 
+    const handleUpdatePosition = async (id: string | number, updates: { sl?: number | null, tp?: number | null }) => {
+        if (!user || !firestore) return;
+        try {
+            const posRef = doc(firestore, 'users', user.uid, 'simulatorPositions', id.toString());
+            await updateDoc(posRef, updates);
+            toast({
+                title: "Position Updated",
+                description: `SL/TP targets updated via chart.`,
+            });
+        } catch (error) {
+            console.error("Update failed:", error);
+        }
+    };
+
     const totalPnl = positions.reduce((sum, pos) => {
         const diff = currentPrice - pos.entryPrice;
         return sum + (pos.type === 'LONG' ? diff * pos.lotSize : -diff * pos.lotSize);
@@ -356,7 +370,14 @@ export default function SimulatorPage() {
 
             <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-4 lg:overflow-hidden">
                 <Card className="col-span-1 border-border lg:col-span-3 bg-card overflow-hidden flex flex-col h-[400px] md:h-[500px] lg:h-auto">
-                    <LightweightChart symbol={symbol} interval={interval} positions={positions} selectedPositionId={selectedPositionId} theme={theme} />
+                    <LightweightChart
+                        symbol={symbol}
+                        interval={interval}
+                        positions={positions}
+                        selectedPositionId={selectedPositionId}
+                        theme={theme}
+                        onUpdatePosition={handleUpdatePosition}
+                    />
                 </Card>
 
                 <div className="flex flex-col gap-4 lg:overflow-y-auto pr-0 lg:pr-1">
@@ -426,7 +447,11 @@ export default function SimulatorPage() {
                                                 <div
                                                     key={pos.id}
                                                     className={`flex justify-between items-center p-3 cursor-pointer ${selectedPositionId === pos.id ? 'bg-primary/5' : ''}`}
-                                                    onClick={() => setSelectedPositionId(pos.id)}
+                                                    onClick={() => {
+                                                        setSelectedPositionId(pos.id);
+                                                        const cleanSymbol = pos.symbol.split('/')[0];
+                                                        if (cleanSymbol !== symbol) setSymbol(cleanSymbol);
+                                                    }}
                                                 >
                                                     <div>
                                                         <div className="font-bold text-sm">{pos.symbol} <span className={pos.type === 'LONG' ? 'text-green-500' : 'text-red-500'}>{pos.type}</span></div>

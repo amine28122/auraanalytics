@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, useState } from 'react';
 import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, CandlestickSeries, Time } from 'lightweight-charts';
 
 interface LightweightChartProps {
@@ -9,13 +9,26 @@ interface LightweightChartProps {
     positions: any[];
     selectedPositionId?: number | string | null;
     theme?: 'light' | 'dark';
+    onUpdatePosition?: (id: string | number, updates: { sl?: number | null, tp?: number | null }) => void;
 }
 
-function LightweightChart({ symbol, interval, positions, selectedPositionId, theme = 'dark' }: LightweightChartProps) {
+function LightweightChart({ symbol, interval, positions, selectedPositionId, theme = 'dark', onUpdatePosition }: LightweightChartProps) {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartInstance = useRef<IChartApi | null>(null);
-    const seriesInstance = useRef<ISeriesApi<"Candlestick"> | null>(null);
+    const [series, setSeries] = useState<ISeriesApi<"Candlestick"> | null>(null);
     const linesRef = useRef<any[]>([]);
+    const dragInfo = useRef<{ id: string | number, type: 'sl' | 'tp' } | null>(null);
+
+    // Refs to avoid chart recreation while allowing access to latest props in event listeners
+    const positionsRef = useRef(positions);
+    const selectedPositionIdRef = useRef(selectedPositionId);
+    const onUpdatePositionRef = useRef(onUpdatePosition);
+
+    useEffect(() => {
+        positionsRef.current = positions;
+        selectedPositionIdRef.current = selectedPositionId;
+        onUpdatePositionRef.current = onUpdatePosition;
+    }, [positions, selectedPositionId, onUpdatePosition]);
 
     useEffect(() => {
         if (!chartContainerRef.current) return;
@@ -52,7 +65,7 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         });
 
         chartInstance.current = chart;
-        seriesInstance.current = candlestickSeries;
+        setSeries(candlestickSeries);
 
         // Fetch Historical Data
         fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=200`)
@@ -82,6 +95,113 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             });
         };
 
+        // Dragging Logic
+        const handleMouseDown = (e: MouseEvent) => {
+            // Use refs for positions and selectedPositionId
+            if (!selectedPositionIdRef.current || !series || !chartContainerRef.current) return;
+            const pos = positionsRef.current.find((p: any) => p.id === selectedPositionIdRef.current);
+            if (!pos || pos.symbol !== `${symbol}/USDT`) return;
+
+            const rect = chartContainerRef.current.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+
+            // Ghost lines are exactly at entry price if not set
+            const slPrice = pos.sl || pos.entryPrice;
+            const tpPrice = pos.tp || pos.entryPrice;
+
+            const slCoord = series.priceToCoordinate(slPrice);
+            const tpCoord = series.priceToCoordinate(tpPrice);
+
+            const threshold = 15;
+            if (slCoord !== null && Math.abs(y - slCoord) < threshold) {
+                dragInfo.current = { id: pos.id, type: 'sl' };
+                chart.applyOptions({ handleScroll: false, handleScale: false });
+            } else if (tpCoord !== null && Math.abs(y - tpCoord) < threshold) {
+                dragInfo.current = { id: pos.id, type: 'tp' };
+                chart.applyOptions({ handleScroll: false, handleScale: false });
+            }
+        };
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!dragInfo.current || !series || !chartContainerRef.current) return;
+            const rect = chartContainerRef.current.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const price = series.coordinateToPrice(y);
+            if (price === null) return;
+
+            // Find the line and update visually
+            const lineType = dragInfo.current.type;
+            const targetLine = linesRef.current.find((l: any) => l.__type === lineType && l.__posId === dragInfo.current?.id);
+            const pos = positionsRef.current.find((p: any) => p.id === dragInfo.current?.id);
+
+            if (targetLine && pos) {
+                const diff = price - pos.entryPrice;
+                const projectedPnl = pos.type === 'LONG' ? diff * pos.lotSize : -diff * pos.lotSize;
+                const pnlText = projectedPnl >= 0 ? `+${projectedPnl.toFixed(2)}$` : `${projectedPnl.toFixed(2)}$`;
+
+                targetLine.applyOptions({
+                    price: price,
+                    title: `${lineType.toUpperCase()} (${pnlText})`,
+                    color: lineType === 'sl' ? '#ef4444' : '#22c55e'
+                });
+            }
+        };
+
+        const handleMouseUp = (e: MouseEvent) => {
+            if (!dragInfo.current || !series || !chartContainerRef.current) return;
+            const rect = chartContainerRef.current.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const price = series.coordinateToPrice(y);
+
+            // Use ref for onUpdatePosition
+            if (price !== null && onUpdatePositionRef.current) {
+                const pos = positionsRef.current.find((p: any) => p.id === dragInfo.current?.id);
+                // Only save if it's actually moved from entry
+                if (pos && Math.abs(price - pos.entryPrice) > (pos.entryPrice * 0.0001)) {
+                    onUpdatePositionRef.current(dragInfo.current.id, {
+                        [dragInfo.current.type]: price
+                    });
+                }
+            }
+
+            dragInfo.current = null;
+            chart.applyOptions({ handleScroll: true, handleScale: true });
+        };
+
+        const container = chartContainerRef.current;
+
+        const updateCursor = (e: MouseEvent) => {
+            if (!selectedPositionIdRef.current || !series || !container) return;
+            const pos = positionsRef.current.find((p: any) => p.id === selectedPositionIdRef.current);
+            if (!pos || pos.symbol !== `${symbol}/USDT`) {
+                container.style.cursor = 'default';
+                return;
+            }
+
+            const rect = container.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+
+            // Use effective prices for cursor detection too
+            const slPrice = pos.sl || pos.entryPrice;
+            const tpPrice = pos.tp || pos.entryPrice;
+
+            const slCoord = series.priceToCoordinate(slPrice);
+            const tpCoord = series.priceToCoordinate(tpPrice);
+
+            const threshold = 10;
+            if ((slCoord !== null && Math.abs(y - slCoord) < threshold) ||
+                (tpCoord !== null && Math.abs(y - tpCoord) < threshold)) {
+                container.style.cursor = 'ns-resize';
+            } else {
+                container.style.cursor = 'default';
+            }
+        };
+
+        container.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mousemove', handleMouseMove);
+        container.addEventListener('mousemove', updateCursor);
+        window.addEventListener('mouseup', handleMouseUp);
+
         const handleResize = () => {
             if (chartContainerRef.current) {
                 chart.applyOptions({ width: chartContainerRef.current.clientWidth, height: chartContainerRef.current.clientHeight });
@@ -90,27 +210,29 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         window.addEventListener('resize', handleResize);
 
         return () => {
+            container.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            container.removeEventListener('mousemove', updateCursor);
             window.removeEventListener('resize', handleResize);
             ws.close();
             chart.remove();
         };
-    }, [symbol, interval]); // Re-run when symbol or interval changes
+    }, [symbol, interval, theme]); // Keep dependencies minimal for chart recreation
 
     // Update Position Lines
     useEffect(() => {
-        if (!seriesInstance.current) return;
+        if (!series) return;
 
         // Clear old lines
-        // Note: Lightweight charts price lines must be managed by the series
-        // We actually need to remove old lines first. Since the API doesn't list them easily,
-        // we keep track of them in linesRef.
-        linesRef.current.forEach(line => seriesInstance.current?.removePriceLine(line));
+        linesRef.current.forEach(line => series.removePriceLine(line));
         linesRef.current = [];
 
         // Add new lines for each active position
         positions.forEach(pos => {
             const isSelected = pos.id === selectedPositionId;
             const isLong = pos.type === 'LONG';
+            if (pos.symbol !== `${symbol}/USDT`) return; // Only show for current symbol
 
             // Professional persistent colors
             const entryColor = '#3b82f6'; // Persistent Blue
@@ -118,47 +240,61 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             const tpColor = '#22c55e';    // Persistent Green
 
             // Entry Line
-            const priceLine = seriesInstance.current?.createPriceLine({
+            const priceLine = series.createPriceLine({
                 price: pos.entryPrice,
                 color: entryColor,
                 lineWidth: isSelected ? 2 : 1,
                 lineStyle: isSelected ? 0 : 2, // Solid if selected, Dashed if not
                 axisLabelVisible: true,
                 title: `${isLong ? 'Buy' : 'Sell'} ${pos.lotSize} ${isSelected ? `(${Math.round(pos.pnl)}$)` : ''}`,
-            });
-            if (priceLine) linesRef.current.push(priceLine);
-
-            // Stop Loss Line
-            if (pos.sl) {
-                const slLine = seriesInstance.current?.createPriceLine({
-                    price: pos.sl,
-                    color: slColor,
-                    lineWidth: 1,
-                    lineStyle: 3, // Dotted
-                    axisLabelVisible: true,
-                    title: 'SL',
-                });
-                if (slLine) linesRef.current.push(slLine);
+            }) as any;
+            if (priceLine) {
+                priceLine.__type = 'entry';
+                priceLine.__posId = pos.id;
+                linesRef.current.push(priceLine);
             }
 
-            // Take Profit Line
-            if (pos.tp) {
-                const tpLine = seriesInstance.current?.createPriceLine({
-                    price: pos.tp,
-                    color: tpColor,
+            // Stop Loss Line (Always show for selected, exactly at entry if not set)
+            const slPrice = pos.sl || (isSelected ? pos.entryPrice : null);
+            if (slPrice) {
+                const slLine = series.createPriceLine({
+                    price: slPrice,
+                    color: pos.sl ? slColor : `${slColor}44`, // Faint if at entry
                     lineWidth: 1,
                     lineStyle: 3, // Dotted
-                    axisLabelVisible: true,
-                    title: 'TP',
-                });
-                if (tpLine) linesRef.current.push(tpLine);
+                    axisLabelVisible: isSelected && !!pos.sl,
+                    title: isSelected ? (pos.sl ? 'SL' : 'Set SL') : '',
+                }) as any;
+                if (slLine) {
+                    slLine.__type = 'sl';
+                    slLine.__posId = pos.id;
+                    linesRef.current.push(slLine);
+                }
+            }
+
+            // Take Profit Line (Always show for selected, exactly at entry if not set)
+            const tpPrice = pos.tp || (isSelected ? pos.entryPrice : null);
+            if (tpPrice) {
+                const tpLine = series.createPriceLine({
+                    price: tpPrice,
+                    color: pos.tp ? tpColor : `${tpColor}44`, // Faded if ghost
+                    lineWidth: 1,
+                    lineStyle: 3, // Dotted
+                    axisLabelVisible: isSelected && !!pos.tp,
+                    title: isSelected ? (pos.tp ? 'TP' : 'Set TP') : '',
+                }) as any;
+                if (tpLine) {
+                    tpLine.__type = 'tp';
+                    tpLine.__posId = pos.id;
+                    linesRef.current.push(tpLine);
+                }
             }
         });
 
-    }, [positions, selectedPositionId, symbol, interval, theme]);
+    }, [positions, selectedPositionId, symbol, series]);
 
     return (
-        <div ref={chartContainerRef} className="w-full h-full" />
+        <div ref={chartContainerRef} className="w-full h-full relative" />
     );
 }
 
