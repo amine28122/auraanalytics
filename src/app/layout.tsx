@@ -26,6 +26,17 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/ico.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/ico.png' },
+    ],
+  },
+  manifest: '/manifest.json',
   openGraph: {
     title: 'AURA | Advanced Trade Signal Analysis',
     description: 'Empowering traders with institutional-grade technical analysis and actionable trade signals. تحليل فني مؤسساتي متقدم.',
