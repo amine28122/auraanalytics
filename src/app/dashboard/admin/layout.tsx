@@ -18,31 +18,59 @@ export default function AdminLayout({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isChecking, setIsChecking] = useState(false);
+  const [isChecking, setIsChecking] = useState(true); // Start checking immediately
+
+  // Import server actions dynamically to avoid build issues if not present yet
+  // utilizing the ones we just created
+  const { checkAdminSession, verifyAdminPassword } = require('./actions');
 
   useEffect(() => {
     // Redirect to home if user is not logged in after loading state is resolved.
     if (!loading && !user) {
       router.push('/');
+      return;
+    }
+
+    // Check if we already have a valid session
+    const checkSession = async () => {
+      try {
+        const isValid = await checkAdminSession();
+        if (isValid) {
+          setIsAuthenticated(true);
+        }
+      } catch (err) {
+        console.error("Session check failed", err);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    if (user) {
+      checkSession();
     }
   }, [user, loading, router]);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsChecking(true);
     setError('');
 
-    // Hardcoded password check. In a real app, this should be more secure.
-    if (password === '123456') {
-      setIsAuthenticated(true);
-    } else {
-      setError('Incorrect password. Please try again.');
+    try {
+      const result = await verifyAdminPassword(password);
+      if (result.success) {
+        setIsAuthenticated(true);
+      } else {
+        setError(result.error || 'Incorrect password. Please try again.');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setIsChecking(false);
     }
-    setIsChecking(false);
   };
 
-  // While checking auth status from Firebase
-  if (loading || !user) {
+  // While checking auth status from Firebase or Server Session
+  if (loading || isChecking) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
