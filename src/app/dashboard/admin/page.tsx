@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Loader2, Edit, CalendarDays, RefreshCw, AlertCircle, Check, Paperclip,
   ExternalLink, Mail, KeySquare, Users, Crown, Gem, DollarSign,
-  BarChart2, Search, Wallet, Activity, TrendingUp
+  BarChart2, Search, Wallet, Activity, TrendingUp, Clock
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { approveActivationRequest, approveWithdrawRequest, updateUserPlan, adjustUserBalance } from '@/lib/actions';
@@ -54,6 +61,8 @@ type UserProfile = {
   planEndDate?: Timestamp;
   analysisCount?: number;
   lastAnalysisDate?: Timestamp;
+  lastAnalysisPair?: string;
+  todayAnalyses?: (string | { time: Timestamp | string; pair: string })[];
   referralCode?: string;
   totalReferrals?: number;
   activeReferrals?: number;
@@ -332,6 +341,7 @@ function WithdrawalRequests({ users }: { users: UserProfile[] }) {
 function AdminDashboard() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
+  const { lang } = useLanguage();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -408,7 +418,7 @@ function AdminDashboard() {
     setSelectedUser(user);
     setNewPlan(user.plan);
     setIsDialogOpen(true);
-  }
+  };
 
   const handleUpdatePlan = async () => {
     if (!firestore || !selectedUser) return;
@@ -484,7 +494,9 @@ function AdminDashboard() {
       const userDocRef = doc(firestore, "users", user.uid);
       batch.update(userDocRef, {
         analysisCount: 0,
-        lastAnalysisDate: null
+        lastAnalysisDate: null,
+        lastAnalysisPair: null,
+        // We keep todayAnalyses so history is not lost on manual reset
       });
     });
 
@@ -604,7 +616,7 @@ function AdminDashboard() {
       return <Badge variant="outline">Unlimited</Badge>;
     }
 
-    const lastDate = user.lastAnalysisDate?.toDate();
+    const lastDate = user.lastAnalysisDate?.toDate ? user.lastAnalysisDate.toDate() : null;
     const now = new Date();
 
     const isNewDay = !lastDate ||
@@ -615,10 +627,26 @@ function AdminDashboard() {
     const used = isNewDay ? 0 : (user.analysisCount || 0);
     const limit = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
 
+    // Format the last analysis time if it happened today
+    const lastTimeStr = lastDate && !isNewDay
+      ? lastDate.toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      : null;
+
     return (
-      <div className="flex items-center gap-2">
-        <BarChart2 className="h-4 w-4 text-muted-foreground" />
-        <span className="font-mono">{used} / {limit}</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <BarChart2 className="h-3 w-3 text-muted-foreground" />
+          <span className="font-mono text-sm font-bold">{used} / {limit}</span>
+        </div>
+
+        {lastTimeStr && (
+          <div className="flex flex-col gap-0.5 ml-1">
+            <div className="flex items-center gap-1 text-[10px] text-primary/70 font-medium">
+              <Clock className="h-2.5 w-2.5" />
+              <span>{lang === 'ar' ? 'آخر:' : 'Last:'} {lastTimeStr}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -1223,5 +1251,3 @@ function AdminDashboard() {
 export default function AdminPage() {
   return <AdminDashboard />;
 }
-
-

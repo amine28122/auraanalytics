@@ -147,20 +147,42 @@ export async function getTradeSignals(
       const userData = userDoc.data();
       const plan = userData.plan || 'Free';
 
-      if (plan !== 'Aura Plan') {
-        let analysisCount = userData.analysisCount || 0;
-        const lastAnalysisDate = userData.lastAnalysisDate;
-        const now = new Date();
-        const lastAnalysisDay = lastAnalysisDate ? new Date(lastAnalysisDate.seconds * 1000) : null;
-        const isNewDay = !lastAnalysisDay || (lastAnalysisDay.getUTCFullYear() !== now.getUTCFullYear() || lastAnalysisDay.getUTCMonth() !== now.getUTCMonth() || lastAnalysisDay.getUTCDate() !== now.getUTCDate());
-        const newCount = isNewDay ? 1 : analysisCount + 1;
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
 
-        transaction.update(userDocRef, {
-          analysisCount: newCount,
-          lastAnalysisDate: serverTimestamp(),
-          preferredAnalysisSchools: validAnalysisSchools
-        });
+      let lastDateStr = "";
+      if (userData.lastAnalysisDate) {
+        const ld = userData.lastAnalysisDate.toDate ? userData.lastAnalysisDate.toDate() : new Date(userData.lastAnalysisDate.seconds * 1000);
+        lastDateStr = ld.toISOString().split('T')[0];
       }
+
+      const isNewDay = todayStr !== lastDateStr;
+      const firstPair = result.signals?.[0]?.pair || 'Unknown';
+
+      // Use a flat string for the log entry to ensure absolute reliability in Firestore arrays
+      const logEntry = `${now.toISOString()}|${firstPair}`;
+
+      let activityLog = Array.isArray(userData.todayAnalyses) ? userData.todayAnalyses : [];
+      if (isNewDay) {
+        activityLog = [logEntry];
+      } else {
+        activityLog = [...activityLog, logEntry].slice(-10);
+      }
+
+      const updates: any = {
+        lastAnalysisDate: serverTimestamp(),
+        lastAnalysisPair: firstPair,
+        todayAnalyses: activityLog,
+        preferredAnalysisSchools: validAnalysisSchools
+      };
+
+      if (plan !== 'Aura Plan') {
+        const analysisCount = userData.analysisCount || 0;
+        const newCount = isNewDay ? 1 : analysisCount + 1;
+        updates.analysisCount = newCount;
+      }
+
+      transaction.update(userDocRef, updates);
     });
 
     return { data: result, error: null, message: 'Analysis successful.', chartImage: chartDataLarge };
