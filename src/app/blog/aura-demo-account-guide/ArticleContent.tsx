@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LandingHeader } from '@/components/landing/header';
 import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, GraduationCap, PlayCircle, ShieldCheck } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, GraduationCap, PlayCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
