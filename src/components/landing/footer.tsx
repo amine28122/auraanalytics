@@ -46,6 +46,7 @@ export default function Footer() {
               <h4 className="font-semibold text-foreground mb-4">{t.company}</h4>
               <ul className="space-y-3">
                 <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">{t.about}</Link></li>
+                <li><Link href="/blog" className="text-muted-foreground hover:text-primary transition-colors">{t.blog}</Link></li>
                 <li><Link href="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors">{t.methodology}</Link></li>
               </ul>
             </div>
@@ -54,6 +55,7 @@ export default function Footer() {
               <ul className="space-y-3">
                 <li><Link href="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">{t.privacy_policy}</Link></li>
                 <li><Link href="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors">{t.terms_of_service}</Link></li>
+                <li><a href="mailto:support@auraanalyticspro.com" className="text-muted-foreground hover:text-primary transition-colors">{t.contact_us}</a></li>
               </ul>
             </div>
           </div>

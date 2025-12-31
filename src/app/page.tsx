@@ -1,25 +1,28 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { AuraAcademyLogo } from '@/components/logo';
 import { Download, Menu, X, ArrowUpRight, TrendingUp, Sun, Moon, Languages } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Script from 'next/script';
-import AppShowcase from '@/components/landing/app-showcase';
-import SuccessStory from '@/components/landing/success-story';
-import StrategyGlimpse from '@/components/landing/strategy-glimpse';
-import PlanComparison from '@/components/landing/plan-comparison';
-import PerformanceChart from '@/components/landing/performance-chart';
-import GlobalCommunity from '@/components/landing/global-community';
-import FoundersStrategy from '@/components/landing/founders-strategy';
-import Footer from '@/components/landing/footer';
-import FinancialTicker from '@/components/landing/financial-ticker';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
-import { InstallPwaButton } from '@/components/install-pwa-button'; // Import the new component
 import { useLanguage } from '@/context/LanguageContext';
+
+// New/Modified imports from instruction
+import { LandingHeader } from '@/components/landing/header';
+import Footer from '@/components/landing/footer';
+import { SuccessStory } from '@/components/landing/success-story';
+import { AppShowcase } from '@/components/landing/app-showcase';
+import PlanComparison from '@/components/landing/plan-comparison';
+import StrategyGlimpse from '@/components/landing/strategy-glimpse';
+import FoundersStrategy from '@/components/landing/founders-strategy';
+import PerformanceChart from '@/components/landing/performance-chart';
+import GlobalCommunity from '@/components/landing/global-community';
+import { InstallPwaButton } from '@/components/install-pwa-button';
+import FinancialTicker from '@/components/landing/financial-ticker';
+
 
 type Theme = 'light' | 'dark';
 
@@ -39,57 +42,7 @@ function FloatingCard({ className, children }: { className?: string, children: R
 }
 
 export default function LandingPage() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const [theme, setTheme] = useState<Theme>('dark');
   const { lang, setLang, t } = useLanguage();
-
-  const currentNavLinks = [
-    { href: "#aura-pro", label: t.aura_pro },
-    { href: "/pricing", label: t.pricing },
-    { href: "/about", label: t.about },
-    { href: "/reviews", label: t.reviews },
-  ];
-
-  useEffect(() => {
-    // Set initial theme based on class applied by blocking script
-    const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-    setTheme(currentTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-  };
-
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
-        // Scrolling down
-        setIsHeaderVisible(false);
-      } else {
-        // Scrolling up
-        setIsHeaderVisible(true);
-      }
-      lastScrollY.current = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
 
   const appSchema = {
     "@context": "https://schema.org",
@@ -142,66 +95,7 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
       />
 
-      <div className={cn("fixed top-0 left-0 right-0 z-50 transition-transform duration-300", isHeaderVisible ? "translate-y-0" : "-translate-y-full")} dir="ltr">
-        <FinancialTicker theme={theme} />
-      </div>
-
-
-      <header className={cn(
-        "fixed top-10 left-0 right-0 z-40 flex items-center justify-between p-4 transition-all duration-300 bg-background",
-        isHeaderVisible ? "translate-y-0" : "-translate-y-full"
-      )}>
-        <div className="flex items-center gap-3">
-          <AuraAcademyLogo iconOnly className="h-10 w-10" />
-          <span className="font-headline text-2xl font-bold text-foreground">AURA</span>
-        </div>
-
-        <nav className="hidden md:flex items-center gap-6">
-          {currentNavLinks.map(link => (
-            <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className='text-foreground'>
-            <Languages className="h-5 w-5" />
-            <span className="sr-only">Toggle Language</span>
-          </Button>
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className='text-foreground'>
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-          <Button size="sm" className="futuristic-button hidden md:inline-flex" asChild>
-            <Link href="/auth">
-              <span>{t.sign_in}</span>
-            </Link>
-          </Button>
-          <Button size="icon" variant="ghost" className="md:hidden text-foreground" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            <span className="sr-only">Toggle menu</span>
-          </Button>
-        </div>
-      </header>
-
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 top-16 z-40 bg-background/95 backdrop-blur-sm md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
-            {currentNavLinks.map(link => (
-              <Link key={link.href} href={link.href} className="text-2xl font-bold text-foreground transition-colors hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
-                {link.label}
-              </Link>
-            ))}
-            <Button size="lg" className="futuristic-button mt-8" asChild>
-              <Link href="/auth">
-                <span>{t.sign_in}</span>
-              </Link>
-            </Button>
-          </div>
-        </div>
-      )}
+      <LandingHeader />
 
       <main>
         <section className="relative w-full overflow-hidden px-4 pt-40 pb-20">
