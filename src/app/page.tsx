@@ -13,8 +13,8 @@ import { useLanguage } from '@/context/LanguageContext';
 // New/Modified imports from instruction
 import { LandingHeader } from '@/components/landing/header';
 import Footer from '@/components/landing/footer';
-import { SuccessStory } from '@/components/landing/success-story';
-import { AppShowcase } from '@/components/landing/app-showcase';
+import SuccessStory from '@/components/landing/success-story';
+import AppShowcase from '@/components/landing/app-showcase';
 import PlanComparison from '@/components/landing/plan-comparison';
 import StrategyGlimpse from '@/components/landing/strategy-glimpse';
 import FoundersStrategy from '@/components/landing/founders-strategy';

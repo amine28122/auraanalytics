@@ -124,7 +124,7 @@ export default function RiskManagementArticle() {
                         <Accordion type="single" collapsible className="w-full">
                             {(lang === 'ar' ? [
                                 { q: "كم يجب أن أخاطر في كل صفقة؟", a: "ننصح دائماً بنسبة تتراوح بين 0.5% إلى 1% للمتداولين المستقرين، وربما أقل في العملات شديدة التقلب." },
-                                { q: "ماذا أفعل إذا ضرب السعر وقف الخسارة كثيراً؟", a: "قد يكون السبب هو وضع الوقف "قريب جداً" من السعر. جرب وضعه بناءً على مستويات تقنية أبعد مثل الـ Order Blocks." },
+                                { q: "ماذا أفعل إذا ضرب السعر وقف الخسارة كثيراً؟", a: "قد يكون السبب هو وضع الوقف 'قريب جداً' من السعر. جرب وضعه بناءً على مستويات تقنية أبعد مثل الـ Order Blocks." },
                                 { q: "هل الرافعة المالية (Leverage) خطر؟", a: "الرافعة سلاح ذو حدين؛ هي تزيد الربح لكنها قد تجعل أي حركة بسيطة ضدك تنهي حسابك. استخدمها بحذر شديد." }
                             ] : [
                                 { q: "How much should I risk per trade?", a: "We always recommend 0.5% to 1% for stable traders, and perhaps less for highly volatile assets." },
