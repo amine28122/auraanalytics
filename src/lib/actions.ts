@@ -4,8 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { generateTradeSignals, type GenerateTradeSignalsOutput, type TradeSignal as AITradeSignal } from '@/ai/flows/generate-trade-signals';
 import { initializeServerFirebase } from '@/firebase/server-init';
-import { getFirestore, doc, getDoc, updateDoc, setDoc, serverTimestamp, runTransaction, collection, addDoc, Timestamp, query, where, getDocs, increment, orderBy } from 'firebase/firestore';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import * as admin from 'firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import Parser from 'rss-parser';
 
@@ -73,16 +72,14 @@ export async function getTradeSignals(
   const { chartDataLarge, chartDataSmall, userId: validUserId, userLang: validUserLang, analysisSchools: validAnalysisSchools } = validatedFields.data;
 
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { data: null, error: 'Database service is not available.', message: null };
-
-  const userDocRef = doc(firestore, 'users', validUserId);
+  const userDocRef = firestore.collection('users').doc(validUserId);
 
   try {
-    await runTransaction(firestore, async (transaction) => {
+    await firestore.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userDocRef);
-      if (!userDoc.exists()) throw new Error('User not found.');
+      if (!userDoc.exists) throw new Error('User not found.');
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
       const plan = userData.plan || 'Free';
       const limit = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS];
       let analysisCount = userData.analysisCount || 0;
@@ -90,7 +87,7 @@ export async function getTradeSignals(
       const now = new Date();
 
       if (plan !== 'Aura Plan') {
-        const lastAnalysisDay = lastAnalysisDate ? new Date(lastAnalysisDate.seconds * 1000) : null;
+        const lastAnalysisDay = lastAnalysisDate ? (lastAnalysisDate.toDate ? lastAnalysisDate.toDate() : new Date(lastAnalysisDate._seconds * 1000)) : null;
 
         const isNewDay = !lastAnalysisDay ||
           (lastAnalysisDay.getUTCFullYear() !== now.getUTCFullYear() ||
@@ -118,18 +115,18 @@ export async function getTradeSignals(
 
     const result = await generateTradeSignals(input);
 
-    await runTransaction(firestore, async (transaction) => {
+    await firestore.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userDocRef);
-      if (!userDoc.exists()) throw new Error('User not found while trying to update count.');
+      if (!userDoc.exists) throw new Error('User not found while trying to update count.');
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
       const plan = userData.plan || 'Free';
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
 
       let lastDateStr = "";
       if (userData.lastAnalysisDate) {
-        const ld = userData.lastAnalysisDate.toDate ? userData.lastAnalysisDate.toDate() : new Date(userData.lastAnalysisDate.seconds * 1000);
+        const ld = userData.lastAnalysisDate.toDate ? userData.lastAnalysisDate.toDate() : new Date(userData.lastAnalysisDate._seconds * 1000);
         lastDateStr = ld.toISOString().split('T')[0];
       }
 
@@ -145,7 +142,7 @@ export async function getTradeSignals(
       }
 
       const updates: any = {
-        lastAnalysisDate: serverTimestamp(),
+        lastAnalysisDate: admin.firestore.FieldValue.serverTimestamp(),
         lastAnalysisPair: firstPair,
         todayAnalyses: activityLog,
         preferredAnalysisSchools: validAnalysisSchools
@@ -193,7 +190,6 @@ export async function submitActivationRequest(
   formData: FormData
 ): Promise<ActivationFormState> {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { error: 'Database service is not available.', message: null };
 
   const validatedFields = activationRequestSchema.safeParse({
     userId: formData.get('userId'),
@@ -213,18 +209,21 @@ export async function submitActivationRequest(
   const { userId, email, transactionId, screenshotDataUrl, planName } = validatedFields.data;
 
   try {
-    const requestsColl = collection(firestore, 'activationRequests');
-    const q = query(requestsColl, where("userId", "==", userId), where("status", "==", "pending"));
-    const existing = await getDocs(q);
+    const requestsColl = firestore.collection('activationRequests');
+    const existing = await requestsColl.where("userId", "==", userId).where("status", "==", "pending").get();
 
     if (!existing.empty) {
       return { error: "You already have a pending activation request. Please wait for it to be processed.", message: null };
     }
 
-    await addDoc(requestsColl, {
-      userId, email, transactionId, screenshotDataUrl, planName,
+    await requestsColl.add({
+      userId,
+      email,
+      transactionId,
+      screenshotDataUrl,
+      planName,
       status: 'pending',
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return { error: null, message: 'Your request has been submitted successfully.' };
@@ -235,27 +234,26 @@ export async function submitActivationRequest(
 
 export async function approveActivationRequest(requestId: string, userId: string): Promise<{ success: boolean; error?: string }> {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { success: false, error: 'Database unavailable' };
-  const requestDocRef = doc(firestore, 'activationRequests', requestId);
-  const userDocRef = doc(firestore, 'users', userId);
+  const requestDocRef = firestore.collection('activationRequests').doc(requestId);
+  const userDocRef = firestore.collection('users').doc(userId);
 
   try {
-    await runTransaction(firestore, async (transaction) => {
+    await firestore.runTransaction(async (transaction) => {
       const requestDoc = await transaction.get(requestDocRef);
       const userDoc = await transaction.get(userDocRef);
 
-      if (!requestDoc.exists() || !userDoc.exists()) throw new Error('User or request document not found.');
+      if (!requestDoc.exists || !userDoc.exists) throw new Error('User or request document not found.');
 
-      const requestData = requestDoc.data();
+      const requestData = requestDoc.data() || {};
       if (requestData.status === 'approved') throw new Error('This request has already been approved.');
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
       const planName = requestData.planName || 'Premium';
       const referredBy = userData.referredBy;
       const shouldAwardCommission = referredBy && !userData.affiliateCommissionPaid;
 
-      const startDate = Timestamp.now();
-      const endDate = new Timestamp(startDate.seconds + 30 * 24 * 60 * 60, startDate.nanoseconds);
+      const startDate = admin.firestore.Timestamp.now();
+      const endDate = new admin.firestore.Timestamp(startDate.seconds + 30 * 24 * 60 * 60, startDate.nanoseconds);
 
       transaction.update(userDocRef, {
         plan: planName,
@@ -268,12 +266,12 @@ export async function approveActivationRequest(requestId: string, userId: string
       });
 
       if (shouldAwardCommission) {
-        const referrerDocRef = doc(firestore, 'users', referredBy);
+        const referrerDocRef = firestore.collection('users').doc(referredBy);
         const commission = planName.trim() === 'Aura Plan' ? 25.00 : 10.00;
         transaction.update(referrerDocRef, {
-          activeReferrals: increment(1),
-          totalEarnings: increment(commission),
-          pendingEarnings: increment(commission),
+          activeReferrals: admin.firestore.FieldValue.increment(1),
+          totalEarnings: admin.firestore.FieldValue.increment(commission),
+          pendingEarnings: admin.firestore.FieldValue.increment(commission),
         });
       }
 
@@ -287,15 +285,14 @@ export async function approveActivationRequest(requestId: string, userId: string
 
 export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium' | 'Aura Plan') {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { success: false, error: 'Database unavailable' };
-  const userDocRef = doc(firestore, 'users', userId);
+  const userDocRef = firestore.collection('users').doc(userId);
 
   try {
-    await runTransaction(firestore, async (transaction) => {
+    await firestore.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userDocRef);
-      if (!userDoc.exists()) throw new Error('User not found.');
+      if (!userDoc.exists) throw new Error('User not found.');
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
       const referredBy = userData.referredBy;
       const shouldAwardCommission = userData.plan === 'Free' && newPlan !== 'Free' && referredBy && !userData.affiliateCommissionPaid;
 
@@ -303,9 +300,9 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
       let planEndDate = null;
 
       if (newPlan !== 'Free') {
-        const startDate = Timestamp.now();
+        const startDate = admin.firestore.Timestamp.now();
         planStartDate = startDate;
-        planEndDate = new Timestamp(startDate.seconds + 30 * 24 * 60 * 60, startDate.nanoseconds);
+        planEndDate = new admin.firestore.Timestamp(startDate.seconds + 30 * 24 * 60 * 60, startDate.nanoseconds);
       }
 
       transaction.update(userDocRef, {
@@ -318,12 +315,12 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
       });
 
       if (shouldAwardCommission) {
-        const referrerDocRef = doc(firestore, 'users', referredBy);
+        const referrerDocRef = firestore.collection('users').doc(referredBy);
         const commission = newPlan.trim() === 'Aura Plan' ? 25.00 : 10.00;
         transaction.update(referrerDocRef, {
-          activeReferrals: increment(1),
-          totalEarnings: increment(commission),
-          pendingEarnings: increment(commission),
+          activeReferrals: admin.firestore.FieldValue.increment(1),
+          totalEarnings: admin.firestore.FieldValue.increment(commission),
+          pendingEarnings: admin.firestore.FieldValue.increment(commission),
         });
       }
     });
@@ -335,12 +332,11 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
 
 export async function adjustUserBalance(userId: string, amount: number) {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { success: false, error: 'Database unavailable' };
   try {
-    const userDocRef = doc(firestore, 'users', userId);
-    await updateDoc(userDocRef, {
-      totalEarnings: increment(amount),
-      pendingEarnings: increment(amount)
+    const userDocRef = firestore.collection('users').doc(userId);
+    await userDocRef.update({
+      totalEarnings: admin.firestore.FieldValue.increment(amount),
+      pendingEarnings: admin.firestore.FieldValue.increment(amount)
     });
     return { success: true };
   } catch (e: any) {
@@ -354,21 +350,19 @@ export async function submitWithdrawRequest(formData: { userId: string; email: s
 
   const { userId, email, amount, walletAddress } = validatedFields.data;
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { error: 'Database unavailable', message: null };
 
   try {
-    const userDocRef = doc(firestore, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
-    if (!userDoc.exists()) throw new Error('User not found');
+    const userDocRef = firestore.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) throw new Error('User not found');
 
-    const userData = userDoc.data();
+    const userData = userDoc.data() || {};
     const currentBalance = userData.pendingEarnings || 0;
     if (currentBalance < 50) return { error: 'Minimum balance required to withdraw is $50.00', message: null };
     if (amount < 50) return { error: 'Minimum withdrawal amount allowed is $50.00', message: null };
 
-    const withdrawRequestsColl = collection(firestore, 'withdrawRequests');
-    const q = query(withdrawRequestsColl, where('userId', '==', userId), where('status', '==', 'pending'));
-    const pendingSnap = await getDocs(q);
+    const withdrawRequestsColl = firestore.collection('withdrawRequests');
+    const pendingSnap = await withdrawRequestsColl.where('userId', '==', userId).where('status', '==', 'pending').get();
 
     let pendingTotal = 0;
     pendingSnap.forEach(doc => { pendingTotal += doc.data().amount || 0; });
@@ -376,10 +370,10 @@ export async function submitWithdrawRequest(formData: { userId: string; email: s
     const availableBalance = currentBalance - pendingTotal;
     if (amount > availableBalance) return { error: `Insufficient available funds.`, message: null };
 
-    await addDoc(withdrawRequestsColl, {
+    await withdrawRequestsColl.add({
       userId, email, amount, walletAddress,
       status: 'pending',
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return { error: null, message: 'Withdrawal requested successfully.' };
@@ -390,24 +384,23 @@ export async function submitWithdrawRequest(formData: { userId: string; email: s
 
 export async function approveWithdrawRequest(requestId: string, userId: string, amount: number) {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { success: false, error: 'Database unavailable' };
   try {
-    await runTransaction(firestore, async (transaction) => {
-      const requestDocRef = doc(firestore, 'withdrawRequests', requestId);
-      const userDocRef = doc(firestore, 'users', userId);
+    await firestore.runTransaction(async (transaction) => {
+      const requestDocRef = firestore.collection('withdrawRequests').doc(requestId);
+      const userDocRef = firestore.collection('users').doc(userId);
 
       const requestDoc = await transaction.get(requestDocRef);
       const userDoc = await transaction.get(userDocRef);
 
-      if (!requestDoc.exists() || !userDoc.exists()) throw new Error('Document not found');
-      const requestData = requestDoc.data();
+      if (!requestDoc.exists || !userDoc.exists) throw new Error('Document not found');
+      const requestData = requestDoc.data() || {};
       if (requestData.status === 'approved') throw new Error('Already processed');
 
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
       if ((userData.pendingEarnings || 0) < amount) throw new Error('Insufficient user balance');
 
       transaction.update(requestDocRef, { status: 'approved' });
-      transaction.update(userDocRef, { pendingEarnings: increment(-amount) });
+      transaction.update(userDocRef, { pendingEarnings: admin.firestore.FieldValue.increment(-amount) });
     });
     return { success: true };
   } catch (e: any) {
@@ -462,14 +455,12 @@ export type SavedAnalysis = {
 
 export async function saveTradeAnalysis(userId: string, data: any, imageBase64: string) {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { success: false };
   try {
-    const analysisRef = collection(firestore, 'users', userId, 'analyses');
-    await addDoc(analysisRef, {
+    await firestore.collection('users').doc(userId).collection('analyses').add({
       ...data,
       image: imageBase64,
       status: 'PENDING',
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     return { success: true };
   } catch (error) {
@@ -493,19 +484,18 @@ export async function getLivePrice(symbol: string) {
 
 export async function getAnalyses(userId: string) {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { success: false, items: [] };
   try {
-    const q = query(collection(firestore, 'users', userId, 'analyses'), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await firestore.collection('users').doc(userId).collection('analyses')
+      .orderBy('createdAt', 'desc').get();
     const items = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toJSON ? data.createdAt.toJSON() : data.createdAt,
-        completedAt: data.completedAt?.toJSON ? data.completedAt.toJSON() : data.completedAt,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+        completedAt: data.completedAt?.toDate ? data.completedAt.toDate().toISOString() : data.completedAt,
       };
-    }) as SavedAnalysis[];
+    }) as any[];
     return { success: true, items };
   } catch (error) {
     return { success: false, items: [] };
@@ -514,11 +504,9 @@ export async function getAnalyses(userId: string) {
 
 export async function updateAnalysisStatus(userId: string, id: string, status: 'WON' | 'LOST', currentPrice: number) {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return { success: false };
   try {
-    const docRef = doc(firestore, 'users', userId, 'analyses', id);
-    await updateDoc(docRef, {
-      status, currentPrice, completedAt: serverTimestamp()
+    await firestore.collection('users').doc(userId).collection('analyses').doc(id).update({
+      status, currentPrice, completedAt: admin.firestore.FieldValue.serverTimestamp()
     });
     return { success: true };
   } catch (error) {
@@ -528,15 +516,17 @@ export async function updateAnalysisStatus(userId: string, id: string, status: '
 
 export async function cleanupOldAnalyses(userId: string) {
   const { firestore } = initializeServerFirebase();
-  if (!firestore) return;
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   try {
-    const q = query(collection(firestore, 'users', userId, 'analyses'), where('status', 'in', ['WON', 'LOST']), where('createdAt', '<', Timestamp.fromDate(oneWeekAgo)));
-    const snapshot = await getDocs(q);
-    await runTransaction(firestore, async (transaction) => {
-      snapshot.forEach(doc => transaction.delete(doc.ref));
-    });
+    const snapshot = await firestore.collection('users').doc(userId).collection('analyses')
+      .where('status', 'in', ['WON', 'LOST'])
+      .where('createdAt', '<', admin.firestore.Timestamp.fromDate(oneWeekAgo))
+      .get();
+
+    const batch = firestore.batch();
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
     return { success: true };
   } catch (error) {
     return { success: false };
@@ -548,15 +538,15 @@ export async function getSharedPrices(requestedPairs: string[]) {
   if (!firestore) return {};
   const apiKey = process.env.FINNHUB_API_KEY;
   if (!apiKey) return {};
-  const priceRef = doc(firestore, 'system', 'prices');
+  const priceRef = firestore.collection('system').doc('prices');
   try {
-    const priceDoc = await getDoc(priceRef);
+    const priceDoc = await priceRef.get();
     const now = Date.now();
     let cachedValues: Record<string, number> = {};
-    if (priceDoc.exists()) {
-      const data = priceDoc.data();
+    if (priceDoc.exists) {
+      const data = priceDoc.data() || {};
       cachedValues = data.values || {};
-      const lastUpdated = data.lastUpdated?.toMillis() || 0;
+      const lastUpdated = data.lastUpdated?.toDate ? data.lastUpdated.toDate().getTime() : 0;
       if (now - lastUpdated < 60000) return cachedValues;
     }
     const majorMarkets = ['XAU/USD', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'BTC/USD', 'ETH/USD'];
@@ -573,11 +563,12 @@ export async function getSharedPrices(requestedPairs: string[]) {
       if (pairsToFetch.length > 5) await new Promise(r => setTimeout(r, 100));
     }
     if (Object.keys(newPrices).length > 0) {
-      await setDoc(priceRef, { values: newPrices, lastUpdated: serverTimestamp() }, { merge: true });
+      await priceRef.set({ values: newPrices, lastUpdated: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
     }
     return newPrices;
   } catch (error) {
     return {};
   }
 }
+
 

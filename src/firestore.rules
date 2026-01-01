@@ -1,13 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // WARNING: These rules are permissive and are not suitable for production.
-    // They are set this way to allow server-side actions (like Genkit flows)
-    // to access the database without complex authentication for this prototype.
-    // In a real application, you would implement proper server-to-server authentication.
+    
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+      
+      match /analyses/{analysisId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+    
+    match /activationRequests/{docId} {
+      allow create: if request.auth != null;
+      allow read, write: if isAdmin();
+    }
+    
+    match /withdrawRequests/{docId} {
+      allow create: if request.auth != null;
+      allow read, write: if isAdmin();
+    }
+    
+    match /system/prices {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
     }
   }
 }
+
 
