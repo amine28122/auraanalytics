@@ -13,6 +13,96 @@ import { cn } from '@/lib/utils';
 // Static Blog Data for Listing
 const blogPosts = [
     {
+        slug: 'apple-stock-forecast-2026',
+        title: {
+            en: 'Apple Stock Forecast 2026: The AI Revolution & $350 Target',
+            ar: 'توقعات سهم أبل 2026: ثورة الذكاء الاصطناعي وهدف 350 دولار'
+        },
+        date: '2026-01-01',
+        readTime: '25 min',
+        category: 'Stocks',
+        image: '/APPLE.png',
+        excerpt: {
+            en: 'Analysis of the AI-driven iPhone 18 cycle, services revenue growth, and the technical roadmap to new all-time highs for Apple.',
+            ar: 'تحليل لدورة آيفون 18 المدعومة بالذكاء الاصطناعي، ونمو إيرادات الخدمات، وخريطة الطريق التقنية لأسهم أبل.'
+        }
+    },
+    {
+        slug: 'google-stock-forecast-2026',
+        title: {
+            en: 'Google Stock Forecast 2026: Gemini AI Dominance & Cloud Surge',
+            ar: 'توقعات سهم جوجل 2026: سيطرة Gemini ونمو السحابة المذهل'
+        },
+        date: '2026-01-01',
+        readTime: '22 min',
+        category: 'AI Tech',
+        image: '/GOOGLE.png',
+        excerpt: {
+            en: 'Explore Alphabet Inc. (GOOGL) growth through Gemini AI integration and massive Google Cloud backlog expansion.',
+            ar: 'استكشف نمو شركة Alphabet من خلال تكامل ذكاء Gemini الاصطناعي والتوسع الهائل في قطاع جوجل كلاود.'
+        }
+    },
+    {
+        slug: 'tesla-stock-forecast-2026',
+        title: {
+            en: 'Tesla Stock Forecast 2026: The Robotaxi Era & Parabolic Potential',
+            ar: 'توقعات سهم تيسلا 2026: عصر الـ Robotaxis والانفجار السعري المرتقب'
+        },
+        date: '2026-01-01',
+        readTime: '28 min',
+        category: 'Hyper-growth',
+        image: '/TESLA.png',
+        excerpt: {
+            en: 'Inside Tesla’s pivot to autonomy, Robotaxi commercialization, and the roadmap to becoming a $3T AI powerhouse.',
+            ar: 'نظرة داخل تحول تيسلا نحو القيادة الذاتية، وتسويق Robotaxi، وخريطة الطريق لتصبح قوة ذكاء اصطناعي بقيمة 3 تريليون دولار.'
+        }
+    },
+    {
+        slug: 'bitcoin-analysis-2026',
+        title: {
+            en: 'Bitcoin Forecast 2026: The $250,000 Milestone',
+            ar: 'توقعات البتكوين 2026: هل نصل إلى 250,000 دولار؟'
+        },
+        date: '2026-01-01',
+        readTime: '18 min',
+        category: 'Crypto',
+        image: '/BITCOIN.png',
+        excerpt: {
+            en: 'Deep dive into Bitcoin market analysis for 2026. Understanding institutional adoption and technical targets.',
+            ar: 'تحليل شامل لسوق البتكوين لعام 2026. فهم التبني المؤسساتي والأهداف التقنية.'
+        }
+    },
+    {
+        slug: 'gold-analysis-2026',
+        title: {
+            en: 'Gold Price Analysis 2026: The Roadmap to $5,000',
+            ar: 'تحليل أسعار الذهب 2026: الطريق نحو 5,000 دولار للأونصة'
+        },
+        date: '2026-01-01',
+        readTime: '15 min',
+        category: 'Markets',
+        image: '/stock_indices_mastery_banner.png',
+        excerpt: {
+            en: 'Comprehensive analysis of Gold in 2026. Explore key support levels and the drivers behind the gold bull run.',
+            ar: 'تحليل شامل للذهب في عام 2026. اكتشف مستويات الدعم الرئيسية والدوافع وراء صعود الذهب.'
+        }
+    },
+    {
+        slug: 'dollar-index-analysis-2026',
+        title: {
+            en: 'US Dollar Index (DXY) 2026: Facing a Structural Shift',
+            ar: 'مؤشر الدولار الأمريكي (DXY) 2026: هل نشهد نهاية هيمنة الدولار؟'
+        },
+        date: '2026-01-01',
+        readTime: '14 min',
+        category: 'Forex',
+        image: '/forex_market_mastery_banner.png',
+        excerpt: {
+            en: 'Analyzing the US Dollar Index (DXY) in 2026. Will the dollar continue its descent toward 90?',
+            ar: 'تحليل مؤشر الدولار الأمريكي في عام 2026. هل سينجح الدولار في الحفاظ على مستوياته؟'
+        }
+    },
+    {
         slug: 'advanced-schools-strategy',
         title: {
             en: 'Mastering the Markets with Advanced Schools Strategy',

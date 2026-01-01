@@ -4,6 +4,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.auraanalyticspro.com').replace(/\/$/, '');
 
     const blogPosts = [
+        'apple-stock-forecast-2026',
+        'google-stock-forecast-2026',
+        'tesla-stock-forecast-2026',
+        'bitcoin-analysis-2026',
+        'gold-analysis-2026',
+        'dollar-index-analysis-2026',
         'advanced-schools-strategy',
         'trading-psychology-mastery',
         'risk-management-strategies',
