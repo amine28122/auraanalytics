@@ -1,36 +1,30 @@
-import * as admin from 'firebase-admin';
+import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { firebaseConfig } from './config';
 
-if (!admin.apps.length) {
-  try {
-    const adminConfig: any = {
-      projectId: "aura-analytics-d2902",
-    };
+let app: FirebaseApp;
+let firestore: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
-    // هذا الجزء مخصص لجعل النظام يعمل في "وضع الإنتاج" تلقائياً
-    // وأيضاً يدعم العمل محلياً إذا وضعت المفتاح في .env.local
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      try {
-        const cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        adminConfig.credential = admin.credential.cert(cert);
-      } catch (e) {
-        console.error("The FIREBASE_SERVICE_ACCOUNT variable is not valid JSON.");
-      }
-    }
-
-    admin.initializeApp(adminConfig);
-    console.log("Firebase Admin Initialized");
-  } catch (error: any) {
-    console.error("Firebase Admin Error:", error.message);
+export function initializeServerFirebase(): { app: FirebaseApp; firestore: Firestore | null; storage: FirebaseStorage | null; } {
+  if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApps()[0];
   }
+
+  try {
+    firestore = getFirestore(app);
+  } catch (e) {
+    console.error("Firestore could not be initialized on the server:", e);
+  }
+
+  try {
+    storage = getStorage(app);
+  } catch (e) {
+    console.error("Storage could not be initialized on the server:", e);
+  }
+
+  return { app, firestore, storage };
 }
-
-export function initializeServerFirebase() {
-  return {
-    app: admin.app(),
-    firestore: admin.firestore(),
-    storage: admin.storage(),
-  };
-}
-
-
-
