@@ -68,7 +68,7 @@ export function LandingHeader() {
                 <div className="flex items-center gap-3">
                     <Link href="/" className="flex items-center gap-3">
                         <AuraAcademyLogo iconOnly className="h-10 w-10" />
-                        <span className="font-headline text-2xl font-bold text-foreground">AURA</span>
+                        <span className="font-headline text-2xl font-bold text-foreground tracking-tighter">AURA ANALYTICS PRO</span>
                     </Link>
                 </div>
 
