@@ -444,10 +444,15 @@ export type SavedAnalysis = {
   pair: string;
   type: 'BUY' | 'SELL';
   entry: number; entryPrice?: string;
+  entryLabel?: string;
+  orderType?: 'Market' | 'Pending';
   stopLoss: number | string;
   takeProfit: number | string | string[];
   status: 'PENDING' | 'WON' | 'LOST';
   image: string;
+  schools?: string[];
+  analysis?: string;
+  userRating?: 'LIKE' | 'DISLIKE';
   createdAt: any;
   completedAt?: any;
   currentPrice?: number;

@@ -540,6 +540,10 @@ export function UnifiedAnalysis() {
             takeProfit: parseFloat(signal.takeProfit[0]) || 0,
             status: 'PENDING',
             image: compressedBase64,
+            schools: selectedSchools,
+            analysis: state.data.analysisSummary || "",
+            orderType: signal.orderType,
+            entryLabel: signal.entryPrice,
             createdAt: serverTimestamp(),
           });
 

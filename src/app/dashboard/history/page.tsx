@@ -3,20 +3,24 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/firebase';
 import { getAnalyses, updateAnalysisStatus, getSharedPrices, cleanupOldAnalyses, SavedAnalysis } from '@/lib/actions';
-import { doc, Timestamp } from 'firebase/firestore';
+import { doc, Timestamp, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, TrendingUp, TrendingDown, CheckCircle2, XCircle, AlertCircle, Trash2, LayoutDashboard } from 'lucide-react';
+import {
+    Clock, TrendingUp, TrendingDown, CheckCircle2, XCircle, AlertCircle, Trash2, LayoutDashboard,
+    ThumbsUp, ThumbsDown, BookOpen, FileText
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useFirebase } from '@/firebase';
 
 const translations = {
     en: {
         title: 'Analysis History',
-        desc: 'Watch your trade analyses evolve. Completed analyses are automatically deleted after 7 days.',
+        desc: 'Watch your trade analyses evolve. Review your past performance and strategies.',
         noAnalyses: 'No analyses found. Start by analyzing a chart!',
         pending: 'Pending',
         won: 'Target Hit',
@@ -27,10 +31,14 @@ const translations = {
         current: 'Current',
         backToDashboard: 'Back to Dashboard',
         lastUpdated: 'Updated just now',
+        schools: 'Schools',
+        analysisSummary: 'Analysis Summary',
+        rateTitle: 'Did this trade work for you?',
+        comprehensive: 'Comprehensive',
     },
     ar: {
         title: 'سجل التحليلات',
-        desc: 'راقب تطور تحليلاتك. يتم حذف التحليلات المكتملة تلقائياً بعد 7 أيام.',
+        desc: 'راقب تطور تحليلاتك. راجع أداءك واستراتيجياتك السابقة.',
         noAnalyses: 'لا يوجد تحليلات. ابدأ بتحليل أول شارت الآن!',
         pending: 'قيد الانتظار',
         won: 'تم ضرب الهدف',
@@ -41,16 +49,22 @@ const translations = {
         current: 'السعر الحالي',
         backToDashboard: 'العودة للوحة التحكم',
         lastUpdated: 'تم التحديث الآن',
+        schools: 'المدارس المستخدمة',
+        analysisSummary: 'ملخص التحليل',
+        rateTitle: 'هل نجحت معك هذه الصفقة؟',
+        comprehensive: 'تحليل شامل',
     }
 };
 
 export default function HistoryPage() {
     const { user } = useAuth();
+    const { firestore } = useFirebase(); // Need firestore for direct updates
     const searchParams = useSearchParams();
     const lang = (searchParams.get('lang') || 'en') as 'en' | 'ar';
     const t = translations[lang === 'ar' ? 'ar' : 'en'];
 
-    const [analyses, setAnalyses] = useState<SavedAnalysis[]>([]);
+    // Define extended type locally or use any if SafeAnalysis is strict
+    const [analyses, setAnalyses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchAndTrack = async () => {
@@ -109,6 +123,20 @@ export default function HistoryPage() {
         return () => clearInterval(interval);
     }, [user]);
 
+    const handleRate = async (id: string, rating: 'LIKE' | 'DISLIKE') => {
+        if (!user || !firestore) return;
+
+        // Optimistic update
+        setAnalyses(prev => prev.map(a => a.id === id ? { ...a, userRating: rating } : a));
+
+        try {
+            const docRef = doc(firestore, 'users', user.uid, 'analyses', id);
+            await updateDoc(docRef, { userRating: rating });
+        } catch (error) {
+            console.error("Failed to rate", error);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -119,7 +147,7 @@ export default function HistoryPage() {
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-8 animate-in fade-in duration-500">
+        <div className="container mx-auto p-4 md:p-6 space-y-8 animate-in fade-in duration-500" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold font-headline">{t.title}</h1>
@@ -195,13 +223,39 @@ export default function HistoryPage() {
                                         {item.type}
                                     </div>
                                 </div>
+                                {/* Schools Tags */}
+                                <div className="flex flex-wrap gap-1.5 mt-3">
+                                    {item.schools && item.schools.length > 0 ? (
+                                        item.schools.map((school: string, idx: number) => (
+                                            <Badge
+                                                key={idx}
+                                                variant="outline"
+                                                className="text-[10px] py-0.5 h-auto bg-primary/5 border-primary/20 whitespace-nowrap"
+                                            >
+                                                <BookOpen className="w-3 h-3 mr-1 inline-block" />
+                                                {school}
+                                            </Badge>
+                                        ))
+                                    ) : (
+                                        <Badge variant="outline" className="text-[10px] py-0.5 h-auto bg-muted border-muted-foreground/20">
+                                            {t.comprehensive}
+                                        </Badge>
+                                    )}
+                                </div>
                             </CardHeader>
 
-                            <CardContent className="p-4 pt-0 flex-1 flex flex-col justify-between">
+                            <CardContent className="p-4 pt-0 flex-1 flex flex-col gap-4">
                                 <div className="grid grid-cols-3 gap-2 mt-2">
-                                    <div className="bg-muted/50 p-2 rounded-lg text-center">
-                                        <p className="text-[10px] uppercase text-muted-foreground font-semibold">{t.entry}</p>
-                                        <p className="text-sm font-bold">{item.entry}</p>
+                                    <div className="bg-muted/50 p-2 rounded-lg text-center flex flex-col justify-center items-center">
+                                        <p className="text-[10px] uppercase text-muted-foreground font-semibold mb-1">{t.entry}</p>
+                                        <p className="text-sm font-bold flex items-center gap-1">
+                                            {item.entryLabel || (item.entry > 0 ? item.entry : "Market")}
+                                            {item.orderType === 'Pending' && (
+                                                <span className="text-[8px] bg-amber-500/20 text-amber-600 px-1 py-0.5 rounded uppercase font-bold tracking-wider">
+                                                    Pending
+                                                </span>
+                                            )}
+                                        </p>
                                     </div>
                                     <div className="bg-green-500/10 p-2 rounded-lg text-center">
                                         <p className="text-[10px] uppercase text-green-600 font-semibold">{t.tp}</p>
@@ -213,12 +267,44 @@ export default function HistoryPage() {
                                     </div>
                                 </div>
 
+                                {item.analysis && (
+                                    <div className="bg-muted/30 p-3 rounded-lg text-xs text-muted-foreground leading-relaxed max-h-24 overflow-y-auto custom-scrollbar">
+                                        <div className="flex items-center gap-1 mb-1 font-bold text-foreground">
+                                            <FileText className="w-3 h-3" /> {t.analysisSummary}
+                                        </div>
+                                        {item.analysis}
+                                    </div>
+                                )}
+
                                 {item.currentPrice && (
-                                    <div className="mt-4 p-2 rounded-md bg-secondary flex justify-between items-center">
+                                    <div className="p-2 rounded-md bg-secondary flex justify-between items-center">
                                         <span className="text-xs font-medium text-muted-foreground">{t.current}</span>
                                         <span className="text-sm font-bold">{item.currentPrice}</span>
                                     </div>
                                 )}
+
+                                {/* Rating System */}
+                                <div className={`mt-auto pt-4 border-t border-border/50 flex items-center justify-between ${item.userRating ? 'opacity-80' : ''}`}>
+                                    <span className="text-xs font-medium text-muted-foreground">{t.rateTitle}</span>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant={item.userRating === 'LIKE' ? 'default' : 'ghost'}
+                                            className={`h-8 w-8 p-0 rounded-full ${item.userRating === 'LIKE' ? 'bg-green-500 hover:bg-green-600' : 'hover:bg-green-500/20 hover:text-green-500'}`}
+                                            onClick={() => handleRate(item.id, 'LIKE')}
+                                        >
+                                            <ThumbsUp className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant={item.userRating === 'DISLIKE' ? 'default' : 'ghost'}
+                                            className={`h-8 w-8 p-0 rounded-full ${item.userRating === 'DISLIKE' ? 'bg-red-500 hover:bg-red-600' : 'hover:bg-red-500/20 hover:text-red-500'}`}
+                                            onClick={() => handleRate(item.id, 'DISLIKE')}
+                                        >
+                                            <ThumbsDown className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     ))}
