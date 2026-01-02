@@ -27,7 +27,7 @@ export default function MarchePage() {
 
   return (
     <div className="h-full w-full flex flex-col gap-8">
-      <div className="flex-1 min-h-[70vh]">
+      <div className="h-[85vh] w-full">
         <TradingViewWidget theme={theme} />
       </div>
 

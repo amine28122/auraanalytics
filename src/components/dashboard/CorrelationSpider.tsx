@@ -136,8 +136,8 @@ export function CorrelationSpider() {
     const moodLabel = marketMood === 'Risk On' ? t.riskOn : (marketMood === 'Risk Off' ? t.riskOff : t.neutral);
 
     return (
-        <Card className="w-full h-full border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden relative" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+        <Card className="w-full h-full border-none shadow-none bg-transparent overflow-hidden relative" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+            {/* Gradient removed for seamless look */}
 
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
