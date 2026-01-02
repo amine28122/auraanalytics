@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRadar } from '@/context/radar-context';
 
 const translations = {
   en: {
@@ -89,18 +90,27 @@ export function SidebarNav({
     { href: `/dashboard/about`, label: t.about, icon: Info },
   ];
 
+  const { signalsCount } = useRadar();
+
   const renderLink = (route: { href: string; label: string; icon: React.ElementType }) => (
     <Link
       key={route.href}
       href={`${route.href}?lang=${lang}`}
       className={cn(
-        'flex items-center gap-4 rounded-lg px-4 py-3 text-base font-semibold text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+        'flex items-center gap-4 rounded-lg px-4 py-3 text-base font-semibold text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group relative',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
         pathname === route.href && 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground'
       )}
     >
       <route.icon className="h-5 w-5" />
-      {route.label}
+      <span className="flex-1">{route.label}</span>
+
+      {/* شارة التنبيهات للرادار */}
+      {route.href === '/dashboard/radar' && signalsCount > 0 && (
+        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm animate-pulse">
+          {signalsCount > 9 ? '9+' : signalsCount}
+        </span>
+      )}
     </Link>
   );
 

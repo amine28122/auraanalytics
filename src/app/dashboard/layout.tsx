@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { RadarProvider } from '@/context/radar-context';
 
 function DashboardLayoutContent({
   children,
@@ -71,15 +72,17 @@ export default function DashboardLayout({
 }) {
   return (
     <FirebaseClientProvider>
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen w-full items-center justify-center bg-background">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        }
-      >
-        <DashboardLayoutContent>{children}</DashboardLayoutContent>
-      </Suspense>
+      <RadarProvider>
+        <Suspense
+          fallback={
+            <div className="flex min-h-screen w-full items-center justify-center bg-background">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          }
+        >
+          <DashboardLayoutContent>{children}</DashboardLayoutContent>
+        </Suspense>
+      </RadarProvider>
     </FirebaseClientProvider>
   );
 }

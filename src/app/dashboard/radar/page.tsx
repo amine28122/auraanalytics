@@ -35,7 +35,7 @@ export default function RadarPage() {
     const t = translations[lang] || translations.en;
 
     return (
-        <div className={`min-h-screen bg-black pt-20 pb-12 overflow-hidden ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <div className={`min-h-screen bg-background pt-20 pb-12 overflow-hidden ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
             {/* تأثيرات خلفية فنية */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
@@ -45,7 +45,7 @@ export default function RadarPage() {
             <div className="container mx-auto px-4 relative z-10">
                 <AuraRadar />
 
-                <div className="mt-16 max-w-2xl mx-auto p-8 rounded-[2.5rem] bg-zinc-900/50 border border-white/5 backdrop-blur-md text-center shadow-2xl">
+                <div className="mt-16 max-w-2xl mx-auto p-8 rounded-[2.5rem] bg-white/50 dark:bg-zinc-900/50 border border-border/50 backdrop-blur-md text-center shadow-xl dark:shadow-2xl">
                     <h3 className="text-primary font-bold text-xl mb-4 flex items-center justify-center gap-3">
                         <span className="relative flex h-3 w-3">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
@@ -54,7 +54,7 @@ export default function RadarPage() {
                         {t.howItWorksTitle}
                     </h3>
                     <div className={`space-y-4 ${lang === 'ar' ? 'text-right' : 'text-left'}`}>
-                        <p className="text-gray-300 text-sm leading-relaxed">
+                        <p className="text-muted-foreground text-sm leading-relaxed">
                             {lang === 'ar' ? (
                                 <>
                                     نظام <span className='font-bold text-primary'>رادار أورا</span> هو نظام مراقبة متطور يتتبع تدفق الأوامر وتغيرات السوق عبر العالم.
@@ -65,12 +65,12 @@ export default function RadarPage() {
                                 </>
                             )}
                         </p>
-                        <ul className="text-gray-400 text-xs space-y-2 list-disc list-inside">
-                            <li><span className="text-white font-bold">{t.li1Title}:</span> {t.li1Desc}</li>
-                            <li><span className="text-white font-bold">{t.li2Title}:</span> {t.li2Desc}</li>
-                            <li><span className="text-white font-bold">{t.li3Title}:</span> {t.li3Desc}</li>
+                        <ul className="text-muted-foreground text-xs space-y-2 list-disc list-inside">
+                            <li><span className="text-foreground font-bold">{t.li1Title}:</span> {t.li1Desc}</li>
+                            <li><span className="text-foreground font-bold">{t.li2Title}:</span> {t.li2Desc}</li>
+                            <li><span className="text-foreground font-bold">{t.li3Title}:</span> {t.li3Desc}</li>
                         </ul>
-                        <div className="pt-2 border-t border-white/5 text-center text-[10px] text-primary/50 uppercase tracking-widest font-bold">
+                        <div className="pt-2 border-t border-border/50 text-center text-[10px] text-primary/50 uppercase tracking-widest font-bold">
                             {t.footer}
                         </div>
                     </div>

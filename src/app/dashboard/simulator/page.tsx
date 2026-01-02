@@ -33,6 +33,20 @@ export default function SimulatorPage() {
     const [priceColor, setPriceColor] = useState<'text-green-500' | 'text-red-500'>('text-green-500');
     const [lastPrice, setLastPrice] = useState<number>(0);
     const [symbol, setSymbol] = useState<string>('BTC');
+
+    // Load last visited symbol from LocalStorage
+    useEffect(() => {
+        const savedSymbol = localStorage.getItem('aura_sim_last_symbol');
+        if (savedSymbol) {
+            setSymbol(savedSymbol);
+        }
+    }, []);
+
+    const handleSymbolChange = (newSymbol: string) => {
+        setSymbol(newSymbol);
+        localStorage.setItem('aura_sim_last_symbol', newSymbol);
+    };
+
     const [positions, setPositions] = useState<any[]>([]);
     const [lotSize, setLotSize] = useState<string>('0.1');
     const [stopLoss, setStopLoss] = useState<string>('');
@@ -110,22 +124,49 @@ export default function SimulatorPage() {
         };
     }, [user, firestore]);
 
+    // Store live prices for all tracked symbols
+    const [prices, setPrices] = useState<Record<string, number>>({});
+
     // Live Price Updates & Auto SL/TP logic
     useEffect(() => {
-        if (!symbol) return;
-        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@trade`);
+        // Collect all unique symbols from active positions + current selected symbol
+        const activeSymbols = new Set(positions.map(p => p.symbol.split('/')[0].toLowerCase()));
+        if (symbol) activeSymbols.add(symbol.toLowerCase());
+
+        if (activeSymbols.size === 0) return;
+
+        // Create a combined stream string for Binance (e.g., btcusdt@trade/ethusdt@trade)
+        const streams = Array.from(activeSymbols).map(s => `${s}usdt@trade`).join('/');
+        const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
 
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
+            const message = JSON.parse(event.data);
+            const data = message.data; // { s: 'BTCUSDT', p: '123.45', ... }
+
+            if (!data) return;
+
+            const streamSymbol = data.s.replace('USDT', ''); // BTC
             const price = parseFloat(data.p);
 
-            setCurrentPrice(price);
-            setPriceColor(price >= lastPrice ? 'text-green-500' : 'text-red-500');
-            setLastPrice(price);
+            setPrices(prev => ({
+                ...prev,
+                [streamSymbol]: price
+            }));
 
-            // Check SL/TP for positions matching current symbol
+            // If this update matches our currently viewed symbol, update UI state
+            if (streamSymbol === symbol) {
+                setCurrentPrice(price);
+                setPriceColor(prices[symbol] && price >= prices[symbol] ? 'text-green-500' : 'text-red-500');
+                setLastPrice(price);
+            }
+
+            // Check SL/TP for positions matching this specific update's symbol
             for (const pos of positions) {
-                if (pos.symbol === `${symbol}/USDT` && !closingRef.current.has(pos.id)) {
+                // Normalize symbol comparison (e.g. BTC from stream vs BTC/USDT from pos)
+                const posSymbolSimple = pos.symbol.split('/')[0];
+
+                if (posSymbolSimple === streamSymbol && !closingRef.current.has(pos.id)) {
+
                     const priceDiff = price - pos.entryPrice;
                     const pnl = pos.type === 'LONG' ? priceDiff * pos.lotSize : -priceDiff * pos.lotSize;
 
@@ -140,7 +181,7 @@ export default function SimulatorPage() {
         };
 
         return () => ws.close();
-    }, [symbol, positions, lastPrice]);
+    }, [symbol, positions]); // Re-connect if symbol changes or positions list changes (new asset added)
 
     const autoClosePosition = async (pos: any, finalPnl: number, closePrice: number, reason: string) => {
         if (!user || !firestore || closingRef.current.has(pos.id)) return;
@@ -212,7 +253,10 @@ export default function SimulatorPage() {
         const pos = positions.find(p => p.id === id);
         if (!pos) return;
 
-        const priceDiff = currentPrice - pos.entryPrice;
+        const pSymbol = pos.symbol.split('/')[0];
+        const closePrice = prices[pSymbol] || currentPrice; // Fallback to current if not found (should be rare)
+
+        const priceDiff = closePrice - pos.entryPrice;
         const finalPnl = pos.type === 'LONG' ? priceDiff * pos.lotSize : -priceDiff * pos.lotSize;
 
         try {
@@ -223,7 +267,7 @@ export default function SimulatorPage() {
             await addDoc(histRef, {
                 ...pos,
                 pnl: finalPnl,
-                currentPrice: currentPrice,
+                currentPrice: closePrice,
                 status: 'CLOSED',
                 closedAt: serverTimestamp()
             });
@@ -281,7 +325,10 @@ export default function SimulatorPage() {
     };
 
     const totalPnl = positions.reduce((sum, pos) => {
-        const diff = currentPrice - pos.entryPrice;
+        const pSymbol = pos.symbol.split('/')[0]; // BTC
+        const pPrice = prices[pSymbol] || pos.entryPrice; // Use live price if available, else entry price (0 PnL initially)
+
+        const diff = pPrice - pos.entryPrice;
         return sum + (pos.type === 'LONG' ? diff * pos.lotSize : -diff * pos.lotSize);
     }, 0);
     const equity = balance + totalPnl;
@@ -312,7 +359,7 @@ export default function SimulatorPage() {
                             <Button
                                 key={s}
                                 variant={symbol === s ? "default" : "outline"}
-                                onClick={() => setSymbol(s)}
+                                onClick={() => handleSymbolChange(s)}
                                 size="sm"
                             >
                                 {s === 'PAXG' ? 'GOLD' : s === 'EUR' ? 'EUR/USD' : s === 'GBP' ? 'GBP/USD' : s}
@@ -441,7 +488,9 @@ export default function SimulatorPage() {
                                 ) : (
                                     <div className="divide-y">
                                         {positions.map((pos) => {
-                                            const diff = currentPrice - pos.entryPrice;
+                                            const pSymbol = pos.symbol.split('/')[0];
+                                            const pPrice = prices[pSymbol] || pos.entryPrice;
+                                            const diff = pPrice - pos.entryPrice;
                                             const pnl = pos.type === 'LONG' ? diff * pos.lotSize : -diff * pos.lotSize;
                                             return (
                                                 <div
@@ -450,7 +499,7 @@ export default function SimulatorPage() {
                                                     onClick={() => {
                                                         setSelectedPositionId(pos.id);
                                                         const cleanSymbol = pos.symbol.split('/')[0];
-                                                        if (cleanSymbol !== symbol) setSymbol(cleanSymbol);
+                                                        if (cleanSymbol !== symbol) handleSymbolChange(cleanSymbol);
                                                     }}
                                                 >
                                                     <div>

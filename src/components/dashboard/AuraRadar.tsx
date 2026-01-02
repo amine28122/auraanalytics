@@ -155,14 +155,14 @@ export default function AuraRadar() {
                 </motion.h2>
                 <div className="w-64 h-6 flex items-center justify-center gap-2 mx-auto">
                     <Activity className={`w-4 h-4 text-primary ${isScanning ? 'animate-spin' : 'animate-pulse'}`} />
-                    <span className="text-gray-400 text-sm font-medium tracking-wide">
+                    <span className="text-muted-foreground text-sm font-medium tracking-wide">
                         {isScanning ? t.scanning : t.monitoring}
                     </span>
                 </div>
             </div>
 
             {/* منطقة الرادار الرئيسية */}
-            <div className="relative w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full border border-primary/30 bg-black/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-[0_0_60px_rgba(168,85,247,0.2)]">
+            <div className="relative w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full border border-primary/30 bg-white/40 dark:bg-black/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-[0_0_60px_rgba(168,85,247,0.2)]">
 
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-full h-[1px] bg-primary/10 absolute" />
@@ -197,7 +197,7 @@ export default function AuraRadar() {
                         >
                             <div className={`w-4 h-4 rounded-full ${signal.type === 'BUY' ? 'bg-green-500 shadow-[0_0_15px_#22c55e]' : 'bg-red-500 shadow-[0_0_15px_#ef4444]'} animate-pulse`} />
 
-                            <div className="absolute hidden group-hover:block -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black border border-primary/30 px-3 py-1 rounded text-[10px] text-white z-50 shadow-xl">
+                            <div className="absolute hidden group-hover:block -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap bg-background border border-primary/30 px-3 py-1 rounded text-[10px] text-foreground z-50 shadow-xl">
                                 {signal.pair} • <span className="text-primary">{signal.strength}%</span>
                             </div>
                         </motion.div>
@@ -215,29 +215,29 @@ export default function AuraRadar() {
                         initial={{ opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className={`mt-8 w-full max-w-sm bg-black/80 backdrop-blur-2xl border border-primary/20 rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden text-right`}
+                        className={`mt-8 w-full max-w-sm bg-white/90 dark:bg-black/80 backdrop-blur-2xl border border-primary/20 rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden text-right`}
                         dir={lang === 'ar' ? 'rtl' : 'ltr'}
                     >
                         <div className={`flex justify-between items-start mb-4 ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
                             <div className={lang === 'ar' ? 'text-right' : ''}>
-                                <h3 className="text-2xl font-bold text-white">{selectedSignal.pair}</h3>
+                                <h3 className="text-2xl font-bold text-foreground">{selectedSignal.pair}</h3>
                                 <span className={`text-xs font-black px-2 py-0.5 rounded ${selectedSignal.type === 'BUY' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
                                     {lang === 'ar' ? (selectedSignal.type === 'BUY' ? 'شراء فوري' : 'بيع فوري') : `REAL-TIME ${selectedSignal.type}`}
                                 </span>
                             </div>
                             <div className={lang === 'ar' ? 'text-left' : 'text-right'}>
                                 <div className="text-primary text-sm font-bold">{selectedSignal.strength}% {t.confidence}</div>
-                                <div className="text-gray-500 text-[10px]">{selectedSignal.time}</div>
+                                <div className="text-muted-foreground text-[10px]">{selectedSignal.time}</div>
                             </div>
                         </div>
 
                         <div className="space-y-3 mb-6 font-mono">
-                            <div className={`bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-                                <span className="text-gray-400 text-xs">{t.marketPrice}</span>
-                                <span className="text-white font-black text-xl tracking-tighter">{selectedSignal.price}</span>
+                            <div className={`bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-border/10 dark:border-white/10 flex justify-between items-center ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+                                <span className="text-muted-foreground text-xs">{t.marketPrice}</span>
+                                <span className="text-foreground font-black text-xl tracking-tighter">{selectedSignal.price}</span>
                             </div>
-                            <div className={`bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-                                <span className="text-gray-400 text-xs">{t.reason}</span>
+                            <div className={`bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-border/10 dark:border-white/10 flex justify-between items-center ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+                                <span className="text-muted-foreground text-xs">{t.reason}</span>
                                 <span className="text-primary text-xs font-bold uppercase">{selectedSignal.reason}</span>
                             </div>
                         </div>
@@ -253,11 +253,11 @@ export default function AuraRadar() {
             </AnimatePresence>
 
             <div className="mt-12 w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <h4 className={`col-span-full text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-2 flex items-center gap-2 ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+                <h4 className={`col-span-full text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mb-2 flex items-center gap-2 ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
                     <RefreshCcw className={`w-3 h-3 ${isScanning ? 'animate-spin' : ''}`} /> {t.feedTitle}
                 </h4>
                 {signals.length === 0 && (
-                    <div className="col-span-full py-8 text-center text-gray-600 italic text-sm border border-dashed border-white/5 rounded-2xl">
+                    <div className="col-span-full py-8 text-center text-muted-foreground italic text-sm border border-dashed border-border/50 rounded-2xl">
                         {t.awaiting}
                     </div>
                 )}
@@ -267,7 +267,7 @@ export default function AuraRadar() {
                         layout
                         initial={{ x: lang === 'ar' ? 20 : -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
-                        className={`bg-zinc-900/50 backdrop-blur border border-white/5 p-4 rounded-2xl flex items-center justify-between group hover:border-primary/40 transition-all cursor-pointer ${lang === 'ar' ? 'flex-row-reverse' : ''}`}
+                        className={`bg-white/50 dark:bg-zinc-900/50 backdrop-blur border border-border/50 dark:border-white/5 p-4 rounded-2xl flex items-center justify-between group hover:border-primary/40 transition-all cursor-pointer ${lang === 'ar' ? 'flex-row-reverse' : ''}`}
                         onClick={() => setSelectedSignal(s)}
                     >
                         <div className={`flex items-center gap-3 ${lang === 'ar' ? 'flex-row-reverse text-right' : ''}`}>
@@ -275,12 +275,12 @@ export default function AuraRadar() {
                                 {s.type === 'BUY' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                             </div>
                             <div>
-                                <div className="text-sm font-black text-white">{s.pair}</div>
-                                <div className="text-[10px] text-gray-500">{s.time}</div>
+                                <div className="text-sm font-black text-foreground">{s.pair}</div>
+                                <div className="text-[10px] text-muted-foreground">{s.time}</div>
                             </div>
                         </div>
                         <div className={lang === 'ar' ? 'text-left' : 'text-right'}>
-                            <div className="text-xs font-mono font-bold text-white">{s.price}</div>
+                            <div className="text-xs font-mono font-bold text-foreground">{s.price}</div>
                             <div className="text-[10px] text-primary font-bold">{s.strength}%</div>
                         </div>
                     </motion.div>
