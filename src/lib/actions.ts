@@ -576,4 +576,45 @@ export async function getSharedPrices(requestedPairs: string[]) {
   }
 }
 
+export async function getMarketCorrelations() {
+  const apiKey = process.env.FINNHUB_API_KEY;
+  if (!apiKey) return null;
+
+  const symbols = [
+    { key: 'EURUSD', id: 'IC MARKETS:EURUSD' }, // Using a broker prefix often helps with Finnhub forex if plain pair fails, but let's try standard first or OANDA
+    // Actually, Finnhub uses 'OANDA:EUR_USD' or just 'BINANCE:BTCUSDT'. 
+    // Let's use generic symbols that usually map well or specific ones.
+    { key: 'EURUSD', id: 'EUR/USD' },
+    { key: 'GOLD', id: 'XAU/USD' },
+    { key: 'SPY', id: 'SPY' },
+    { key: 'BTC', id: 'BTC/USD' }
+  ];
+
+  try {
+    const promises = symbols.map(async (sym) => {
+      let querySymbol = sym.id;
+      // Finnhub symbol normalization
+      if (sym.key === 'BTC') querySymbol = 'BINANCE:BTCUSDT';
+      else if (sym.key === 'GOLD') querySymbol = 'OANDA:XAU_USD';
+      else if (sym.key === 'EURUSD') querySymbol = 'OANDA:EUR_USD';
+      // SPY is just SPY
+
+      const url = `https://finnhub.io/api/v1/quote?symbol=${querySymbol}&token=${apiKey}`;
+      const res = await fetch(url, { next: { revalidate: 5 } }); // Update every 5s (Aggressive)
+      const data = await res.json();
+
+      return {
+        key: sym.key,
+        change: typeof data.dp === 'number' ? data.dp : 0
+      };
+    });
+
+    const results = await Promise.all(promises);
+    return results;
+  } catch (error) {
+    console.error("Failed to fetch correlations", error);
+    return [];
+  }
+}
+
 
