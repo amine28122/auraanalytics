@@ -541,7 +541,7 @@ export function UnifiedAnalysis() {
             status: 'PENDING',
             image: compressedBase64,
             schools: selectedSchools,
-            analysis: state.data.analysisSummary || "",
+            analysis: state.data?.analysisSummary || "",
             orderType: signal.orderType,
             entryLabel: signal.entryPrice,
             createdAt: serverTimestamp(),
