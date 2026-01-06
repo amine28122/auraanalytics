@@ -46,7 +46,7 @@ const translations = {
         selectPaymentDesc: 'Choose how you would like to pay for the Premium plan.',
         requestPending: 'Request Pending',
         requestPendingDesc: 'Your activation request is currently under review. We will notify you once it is approved.',
-        newYearOffer: "NEW YEAR'S",
+        newYearOffer: "LIMITED",
         newYearOfferSub: 'OFFER',
         days: 'Days',
         hours: 'Hours',
@@ -75,8 +75,8 @@ const translations = {
         selectPaymentDesc: 'اختر كيف ترغب في الدفع مقابل الخطة المميزة.',
         requestPending: 'الطلب قيد المراجعة',
         requestPendingDesc: 'طلب التفعيل الخاص بك قيد المراجعة حاليًا. سنقوم بإعلامك بمجرد الموافقة عليه.',
-        newYearOffer: "NEW YEAR'S",
-        newYearOfferSub: 'OFFER',
+        newYearOffer: "عرض",
+        newYearOfferSub: 'محدود',
         days: 'أيام',
         hours: 'ساعات',
         minutes: 'دقائق',
@@ -104,8 +104,8 @@ const translations = {
         selectPaymentDesc: 'Elija cómo le gustaría pagar el plan Premium.',
         requestPending: 'Solicitud Pendiente',
         requestPendingDesc: 'Su solicitud de activación está actualmente en revisión. Le notificaremos una vez que sea aprobada.',
-        newYearOffer: "NEW YEAR'S",
-        newYearOfferSub: 'OFFER',
+        newYearOffer: "OFERTA",
+        newYearOfferSub: 'LIMITADA',
         days: 'Días',
         hours: 'Horas',
         minutes: 'Minutos',
@@ -114,7 +114,7 @@ const translations = {
 };
 
 const WALLET_ADDRESS = "TBEJ333HrfBnsdJqWn3x2tV5GZ3hY3g5R7";
-const OFFER_END_DATE = '2026-01-01T00:00:00Z';
+const OFFER_END_DATE = '2026-01-21T00:00:00Z';
 
 function SubmitButton({ t, isEnabled }: { t: any, isEnabled: boolean }) {
     const { pending } = useFormStatus();

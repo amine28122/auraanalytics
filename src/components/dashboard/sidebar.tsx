@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Zap, Crown, Gem, User as UserIcon, LogOut, CalendarDays, Activity, Users, Languages, Check, Globe } from 'lucide-react';
+import { Zap, Crown, Gem, User as UserIcon, LogOut, CalendarDays, Activity, Users, Languages, Check, Globe, ChevronRight } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from '../ui/dropdown-menu';
@@ -77,6 +77,7 @@ export function Sidebar() {
   const { firestore } = useFirebase();
   const searchParams = useSearchParams();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed
   const auth = getAuth();
 
 
@@ -194,20 +195,26 @@ export function Sidebar() {
 
 
   return (
-    <div className="hidden h-screen w-72 flex-col bg-sidebar md:flex sticky top-0">
-      <div className="flex h-20 items-center border-b border-sidebar-border px-6">
-        <Link href={`/dashboard?lang=${lang}`} className="flex items-center gap-3">
-          <AuraAcademyLogo iconOnly className="h-10 w-10" />
+    <div className={`hidden flex-col bg-sidebar md:flex fixed left-0 top-16 h-[calc(100vh-64px)] transition-all duration-300 z-20 ${isCollapsed ? 'w-20' : 'w-72'}`}>
+      <div className={`flex h-20 items-center border-b border-sidebar-border ${isCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
+        {!isCollapsed && (
           <span className="font-headline text-xl font-bold text-sidebar-foreground">
             AURA ANALYTICS
           </span>
-        </Link>
+        )}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-2 rounded-md hover:bg-sidebar-accent transition-colors"
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          <ChevronRight className={`h-5 w-5 text-sidebar-foreground transition-transform ${!isCollapsed ? 'rotate-180' : ''}`} />
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <SidebarNav lang={lang as 'en' | 'ar' | 'es'} className="px-4 py-2" />
+        <SidebarNav lang={lang as 'en' | 'ar' | 'es'} className="px-4 py-2" isCollapsed={isCollapsed} />
       </div>
       <div className="p-4 mt-auto border-t border-sidebar-border/50">
-        {userProfile?.plan === 'Free' ? (
+        {!isCollapsed && userProfile?.plan === 'Free' ? (
           <Card className="bg-sidebar-accent/50 border-sidebar-border">
             <CardHeader className="p-4 text-center">
               <CardTitle className="flex items-center justify-center gap-2 text-base text-sidebar-foreground">
@@ -224,7 +231,7 @@ export function Sidebar() {
               </Button>
             </CardContent>
           </Card>
-        ) : (
+        ) : !isCollapsed ? (
           <Card className="bg-sidebar-accent/50 border-sidebar-border">
             <CardHeader className="p-4 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sidebar-accent">
@@ -238,23 +245,25 @@ export function Sidebar() {
               </CardDescription>
             </CardHeader>
           </Card>
-        )}
+        ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-md px-3 py-3 mt-4 text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-sidebar-ring">
+            <button className={`flex w-full items-center rounded-md px-3 py-3 mt-4 text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-sidebar-ring ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
               <Avatar className="h-9 w-9">
                 <AvatarFallback>
                   <UserIcon className="h-5 w-5 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col items-start">
-                <p className="text-sm font-medium leading-none">
-                  {user?.displayName}
-                </p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
-              </div>
+              {!isCollapsed && (
+                <div className="flex flex-col items-start">
+                  <p className="text-sm font-medium leading-none">
+                    {user?.displayName}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-64 mb-2" side="top" align="start">

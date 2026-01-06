@@ -34,14 +34,16 @@ function DashboardLayoutContent({
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <Sidebar />
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      {/* Full-width Header at the top */}
+      <Header />
 
-      {/* Main Area */}
-      <div className="flex flex-1 flex-col">
-        <Header />
+      {/* Sidebar and Main Content below Header */}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Main Content Area - with left margin for fixed sidebar ONLY on desktop */}
+        <div className="flex flex-1 flex-col overflow-hidden ml-0 md:ml-20">
           <main className="flex-1 overflow-y-auto p-4 md:p-8">
             <ErrorBoundary>
               {children}

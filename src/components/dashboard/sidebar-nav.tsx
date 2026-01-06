@@ -69,8 +69,9 @@ const translations = {
 export function SidebarNav({
   className,
   lang,
+  isCollapsed = false,
   ...props
-}: React.HTMLAttributes<HTMLElement> & { lang: 'en' | 'ar' | 'es' }) {
+}: React.HTMLAttributes<HTMLElement> & { lang: 'en' | 'ar' | 'es'; isCollapsed?: boolean }) {
   const pathname = usePathname();
   const t = translations[lang] || translations.en;
 
@@ -97,18 +98,31 @@ export function SidebarNav({
       key={route.href}
       href={`${route.href}?lang=${lang}`}
       className={cn(
-        'flex items-center gap-4 rounded-lg px-4 py-3 text-base font-semibold text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group relative',
+        'flex items-center rounded-lg px-4 py-3 text-base font-semibold text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group relative',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-        pathname === route.href && 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground'
+        pathname === route.href && 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground',
+        isCollapsed ? 'justify-center' : 'gap-4'
       )}
+      title={isCollapsed ? route.label : undefined}
     >
       <route.icon className="h-5 w-5" />
-      <span className="flex-1">{route.label}</span>
+      {!isCollapsed && (
+        <>
+          <span className="flex-1">{route.label}</span>
 
-      {/* شارة التنبيهات للرادار */}
-      {route.href === '/dashboard/radar' && signalsCount > 0 && (
-        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm animate-pulse">
-          {signalsCount > 9 ? '9+' : signalsCount}
+          {/* شارة التنبيهات للرادار */}
+          {route.href === '/dashboard/radar' && signalsCount > 0 && (
+            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm animate-pulse">
+              {signalsCount > 9 ? '9+' : signalsCount}
+            </span>
+          )}
+        </>
+      )}
+
+      {/* Badge for collapsed mode */}
+      {isCollapsed && route.href === '/dashboard/radar' && signalsCount > 0 && (
+        <span className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-[8px] font-bold text-white">
+          {signalsCount > 9 ? '9' : signalsCount}
         </span>
       )}
     </Link>

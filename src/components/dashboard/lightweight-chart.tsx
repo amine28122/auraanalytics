@@ -9,10 +9,12 @@ interface LightweightChartProps {
     positions: any[];
     selectedPositionId?: number | string | null;
     theme?: 'light' | 'dark';
+    markers?: any[];
+    extraLines?: { price: number; color: string; title: string }[]; // Institutional Levels
     onUpdatePosition?: (id: string | number, updates: { sl?: number | null, tp?: number | null }) => void;
 }
 
-function LightweightChart({ symbol, interval, positions, selectedPositionId, theme = 'dark', onUpdatePosition }: LightweightChartProps) {
+function LightweightChart({ symbol, interval, positions, selectedPositionId, theme = 'dark', markers = [], extraLines = [], onUpdatePosition }: LightweightChartProps) {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartInstance = useRef<IChartApi | null>(null);
     const [series, setSeries] = useState<ISeriesApi<"Candlestick"> | null>(null);
@@ -273,7 +275,7 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         };
     }, [symbol, interval, theme]); // Keep dependencies minimal for chart recreation
 
-    // Update Position Lines
+    // Update Position Lines & Extra Lines
     useEffect(() => {
         if (!series) return;
 
@@ -281,10 +283,9 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         linesRef.current.forEach(line => series.removePriceLine(line));
         linesRef.current = [];
 
-        // Add new lines for each active position
+        // 1. Draw Position Lines
         positions.forEach(pos => {
             const isSelected = pos.id === selectedPositionId;
-            const isLong = pos.type === 'LONG';
             if (pos.symbol !== `${symbol}/USDT`) return; // Only show for current symbol
 
             // Professional persistent colors
@@ -299,7 +300,7 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
                 lineWidth: isSelected ? 2 : 1,
                 lineStyle: isSelected ? 0 : 2, // Solid if selected, Dashed if not
                 axisLabelVisible: true,
-                title: `${isLong ? 'Buy' : 'Sell'} ${pos.lotSize} ${isSelected ? `(${Math.round(pos.pnl)}$)` : ''}`,
+                title: `${pos.type === 'LONG' ? 'Buy' : 'Sell'} ${pos.lotSize} ${isSelected ? `(${Math.round(pos.pnl)}$)` : ''}`,
             }) as any;
             if (priceLine) {
                 priceLine.__type = 'entry';
@@ -307,14 +308,14 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
                 linesRef.current.push(priceLine);
             }
 
-            // Stop Loss Line (Always show for selected, exactly at entry if not set)
+            // Stop Loss Line
             const slPrice = pos.sl || (isSelected ? pos.entryPrice : null);
             if (slPrice) {
                 const slLine = series.createPriceLine({
                     price: slPrice,
-                    color: pos.sl ? slColor : `${slColor}44`, // Faint if at entry
+                    color: pos.sl ? slColor : `${slColor}44`,
                     lineWidth: 1,
-                    lineStyle: 3, // Dotted
+                    lineStyle: 3,
                     axisLabelVisible: isSelected && !!pos.sl,
                     title: isSelected ? (pos.sl ? 'SL' : 'Set SL') : '',
                 }) as any;
@@ -325,14 +326,14 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
                 }
             }
 
-            // Take Profit Line (Always show for selected, exactly at entry if not set)
+            // Take Profit Line
             const tpPrice = pos.tp || (isSelected ? pos.entryPrice : null);
             if (tpPrice) {
                 const tpLine = series.createPriceLine({
                     price: tpPrice,
-                    color: pos.tp ? tpColor : `${tpColor}44`, // Faded if ghost
+                    color: pos.tp ? tpColor : `${tpColor}44`,
                     lineWidth: 1,
-                    lineStyle: 3, // Dotted
+                    lineStyle: 3,
                     axisLabelVisible: isSelected && !!pos.tp,
                     title: isSelected ? (pos.tp ? 'TP' : 'Set TP') : '',
                 }) as any;
@@ -344,7 +345,38 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             }
         });
 
-    }, [positions, selectedPositionId, symbol, series]);
+        // 2. Draw Institutional Levels (Extra Lines)
+        extraLines.forEach(line => {
+            const pl = series.createPriceLine({
+                price: line.price,
+                color: line.color,
+                lineWidth: 2,
+                lineStyle: 0, // Solid
+                title: line.title,
+                axisLabelVisible: true,
+            }) as any;
+            if (pl) {
+                pl.__type = 'extra';
+                linesRef.current.push(pl);
+            }
+        });
+
+    }, [positions, selectedPositionId, symbol, series, extraLines]);
+
+    // Update Markers (Signals)
+    useEffect(() => {
+        if (series) {
+            try {
+                // Safety check: ensure setMarkers exists before calling
+                const s = series as any;
+                if (typeof s.setMarkers === 'function') {
+                    s.setMarkers(markers);
+                }
+            } catch (e) {
+                console.warn("Failed to set markers:", e);
+            }
+        }
+    }, [series, markers]);
 
     return (
         <div ref={chartContainerRef} className="w-full h-full relative" />

@@ -18,63 +18,63 @@ import Script from 'next/script';
 // It does not require user authentication.
 
 const translations = {
-  en: {
-    cryptoTitle: 'Pay with Crypto',
-    cryptoDescription: 'Send the equivalent of $50 to the USDT (TRC20) address below. After payment, you must sign up or log in to submit your transaction proof.',
-    walletAddress: 'Wallet Address (USDT TRC20)',
-    copy: 'Copy',
-    copied: 'Copied!',
-    cardTitle: 'Pay with Bank Card',
-    cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must sign up or log in to submit your proof for manual activation.',
-    payNow: 'Pay Now ($50)',
-    loginToSubmit: 'Log In to Submit Proof',
-    loginRequired: 'Login Required',
-    loginRequiredDesc: 'Please log in to your account to submit your payment proof and activate your premium plan.',
-    newYearOffer: "NEW YEAR'S",
-    newYearOfferSub: 'OFFER',
-    days: 'Days',
-    hours: 'Hours',
-    minutes: 'Mins',
-    seconds: 'Secs',
-  },
-  // Add other languages if needed
+    en: {
+        cryptoTitle: 'Pay with Crypto',
+        cryptoDescription: 'Send the equivalent of $50 to the USDT (TRC20) address below. After payment, you must sign up or log in to submit your transaction proof.',
+        walletAddress: 'Wallet Address (USDT TRC20)',
+        copy: 'Copy',
+        copied: 'Copied!',
+        cardTitle: 'Pay with Bank Card',
+        cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must sign up or log in to submit your proof for manual activation.',
+        payNow: 'Pay Now ($50)',
+        loginToSubmit: 'Log In to Submit Proof',
+        loginRequired: 'Login Required',
+        loginRequiredDesc: 'Please log in to your account to submit your payment proof and activate your premium plan.',
+        newYearOffer: "LIMITED",
+        newYearOfferSub: 'OFFER',
+        days: 'Days',
+        hours: 'Hours',
+        minutes: 'Mins',
+        seconds: 'Secs',
+    },
+    // Add other languages if needed
 };
 
 const WALLET_ADDRESS = "TBEJ333HrfBnsdJqWn3x2tV5GZ3hY3g5R7";
-const OFFER_END_DATE = '2026-01-01T00:00:00Z';
+const OFFER_END_DATE = '2026-01-21T00:00:00Z';
 
 
 function CryptoPaymentInfo({ t }: { t: any }) {
     const [isCopied, setIsCopied] = useState(false);
 
     const handleCopy = () => {
-      navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      });
+        navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        });
     };
 
     return (
         <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t.walletAddress}</label>
-              <div className="flex items-center gap-2">
-                  <Input 
-                      readOnly 
-                      value={WALLET_ADDRESS} 
-                      className="font-mono text-sm"
-                  />
-                  <Button type="button" variant="outline" size="icon" onClick={handleCopy}>
-                      {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-              </div>
-              {isCopied && <p className="text-xs text-green-500 text-center">{t.copied}</p>}
+                <label className="text-sm font-medium">{t.walletAddress}</label>
+                <div className="flex items-center gap-2">
+                    <Input
+                        readOnly
+                        value={WALLET_ADDRESS}
+                        className="font-mono text-sm"
+                    />
+                    <Button type="button" variant="outline" size="icon" onClick={handleCopy}>
+                        {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                </div>
+                {isCopied && <p className="text-xs text-green-500 text-center">{t.copied}</p>}
             </div>
-             <Alert>
+            <Alert>
                 <Info className="h-4 w-4" />
                 <AlertTitle>{t.loginRequired}</AlertTitle>
                 <AlertDescription>
-                 {t.loginRequiredDesc}
+                    {t.loginRequiredDesc}
                 </AlertDescription>
             </Alert>
             <Button asChild className="w-full">
@@ -99,11 +99,11 @@ function CardPaymentInfo({ t }: { t: any }) {
         <div className="space-y-4 text-center">
             <p>{t.cardDescription}</p>
             <Button onClick={handlePayNowClick} className="w-full">{t.payNow}</Button>
-             <Alert>
+            <Alert>
                 <Info className="h-4 w-4" />
                 <AlertTitle>{t.loginRequired}</AlertTitle>
                 <AlertDescription>
-                 {t.loginRequiredDesc}
+                    {t.loginRequiredDesc}
                 </AlertDescription>
             </Alert>
             <Button asChild className="w-full" variant="secondary">
@@ -145,16 +145,16 @@ function UpgradeDialog({ children, t }: { children: React.ReactNode, t: any }) {
             </div>
         );
     };
-    
+
     const getDialogTitle = () => {
         if (paymentMethod === 'crypto') return t.cryptoTitle;
         if (paymentMethod === 'card') return t.cardTitle;
         return "Select Payment Method";
     };
-    
+
     const getDialogDescription = () => {
         if (paymentMethod === 'crypto') return t.cryptoDescription;
-        if (paymentMethod === 'card') return ""; 
+        if (paymentMethod === 'card') return "";
         return "Choose how you would like to pay for the Premium plan.";
     };
 
@@ -204,11 +204,11 @@ const CountdownTimer = ({ t }: { t: any }) => {
 
     Object.keys(timeLeft).forEach((interval) => {
         if (!(timeLeft as any)[interval]) {
-             if (Object.keys(timeLeft).length > 1 && interval === 'seconds') {
+            if (Object.keys(timeLeft).length > 1 && interval === 'seconds') {
                 // If it is not the only interval, we should show it even if it's 0
-             } else {
+            } else {
                 return;
-             }
+            }
         }
 
         timerComponents.push(
@@ -233,87 +233,87 @@ const CountdownTimer = ({ t }: { t: any }) => {
 
 export default function PublicPricingPage() {
     const initialPlans = [
-      {
-        name: 'Free',
-        price: '$0',
-        description: 'Perfect for getting started',
-        features: ['1 analysis per day', 'Basic chart tools', 'Email support'],
-        cta: 'Get Started',
-        ctaLink: '/auth',
-      },
-      {
-        name: 'Premium',
-        price: '$50',
-        originalPrice: '$100',
-        discount: '-50%',
-        description: 'For active traders',
-        features: [
-          '5 analyses per day',
-          'Advanced chart tools',
-          'Priority email support',
-          'Access to exclusive webinars',
-        ],
-        cta: 'Upgrade to Premium',
-        isPrimary: true,
-        isOffer: true,
-      },
-      {
-        name: 'Aura Plan',
-        price: 'Contact Us',
-        description: 'For institutions and professionals',
-        features: [
-          'Unlimited analyses',
-          'All Premium features',
-          'Direct line to analysts',
-          'Personalized strategy sessions',
-        ],
-        cta: 'Contact for Access',
-        ctaLink: 'https://tawk.to/youssef.bennani99',
-        isExternal: true
-      },
+        {
+            name: 'Free',
+            price: '$0',
+            description: 'Perfect for getting started',
+            features: ['1 analysis per day', 'Basic chart tools', 'Email support'],
+            cta: 'Get Started',
+            ctaLink: '/auth',
+        },
+        {
+            name: 'Premium',
+            price: '$50',
+            originalPrice: '$100',
+            discount: '-50%',
+            description: 'For active traders',
+            features: [
+                '5 analyses per day',
+                'Advanced chart tools',
+                'Priority email support',
+                'Access to exclusive webinars',
+            ],
+            cta: 'Upgrade to Premium',
+            isPrimary: true,
+            isOffer: true,
+        },
+        {
+            name: 'Aura Plan',
+            price: 'Contact Us',
+            description: 'For institutions and professionals',
+            features: [
+                'Unlimited analyses',
+                'All Premium features',
+                'Direct line to analysts',
+                'Personalized strategy sessions',
+            ],
+            cta: 'Contact for Access',
+            ctaLink: 'https://tawk.to/youssef.bennani99',
+            isExternal: true
+        },
     ];
 
     const lang: keyof typeof translations = 'en'; // Default to English for public page
     const t = translations[lang];
 
     const pricingSchema = {
-      "@context": "https://schema.org",
-      "@type": "ItemList",
-      "name": "AURA Pricing Plans",
-      "itemListElement": initialPlans.filter(p => p.price.startsWith('$')).map((plan, index) => ({
-        "@type": "ListItem",
-        "position": index + 1,
-        "item": {
-          "@type": "Product",
-          "name": `AURA - ${plan.name} Plan`,
-          "description": plan.description,
-          "offers": {
-            "@type": "Offer",
-            "price": plan.price.replace('$', '').split(' ')[0],
-            "priceCurrency": "USD",
-            "name": plan.name,
-            "description": plan.features.join('. '),
-            "availability": "https://schema.org/OnlineOnly",
-            "priceValidUntil": "2025-12-31"
-          }
-        }
-      }))
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "AURA Pricing Plans",
+        "itemListElement": initialPlans.filter(p => p.price.startsWith('$')).map((plan, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+                "@type": "Product",
+                "name": `AURA - ${plan.name} Plan`,
+                "description": plan.description,
+                "offers": {
+                    "@type": "Offer",
+                    "price": plan.price.replace('$', '').split(' ')[0],
+                    "priceCurrency": "USD",
+                    "name": plan.name,
+                    "description": plan.features.join('. '),
+                    "availability": "https://schema.org/OnlineOnly",
+                    "priceValidUntil": "2025-12-31"
+                }
+            }
+        }))
     };
-    
+
 
     return (
         <div className="min-h-screen bg-background">
-             <Script
-              id="pricing-schema"
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingSchema) }}
+            <Script
+                id="pricing-schema"
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingSchema) }}
             />
             <header className="flex items-center justify-between p-4 border-b">
-                 <Link href="/" className="flex items-center gap-3">
+                <Link href="/" className="flex items-center gap-3">
                     <AuraAcademyLogo iconOnly className="h-10 w-10" />
                     <span className="font-headline text-2xl font-bold">AURA</span>
                 </Link>
-                 <Button asChild>
+                <Button asChild>
                     <Link href="/auth">Sign In</Link>
                 </Button>
             </header>
@@ -338,16 +338,16 @@ export default function PublicPricingPage() {
                                         </Button>
                                     );
                                 }
-                                
+
                                 return (
-                                   <UpgradeDialog t={t}>
-                                     <Button
-                                        className="w-full"
-                                        variant={plan.isPrimary ? 'default' : 'secondary'}
-                                      >
-                                        {plan.cta}
-                                      </Button>
-                                   </UpgradeDialog>
+                                    <UpgradeDialog t={t}>
+                                        <Button
+                                            className="w-full"
+                                            variant={plan.isPrimary ? 'default' : 'secondary'}
+                                        >
+                                            {plan.cta}
+                                        </Button>
+                                    </UpgradeDialog>
                                 );
                             };
 
@@ -367,15 +367,15 @@ export default function PublicPricingPage() {
                                     )}
                                     <CardHeader className="text-center">
                                         <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                                         <div className="flex flex-col items-center justify-center">
+                                        <div className="flex flex-col items-center justify-center">
                                             <div className="flex items-baseline gap-2">
-                                              <p className="text-4xl font-bold">{plan.price}</p>
-                                              {plan.discount && <Badge variant="destructive">{plan.discount}</Badge>}
+                                                <p className="text-4xl font-bold">{plan.price}</p>
+                                                {plan.discount && <Badge variant="destructive">{plan.discount}</Badge>}
                                             </div>
                                             {plan.originalPrice && (
                                                 <span className="text-lg text-muted-foreground line-through">{plan.originalPrice}</span>
                                             )}
-                                         </div>
+                                        </div>
                                         <CardDescription>{plan.description}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex-grow">

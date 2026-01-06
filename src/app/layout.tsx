@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
 
 // IMPORTANT: Replace with your actual production URL
 const AURA_APP_URL = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.auraanalyticspro.com');
@@ -141,6 +142,7 @@ export default function RootLayout({
           {children}
         </LanguageProvider>
         <Toaster />
+        <WhatsAppButton />
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7139106139007097"
@@ -162,19 +164,7 @@ export default function RootLayout({
             gtag('config', 'G-26JEWQ7ZDV');
           `}
         </Script>
-        <Script id="tawk-to-script" strategy="lazyOnload">
-          {`
-            var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-            (function(){
-            var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-            s1.async=true;
-            s1.src='https://embed.tawk.to/68bf7efe791cb1192942bd2e/1j4m0g4lv';
-            s1.charset='UTF-8';
-            s1.setAttribute('crossorigin','*');
-            s0.parentNode.insertBefore(s1,s0);
-            })();
-          `}
-        </Script>
+
       </body>
     </html>
   );
