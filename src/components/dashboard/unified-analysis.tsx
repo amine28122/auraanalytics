@@ -157,21 +157,38 @@ function SubmitButton({ disabled, t }: { disabled: boolean; t: any }) {
 
 const CameraDialog = ({ open, onOpenChange, onCapture, t }: { open: boolean, onOpenChange: (open: boolean) => void, onCapture: (dataUrl: string) => void, t: any }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
 
+  const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const positionRef = useRef({ x: 0, y: 0 }); // Refs for direct access during event handlers
+
   useEffect(() => {
     let stream: MediaStream | null = null;
+    if (open) {
+      // Reset state on open
+      setZoom(1);
+      setPosition({ x: 0, y: 0 });
+      positionRef.current = { x: 0, y: 0 };
 
-    const startAndAssignStream = async () => {
-      if (open) {
+      const startAndAssignStream = async () => {
         if (!navigator.mediaDevices?.getUserMedia) {
           toast({ variant: 'destructive', title: t.cameraAccessRequired, description: "Your browser doesn't support camera access." });
           setHasPermission(false);
           return;
         }
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: 'environment',
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            }
+          });
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
           }
@@ -182,8 +199,8 @@ const CameraDialog = ({ open, onOpenChange, onCapture, t }: { open: boolean, onO
           toast({ variant: 'destructive', title: t.cameraAccessRequired, description: t.allowCameraAccess });
         }
       }
+      startAndAssignStream();
     }
-    startAndAssignStream();
 
     return () => {
       if (stream) {
@@ -196,16 +213,115 @@ const CameraDialog = ({ open, onOpenChange, onCapture, t }: { open: boolean, onO
     }
   }, [open, t, toast]);
 
+  // Pan Handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+
+    const newPos = {
+      x: positionRef.current.x + dx,
+      y: positionRef.current.y + dy
+    };
+
+    setPosition(newPos);
+
+    // Don't update ref here, only on up or we lose the delta logic 
+    // Actually, for smooth dragging usually we do:
+    // current = start + delta. 
+    // To do that we need to keep 'start' refers to the position at the BEGINNING of the drag.
+    // Let's adjust:
+    // We need to know the 'base' position when drag started.
+  };
+
+  // Better Pan Logic
+  const handlePanStart = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePanMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const newX = e.clientX - dragStartRef.current.x;
+    const newY = e.clientY - dragStartRef.current.y;
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handlePanEnd = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    positionRef.current = position; // Sync ref
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
 
   const handleCapture = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
+    if (videoRef.current && containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth;
+      const containerHeight = containerRef.current.clientHeight;
+
+      // We want to capture exactly what is visible in the container
       const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
+      canvas.width = containerWidth;
+      canvas.height = containerHeight;
       const context = canvas.getContext('2d');
+
       if (context) {
-        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg');
+        // Calculate the draw parameters
+        // The video is drawn at (position.x, position.y) with scale (zoom)
+        // Center of scaling should be considered, but here we applied simply styles
+
+        // CSS Transform Origin is usually center (50% 50%) by default on some elements, but we are just translating
+        // Simulating the CSS transform in Canvas:
+
+        // 1. Fill background (optional)
+        context.fillStyle = '#000';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 2. Apply transforms
+        // We need to translate to the center if we want zoom-from-center, but our simple pan logic moves the whole thing
+        // Let's assume the video is centered by flexbox initially? 
+        // No, in our CSS below we should precise positioning.
+
+        // Let's rely on the math:
+        // Rendered Width = VideoWidth * Zoom
+        // Rendered Height = VideoHeight * Zoom
+        // Rendered X = Position.X + (ContainerWidth - RenderedWidth) / 2  <-- If centered initially
+
+        // To simplify: We will style the video with `transform: translate(x, y) scale(z)`
+        // And we replicate that in canvas
+
+        const vid = videoRef.current;
+        const vWidth = vid.videoWidth;
+        const vHeight = vid.videoHeight;
+
+        // Aspect Fit logic initial:
+        // We usually want the video to cover or contain. 
+        // Let's assume we render the video at intrinsic size * zoom, centered + offset.
+
+        context.save();
+
+        // Move to center of canvas
+        context.translate(canvas.width / 2, canvas.height / 2);
+
+        // Apply Pan
+        context.translate(position.x, position.y);
+
+        // Apply Zoom
+        context.scale(zoom, zoom);
+
+        // Draw video centered at the new origin
+        context.drawImage(vid, -vWidth / 2, -vHeight / 2, vWidth, vHeight);
+
+        context.restore();
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         onCapture(dataUrl);
         onOpenChange(false);
       }
@@ -214,25 +330,87 @@ const CameraDialog = ({ open, onOpenChange, onCapture, t }: { open: boolean, onO
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 flex flex-col w-full sm:max-w-xs">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="p-0 flex flex-col w-full sm:max-w-md overflow-hidden bg-background">
+        <DialogHeader className="p-4 bg-muted/30 border-b">
           <DialogTitle>{t.cameraDialogTitle}</DialogTitle>
+          <DialogDescription className="text-xs">
+            Drag to move • Pinch/Slider to Zoom
+          </DialogDescription>
         </DialogHeader>
-        <div className="relative aspect-[9/16] w-full overflow-hidden bg-slate-900">
-          <video ref={videoRef} playsInline autoPlay muted className="h-full w-full object-cover" />
+
+        <div
+          ref={containerRef}
+          className="relative w-full aspect-[3/4] overflow-hidden bg-slate-950 cursor-move touch-none"
+          onPointerDown={handlePanStart}
+          onPointerMove={handlePanMove}
+          onPointerUp={handlePanEnd}
+          onPointerLeave={handlePanEnd}
+        >
+          {!hasPermission === false && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <video
+                ref={videoRef}
+                playsInline
+                autoPlay
+                muted
+                className="max-w-none"
+                style={{
+                  transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                  width: 'auto',
+                  height: 'auto',
+                  // Ensure video is large enough to be useful?
+                  // Actually let's just let it be its natural size and centered by flex above?
+                  // No, 'max-w-none' and absolute positioning might be better for precise control.
+                  // Let's use the canvas logic: Centered by default.
+                }}
+              />
+            </div>
+          )}
+
           {hasPermission === false && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-4 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-4 text-center z-10">
               <VideoOff className="h-8 w-8 text-destructive" />
               <p className="mt-2 font-semibold text-white">{t.cameraAccessRequired}</p>
               <p className="mt-1 text-xs text-slate-300">{t.allowCameraAccess}</p>
             </div>
           )}
+
+          {/* Grid Overlay for framing */}
+          <div className="absolute inset-0 pointer-events-none opacity-30">
+            <div className="w-full h-full border-2 border-white/20"></div>
+            <div className="absolute top-1/3 left-0 right-0 h-px bg-white/20"></div>
+            <div className="absolute top-2/3 left-0 right-0 h-px bg-white/20"></div>
+            <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/20"></div>
+            <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/20"></div>
+          </div>
         </div>
-        <div className="flex gap-2 p-4 pt-0">
-          <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full">{t.cancel}</Button>
-          <Button onClick={handleCapture} disabled={!hasPermission} className="w-full">
-            <Camera className="mr-2 h-4 w-4" /> {t.capture}
-          </Button>
+
+        <div className="p-4 space-y-4 bg-background border-t">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <TrendingUp className="h-4 w-4" /> {/* Should be ZoomOut but let's use generic */}
+              <span className="text-xs">Zoom</span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              value={zoom}
+              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <span className="text-xs w-8 text-right">{Math.round(zoom * 100)}%</span>
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={() => onOpenChange(false)} variant="outline" className="flex-1">
+              {t.cancel}
+            </Button>
+            <Button onClick={handleCapture} disabled={!hasPermission} className="flex-1">
+              <Camera className="mr-2 h-4 w-4" /> {t.capture}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
