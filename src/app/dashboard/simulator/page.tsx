@@ -60,6 +60,15 @@ export default function SimulatorPage() {
     const [history, setHistory] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
+
+    const formatSymbol = (s: string) => {
+        if (!s) return '';
+        const base = s.split('/')[0].toUpperCase();
+        if (base === 'PAXG') return 'GOLD';
+        if (base === 'EUR') return 'EUR/USD';
+        if (base === 'GBP') return 'GBP/USD';
+        return s.includes('/') ? s : `${s}/USDT`;
+    };
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [markers, setMarkers] = useState<any[]>([]);
     const [extraLines, setExtraLines] = useState<any[]>([]);
@@ -453,7 +462,7 @@ export default function SimulatorPage() {
 
             toast({
                 title: `${reason} Triggered`,
-                description: `${pos.type} position on ${pos.symbol} closed. P&L: ${finalPnl.toFixed(2)}$`,
+                description: `${pos.type} position on ${formatSymbol(pos.symbol)} closed. P&L: ${finalPnl.toFixed(2)}$`,
                 variant: finalPnl >= 0 ? "default" : "destructive",
             });
 
@@ -489,7 +498,7 @@ export default function SimulatorPage() {
 
             toast({
                 title: "Trade Opened",
-                description: `${type} ${lotSize} lot on ${symbol} at ${currentPrice.toFixed(2)}`,
+                description: `${type} ${lotSize} lot on ${formatSymbol(symbol)} at ${currentPrice.toFixed(2)}`,
             });
         } catch (error) {
             console.error("Trade failed:", error);
@@ -597,7 +606,7 @@ export default function SimulatorPage() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between shrink-0 px-2 md:px-0">
                     <div>
                         <h1 className="text-xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                            {symbol === 'PAXG' ? 'GOLD' : symbol === 'EUR' ? 'EUR/USD' : symbol === 'GBP' ? 'GBP/USD' : `${symbol}/USDT`}
+                            {formatSymbol(symbol)}
                             <span className="flex items-center text-[10px] md:text-sm font-normal text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-md whitespace-nowrap">
                                 <RefreshCcw className="w-3 h-3 mr-1 animate-spin-slow" /> Live
                             </span>
@@ -614,7 +623,7 @@ export default function SimulatorPage() {
                                     size="sm"
                                     className="h-8 text-[11px] md:text-sm"
                                 >
-                                    {s === 'PAXG' ? 'GOLD' : s === 'EUR' ? 'EUR/USD' : s === 'GBP' ? 'GBP/USD' : s}
+                                    {formatSymbol(s)}
                                 </Button>
                             ))}
                         </div>
@@ -738,7 +747,7 @@ export default function SimulatorPage() {
                                     {/* Simplified Price Display */}
                                     <div className="flex items-center justify-between p-3 rounded-2xl bg-muted/20 border border-border">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{symbol} / USDT</span>
+                                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{formatSymbol(symbol)}</span>
                                             <span className="text-[8px] text-primary/50 font-bold uppercase tracking-tighter">Real-time Feed</span>
                                         </div>
                                         <div className={`text-2xl font-mono font-black tabular-nums tracking-tighter ${priceColor}`}>
@@ -864,7 +873,7 @@ export default function SimulatorPage() {
                                             <div key={pos.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-xl mb-2 border border-border hover:border-primary/20 transition-all group">
                                                 <div className="flex flex-col">
                                                     <div className="font-bold text-sm tracking-tighter flex items-center gap-2">
-                                                        {pos.symbol}
+                                                        {formatSymbol(pos.symbol)}
                                                         <Badge className={pos.type === 'LONG' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20 text-[9px] font-black'}>
                                                             {pos.type}
                                                         </Badge>
@@ -885,7 +894,7 @@ export default function SimulatorPage() {
                                         <div key={pos.id} className="flex items-center justify-between p-3 bg-muted/10 rounded-xl mb-2 border border-border opacity-70 hover:opacity-100 transition-all">
                                             <div>
                                                 <div className="font-bold text-sm flex items-center gap-2">
-                                                    {pos.symbol}
+                                                    {formatSymbol(pos.symbol)}
                                                     <span className={`text-[10px] font-black ${pos.type === 'LONG' ? 'text-green-500' : 'text-red-500'}`}>{pos.type}</span>
                                                 </div>
                                                 <div className="text-[10px] text-muted-foreground font-medium">{new Date(pos.closedAt?.toDate ? pos.closedAt.toDate() : pos.closedAt).toLocaleTimeString()}</div>
