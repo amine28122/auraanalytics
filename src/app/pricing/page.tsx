@@ -20,13 +20,13 @@ import Script from 'next/script';
 const translations = {
     en: {
         cryptoTitle: 'Pay with Crypto',
-        cryptoDescription: 'Send the equivalent of $50 to the USDT (TRC20) address below. After payment, you must sign up or log in to submit your transaction proof.',
+        cryptoDescription: 'Send the equivalent of $100 to the USDT (TRC20) address below. After payment, you must sign up or log in to submit your transaction proof.',
         walletAddress: 'Wallet Address (USDT TRC20)',
         copy: 'Copy',
         copied: 'Copied!',
         cardTitle: 'Pay with Bank Card',
         cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must sign up or log in to submit your proof for manual activation.',
-        payNow: 'Pay Now ($50)',
+        payNow: 'Pay Now ($100)',
         loginToSubmit: 'Log In to Submit Proof',
         loginRequired: 'Login Required',
         loginRequiredDesc: 'Please log in to your account to submit your payment proof and activate your premium plan.',
@@ -243,8 +243,8 @@ export default function PublicPricingPage() {
         },
         {
             name: 'Premium',
-            price: '$50',
-            originalPrice: '$100',
+            price: '$100',
+            originalPrice: '$200',
             discount: '-50%',
             description: 'For active traders',
             features: [
