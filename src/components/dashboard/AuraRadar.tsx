@@ -110,13 +110,45 @@ export default function AuraRadar() {
         }
     };
 
-    // 1. Data Polling Hook (Stable order)
+    // 1. Data Polling & Price Fallback
     useEffect(() => {
-        fetchRadarData();
-        const intervalTime = highAlertMode ? 2000 : 10000;
-        const intv = setInterval(fetchRadarData, intervalTime);
+        const fastPriceScan = async () => {
+            // Priority 0: Try direct client-side fetch from Binance (Bypasses Vercel IP blocks)
+            try {
+                const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
+                if (res.ok) {
+                    const data = await res.json();
+                    const p = parseFloat(data.price);
+                    if (p > 0) {
+                        setLastGoldPrice(goldPrice || p);
+                        setGoldPrice(p);
+                        return; // Found real price, skip server poll for this frame
+                    }
+                }
+            } catch (e) { }
+
+            // Priority 1: Server Side Poll (Syncs with news/database)
+            fetchRadarData();
+        };
+
+        fastPriceScan();
+        const intervalTime = highAlertMode ? 3000 : 15000;
+        const intv = setInterval(fastPriceScan, intervalTime);
         return () => clearInterval(intv);
-    }, [highAlertMode]);
+    }, [highAlertMode, goldPrice]);
+
+    // 2. News Processing & Secondary Data
+    useEffect(() => {
+        const fetchNewsOnly = async () => {
+            const newsRes = await getEconomicCalendar();
+            if (newsRes.success) {
+                setNewsEvents(newsRes.items as NewsEvent[]);
+            }
+        };
+        fetchNewsOnly();
+        const intv = setInterval(fetchNewsOnly, 60000);
+        return () => clearInterval(intv);
+    }, []);
 
     // 2. Countdown & Impact Hook (Stable order)
     useEffect(() => {
