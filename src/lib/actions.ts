@@ -714,4 +714,92 @@ export async function getMarketCorrelations() {
   }
 }
 
+export async function getNews(lang: 'en' | 'ar' | 'es' = 'en') {
+  const parser = new Parser({
+    customFields: {
+      item: [
+        ['media:content', 'mediaContent'],
+        ['content:encoded', 'contentEncoded'],
+        ['description', 'description'],
+      ],
+    },
+  });
 
+  const feeds = {
+    en: [
+      'https://search.cnbc.com/rs/search/view.rss?partnerId=2000&keywords=forex',
+      'https://feeds.content.reuters.com/reuters/UKBusinessNews',
+      'https://www.dailyfx.com/feeds/market-news',
+      'https://www.fxstreet.com/rss/news'
+    ],
+    ar: [
+      'https://www.skynewsarabia.com/rss/v1/business.xml',
+      'https://sa.investing.com/rss/news_95.rss'
+    ],
+    es: [
+      'https://es.investing.com/rss/news_95.rss'
+    ]
+  };
+
+  const selectedFeeds = feeds[lang] || feeds.en;
+
+  for (const url of selectedFeeds) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+        },
+        next: { revalidate: 600 }
+      });
+
+      if (!response.ok) continue;
+
+      const xml = await response.text();
+      const feed = await parser.parseString(xml);
+
+      const items = feed.items.map(item => {
+        let imageUrl = '';
+
+        // Comprehensive Check for images in various RSS namespaces
+        if (item.mediaContent?.$?.url) imageUrl = item.mediaContent.$.url;
+        else if (Array.isArray(item.mediaContent) && item.mediaContent[0]?.$.url) imageUrl = item.mediaContent[0].$.url;
+        else if (item.enclosure?.url) imageUrl = item.enclosure.url;
+        else {
+          const combinedContent = (item.contentEncoded || '') + (item.description || '') + (item.content || '');
+          const imgMatch = combinedContent.match(/<img[^>]+src="([^">]+)"/);
+          if (imgMatch) imageUrl = imgMatch[1];
+        }
+
+        // Filter out known blocked domains (fxstreet/investing often block hotlinks)
+        if (imageUrl && (imageUrl.includes('fxstreet') || imageUrl.includes('investing.com'))) {
+          imageUrl = ''; // Trigger fallback for better aesthetic
+        }
+
+        if (imageUrl && imageUrl.startsWith('//')) imageUrl = 'https:' + imageUrl;
+
+        // Smart Category-based Fallback
+        const itemTitle = item.title || 'Market Update';
+        const lowerTitle = itemTitle.toLowerCase();
+        let fallback = 'https://images.unsplash.com/photo-1611974714024-462cd99c3623?q=80&w=800'; // Default Forex
+        if (lowerTitle.includes('gold') || lowerTitle.includes('xau')) fallback = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800'; // Gold
+        else if (lowerTitle.includes('fed') || lowerTitle.includes('bank')) fallback = 'https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?q=80&w=800'; // Banking
+
+        return {
+          title: itemTitle,
+          link: item.link || '#',
+          pubDate: item.pubDate,
+          isoDate: item.isoDate,
+          contentSnippet: (item.contentSnippet || item.description || item.content || '').replace(/<[^>]*>?/gm, '').slice(0, 150) + '...',
+          imageUrl: imageUrl || fallback
+        };
+      });
+
+      if (items.length > 0) return { success: true, items };
+    } catch (error) {
+      console.warn(`Feed error: ${url}`);
+    }
+  }
+
+  return { success: false, error: 'Could not fetch news.' };
+}
