@@ -92,8 +92,10 @@ export default function AuraRadar() {
     };
 
     const handleNewsRelease = async (event: NewsEvent) => {
-        const actualVal = event.actual || (Math.random() > 0.5 ? (parseFloat(event.forecast) + 0.1).toString() : (parseFloat(event.forecast) - 0.1).toString());
-        const sentiment = await getGoldSentiment(event.id, actualVal, event.forecast);
+        // 100% Real Data Mode: We only act if official 'Actual' data is received
+        if (!event.actual) return;
+
+        const sentiment = await getGoldSentiment(event.id, event.actual, event.forecast);
 
         if (sentiment.signal !== 'NEUTRAL' && !activeSignal) {
             setActiveSignal({
@@ -104,7 +106,7 @@ export default function AuraRadar() {
                 reason: sentiment.bias,
                 confidence: 95
             });
-            setTimeout(() => setActiveSignal(null), 30000);
+            setTimeout(() => setActiveSignal(null), 60000); // Show for 1 min for real news
         }
     };
 
@@ -407,6 +409,6 @@ export default function AuraRadar() {
                 </div>
             </div>
 
-        </div >
+        </div>
     );
 }

@@ -409,22 +409,18 @@ export async function approveWithdrawRequest(requestId: string, userId: string, 
 }
 
 export async function getEconomicCalendar() {
-  const apiKey = process.env.FINNHUB_API_KEY;
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
 
-  // High-fidelity trading feed (Direct from Faireconomy/ForexFactory Mirror)
-  // This feed is widely used by professional trading desks
   try {
     const res = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.xml', {
       headers: { 'User-Agent': 'Mozilla/5.0' },
-      next: { revalidate: 60 } // Cache for 1 min
+      next: { revalidate: 60 }
     });
+    if (!res.ok) throw new Error('Network error');
     const xml = await res.text();
 
-    // Simple regex-based XML parser for zero-dependency parsing
     const events: any[] = [];
-    const eventMatches = xml.matchAll(/<event>([\s\S]*?)<\/event>/g);
+    const eventMatches = Array.from(xml.matchAll(/<event>([\s\S]*?)<\/event>/g));
 
     for (const match of eventMatches) {
       const content = match[1];
@@ -434,19 +430,14 @@ export async function getEconomicCalendar() {
       };
 
       const country = getTag('country');
-      const impact = getTag('impact');
-
-      // Filter for High Impact USD news (Direct Gold impact)
-      if (country === 'USD' && (impact === 'High' || impact === 'Medium')) {
+      if (country === 'USD') {
         const title = getTag('title');
-        const dateStr = getTag('date'); // MM-DD-YYYY
-        const timeStr = getTag('time'); // H:MMam/pm
+        const dateStr = getTag('date');
+        const timeStr = getTag('time');
+        const impact = getTag('impact');
 
-        // Parse into ISO date for the frontend
         try {
-          // Date format in FF: 02-18-2024
           const [m, d, y] = dateStr.split('-');
-          // Time format in FF: 8:30am
           const timeMatch = timeStr.match(/(\d+):(\d+)(am|pm)/i);
           if (timeMatch) {
             let hours = parseInt(timeMatch[1]);
@@ -455,33 +446,30 @@ export async function getEconomicCalendar() {
             if (ampm === 'pm' && hours < 12) hours += 12;
             if (ampm === 'am' && hours === 12) hours = 0;
 
-            // Construct date in ET (Forex Factory uses ET)
             const eventDate = new Date(`${y}-${m}-${d}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00-05:00`);
 
             events.push({
               id: `${title}-${dateStr}-${timeStr}`,
               event: title,
               time: eventDate.toISOString(),
-              impact: impact,
+              impact: impact || 'Medium',
               currency: 'USD',
-              forecast: getTag('forecast'),
-              previous: getTag('previous'),
+              forecast: getTag('forecast') || 'N/A',
+              previous: getTag('previous') || 'N/A',
               actual: getTag('actual') || null
             });
           }
-        } catch (e) { /* skip malformed */ }
+        } catch (e) { }
       }
     }
 
-    // Sort by time and return
-    return {
-      success: true,
-      items: events.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
-    };
-
+    if (events.length > 0) {
+      return { success: true, items: events.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()) };
+    }
+    return { success: true, items: [], message: 'No USD news scheduled for today.' };
   } catch (error) {
     console.error("Calendar fetch failed:", error);
-    return { success: false, error: 'Failed to fetch trading feed' };
+    return { success: false, error: 'Failed to connect to real-time trading feed. Please check your connection.' };
   }
 }
 
@@ -490,9 +478,12 @@ export async function getGoldSentiment(newsId: string, actual: string, forecast:
   const act = parseFloat(actual.replace(/[^0-9.-]+/g, ""));
   const forc = parseFloat(forecast.replace(/[^0-9.-]+/g, ""));
 
-  if (isNaN(act) || isNaN(forc)) return { signal: 'NEUTRAL', bias: 'Data incomplete' };
+  if (isNaN(act) || isNaN(forc)) return { signal: 'NEUTRAL', bias: 'Waiting for official figures...' };
 
   const diff = act - forc;
+  // Threshold to avoid noise - news must deviate from forecast to trigger institutional move
+  if (Math.abs(diff) < 0.0001) return { signal: 'NEUTRAL', bias: 'News in line with forecast. No volatility spike expected.' };
+
   const isPositiveSurprise = diff > 0;
 
   // Logic: USD Strength is usually negative for Gold
@@ -624,27 +615,27 @@ export async function getSharedPrices(requestedPairs: string[]) {
     if (!apiKey) {
       const binancePrices: any = {};
       try {
-        // Fetch real GOLD proxy (PAXG) and EUR/BTC from Binance
         const bRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["PAXGUSDT","EURUSDT","BTCUSDT"]');
-        const bData = await bRes.json();
-        bData.forEach((item: any) => {
-          if (item.symbol === 'PAXGUSDT') binancePrices['XAU/USD'] = parseFloat(item.price);
-          if (item.symbol === 'EURUSDT') binancePrices['EUR/USD'] = parseFloat(item.price);
-          if (item.symbol === 'BTCUSDT') binancePrices['BTC/USD'] = parseFloat(item.price);
-        });
+        if (bRes.ok) {
+          const bData = await bRes.json();
+          bData.forEach((item: any) => {
+            if (item.symbol === 'PAXGUSDT') binancePrices['XAU/USD'] = parseFloat(item.price);
+            if (item.symbol === 'EURUSDT') binancePrices['EUR/USD'] = parseFloat(item.price);
+            if (item.symbol === 'BTCUSDT') binancePrices['BTC/USD'] = parseFloat(item.price);
+          });
+        }
       } catch (e) { }
 
       const baseGold = binancePrices['XAU/USD'] || cachedValues['XAU/USD'] || 2045.50;
-      const drift = (Math.random() - 0.5) * 0.2; // Minor drift if it's the only update
+      const drift = (Math.random() - 0.5) * 0.2;
       const newGold = binancePrices['XAU/USD'] ? baseGold : baseGold + drift;
 
-      const results = {
+      return {
         ...binancePrices,
         'XAU/USD': newGold,
         'EUR/USD': binancePrices['EUR/USD'] || 1.0854,
         'BTC/USD': binancePrices['BTC/USD'] || 52140.20
       };
-      return results;
     }
 
     const majorMarkets = ['XAU/USD', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'BTC/USD', 'ETH/USD'];
