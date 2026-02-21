@@ -758,10 +758,11 @@ export async function getNews(lang: 'en' | 'ar' | 'es' = 'en') {
       const xml = await response.text();
       const feed = await parser.parseString(xml);
 
-      const items = feed.items.map(item => {
+      const items = feed.items.map((item, idx) => {
         let imageUrl = '';
+        const itemTitle = item.title || 'Market Update';
 
-        // Comprehensive Check for images in various RSS namespaces
+        // 1. Comprehensive Check for images in various RSS namespaces
         if (item.mediaContent?.$?.url) imageUrl = item.mediaContent.$.url;
         else if (Array.isArray(item.mediaContent) && item.mediaContent[0]?.$.url) imageUrl = item.mediaContent[0].$.url;
         else if (item.enclosure?.url) imageUrl = item.enclosure.url;
@@ -771,19 +772,48 @@ export async function getNews(lang: 'en' | 'ar' | 'es' = 'en') {
           if (imgMatch) imageUrl = imgMatch[1];
         }
 
-        // Filter out known blocked domains (fxstreet/investing often block hotlinks)
-        if (imageUrl && (imageUrl.includes('fxstreet') || imageUrl.includes('investing.com'))) {
-          imageUrl = ''; // Trigger fallback for better aesthetic
+        // 2. Strict Domain Blocking - If it's from a known hotlink-blocker, force a high-quality fallback
+        const blockedDomains = ['fxstreet', 'investing.com', 'dailyfx', 'marketpulse', 'actionforex'];
+        if (imageUrl && blockedDomains.some(domain => imageUrl.toLowerCase().includes(domain))) {
+          imageUrl = '';
         }
 
         if (imageUrl && imageUrl.startsWith('//')) imageUrl = 'https:' + imageUrl;
 
-        // Smart Category-based Fallback
-        const itemTitle = item.title || 'Market Update';
+        // 3. ENHANCED DYNAMIC IMAGE POOL (Prevents repetition and looks premium)
+        const imagePools = {
+          gold: [
+            'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800',
+            'https://images.unsplash.com/photo-1610375461246-83df859d849d?q=80&w=800',
+            'https://images.unsplash.com/photo-1536697246787-1f7ad5ecda99?q=80&w=800',
+            'https://images.unsplash.com/photo-1554672408-730436b60dde?q=80&w=800',
+            'https://images.unsplash.com/photo-1633156185012-1d5440813958?q=80&w=800'
+          ],
+          forex: [
+            'https://images.unsplash.com/photo-1611974714024-462cd99c3623?q=80&w=800',
+            'https://images.unsplash.com/photo-1640340434855-6084b1f4901c?q=80&w=800',
+            'https://images.unsplash.com/photo-1611746183856-2007823e59f4?q=80&w=800',
+            'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?q=80&w=800',
+            'https://images.unsplash.com/photo-1642388691919-6149176fb32a?q=80&w=800'
+          ],
+          business: [
+            'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=800',
+            'https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?q=80&w=800',
+            'https://images.unsplash.com/photo-1454165833767-13143895960d?q=80&w=800',
+            'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800',
+            'https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?q=80&w=800'
+          ]
+        };
+
+        // Determine category and pick a varied image using title hash or index
         const lowerTitle = itemTitle.toLowerCase();
-        let fallback = 'https://images.unsplash.com/photo-1611974714024-462cd99c3623?q=80&w=800'; // Default Forex
-        if (lowerTitle.includes('gold') || lowerTitle.includes('xau')) fallback = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=800'; // Gold
-        else if (lowerTitle.includes('fed') || lowerTitle.includes('bank')) fallback = 'https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?q=80&w=800'; // Banking
+        let activePool = imagePools.business;
+        if (lowerTitle.includes('gold') || lowerTitle.includes('xau') || lowerTitle.includes('ذهب')) activePool = imagePools.gold;
+        else if (lowerTitle.includes('forex') || lowerTitle.includes('usd') || lowerTitle.includes('currency')) activePool = imagePools.forex;
+
+        // Pick one from the pool based on title length or index to ensure variety
+        const poolIndex = (itemTitle.length + idx) % activePool.length;
+        const selectedFallback = activePool[poolIndex];
 
         return {
           title: itemTitle,
@@ -791,7 +821,7 @@ export async function getNews(lang: 'en' | 'ar' | 'es' = 'en') {
           pubDate: item.pubDate,
           isoDate: item.isoDate,
           contentSnippet: (item.contentSnippet || item.description || item.content || '').replace(/<[^>]*>?/gm, '').slice(0, 150) + '...',
-          imageUrl: imageUrl || fallback
+          imageUrl: imageUrl || selectedFallback
         };
       });
 
