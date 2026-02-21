@@ -205,12 +205,26 @@ export default function HistoryPage() {
                                     <Clock className="h-2.5 w-2.5" />
                                     {(() => {
                                         const dateData = item.createdAt as any;
-                                        const date = (dateData instanceof Timestamp)
-                                            ? dateData.toDate()
-                                            : (dateData?.seconds)
-                                                ? new Date(dateData.seconds * 1000)
-                                                : new Date();
-                                        return formatDistanceToNow(date, { addSuffix: true });
+                                        let date: Date;
+
+                                        if (dateData instanceof Timestamp) {
+                                            date = dateData.toDate();
+                                        } else if (dateData?.seconds) {
+                                            date = new Date(dateData.seconds * 1000);
+                                        } else if (typeof dateData === 'string') {
+                                            date = new Date(dateData);
+                                        } else {
+                                            date = new Date();
+                                        }
+
+                                        return date.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: false
+                                        });
                                     })()}
                                 </div>
                             </div>

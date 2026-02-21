@@ -14,101 +14,102 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 type UserProfile = {
-  plan?: 'Free' | 'Premium' | 'Aura Plan';
-  email?: string;
-  uid?: string;
+    plan?: 'Free' | 'Premium' | 'Aura Plan';
+    email?: string;
+    uid?: string;
 };
 
 const translations = {
-  en: {
-    cryptoTitle: 'Pay with Crypto',
-    cryptoDescription: 'Send the equivalent of $50 to the USDT (TRC20) address below. After payment, upload a screenshot and your transaction ID.',
-    walletAddress: 'Wallet Address (USDT TRC20)',
-    copy: 'Copy',
-    copied: 'Copied!',
-    transactionId: 'Transaction ID',
-    paymentScreenshot: 'Payment Screenshot',
-    uploadScreenshot: 'Click to upload a screenshot',
-    submitRequest: 'Submit Activation Request',
-    submitting: 'Submitting...',
-    requestSubmitted: 'Request Submitted',
-    requestSubmittedDesc: 'Your request has been sent for review. Activation may take some time.',
-    submissionError: 'Submission Error',
-    cardTitle: 'Pay with Bank Card',
-    cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must submit proof for manual activation.',
-    payNow: 'Pay Now ($50)',
-    paymentProofNote: 'After successful payment, please come back and submit the proof via the "Pay with Crypto" option, using your payment receipt screenshot.',
-    selectPayment: 'Select Payment Method',
-    selectPaymentDesc: 'Choose how you would like to pay for the Premium plan.',
-    requestPending: 'Request Pending',
-    requestPendingDesc: 'Your activation request is currently under review. We will notify you once it is approved.',
-  },
-  ar: {
-    cryptoTitle: 'الدفع بالعملات الرقمية',
-    cryptoDescription: 'أرسل ما يعادل 50 دولارًا إلى عنوان USDT (TRC20) أدناه. بعد الدفع، قم بتحميل لقطة شاشة ومعرف المعاملة الخاص بك.',
-    walletAddress: 'عنوان المحفظة (USDT TRC20)',
-    copy: 'نسخ',
-    copied: 'تم النسخ!',
-    transactionId: 'معرف المعاملة',
-    paymentScreenshot: 'لقطة شاشة الدفع',
-    uploadScreenshot: 'انقر لتحميل لقطة شاشة',
-    submitRequest: 'إرسال طلب التفعيل',
-    submitting: 'جارٍ الإرسال...',
-    requestSubmitted: 'تم إرسال الطلب',
-    requestSubmittedDesc: 'تم إرسال طلبك للمراجعة. قد يستغرق التفعيل بعض الوقت.',
-    submissionError: 'خطأ في الإرسال',
-    cardTitle: 'الدفع بالبطاقة البنكية',
-    cardDescription: 'انقر على الزر أدناه للمتابعة إلى الدفع عبر شريكنا الآمن. بعد الدفع، يجب عليك تقديم إثبات للتفعيل اليدوي.',
-    payNow: 'ادفع الآن (50$)',
-    paymentProofNote: 'بعد الدفع بنجاح، يرجى العودة وتقديم الإثبات عبر خيار "الدفع بالعملات الرقمية"، باستخدام لقطة شاشة من إيصال الدفع.',
-    selectPayment: 'اختر طريقة الدفع',
-    selectPaymentDesc: 'اختر كيف ترغب في الدفع مقابل الخطة المميزة.',
-    requestPending: 'الطلب قيد المراجعة',
-    requestPendingDesc: 'طلب التفعيل الخاص بك قيد المراجعة حاليًا. سنقوم بإعلامك بمجرد الموافقة عليه.',
-  },
-  es: {
-    cryptoTitle: 'Pagar con Criptomonedas',
-    cryptoDescription: 'Envíe el equivalente a $50 a la dirección USDT (TRC20) a continuación. Después del pago, suba una captura de pantalla y su ID de transacción.',
-    walletAddress: 'Dirección de la Billetera (USDT TRC20)',
-    copy: 'Copiar',
-    copied: '¡Copiado!',
-    transactionId: 'ID de Transacción',
-    paymentScreenshot: 'Captura de Pantalla del Pago',
-    uploadScreenshot: 'Haga clic para subir una captura de pantalla',
-    submitRequest: 'Enviar Solicitud de Activación',
-    submitting: 'Enviando...',
-    requestSubmitted: 'Solicitud Enviada',
-    requestSubmittedDesc: 'Su solicitud ha sido enviada para su revisión. La activación puede tardar un tiempo.',
-    submissionError: 'Error de Envío',
-    cardTitle: 'Pagar con Tarjeta Bancaria',
-    cardDescription: 'Haga clic en el botón de abajo para proceder con el pago a través de nuestro socio seguro. Después del pago, debe presentar una prueba para la activación manual.',
-    payNow: 'Pagar Ahora ($50)',
-    paymentProofNote: 'Después de un pago exitoso, por favor regrese y presente la prueba a través de la opción "Pagar con Criptomonedas", usando la captura de pantalla de su recibo de pago.',
-    selectPayment: 'Seleccione el Método de Pago',
-    selectPaymentDesc: 'Elija cómo le gustaría pagar el plan Premium.',
-    requestPending: 'Solicitud Pendiente',
-    requestPendingDesc: 'Su solicitud de activación está actualmente en revisión. Le notificaremos una vez que sea aprobada.',
-  },
+    en: {
+        cryptoTitle: 'Pay with Crypto',
+        cryptoDescription: 'Send the equivalent of $50 to the USDT (TRC20) address below. After payment, upload a screenshot and your transaction ID.',
+        walletAddress: 'Wallet Address (USDT TRC20)',
+        copy: 'Copy',
+        copied: 'Copied!',
+        transactionId: 'Transaction ID',
+        paymentScreenshot: 'Payment Screenshot',
+        uploadScreenshot: 'Click to upload a screenshot',
+        submitRequest: 'Submit Activation Request',
+        submitting: 'Submitting...',
+        requestSubmitted: 'Request Submitted',
+        requestSubmittedDesc: 'Your request has been sent for review. Activation may take some time.',
+        submissionError: 'Submission Error',
+        cardTitle: 'Pay with Bank Card',
+        cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must submit proof for manual activation.',
+        payNow: 'Pay Now ($50)',
+        paymentProofNote: 'After successful payment, please come back and submit the proof via the "Pay with Crypto" option, using your payment receipt screenshot.',
+        selectPayment: 'Select Payment Method',
+        selectPaymentDesc: 'Choose how you would like to pay for the Premium plan.',
+        requestPending: 'Request Pending',
+        requestPendingDesc: 'Your activation request is currently under review. We will notify you once it is approved.',
+    },
+    ar: {
+        cryptoTitle: 'الدفع بالعملات الرقمية',
+        cryptoDescription: 'أرسل ما يعادل 50 دولارًا إلى عنوان USDT (TRC20) أدناه. بعد الدفع، قم بتحميل لقطة شاشة ومعرف المعاملة الخاص بك.',
+        walletAddress: 'عنوان المحفظة (USDT TRC20)',
+        copy: 'نسخ',
+        copied: 'تم النسخ!',
+        transactionId: 'معرف المعاملة',
+        paymentScreenshot: 'لقطة شاشة الدفع',
+        uploadScreenshot: 'انقر لتحميل لقطة شاشة',
+        submitRequest: 'إرسال طلب التفعيل',
+        submitting: 'جارٍ الإرسال...',
+        requestSubmitted: 'تم إرسال الطلب',
+        requestSubmittedDesc: 'تم إرسال طلبك للمراجعة. قد يستغرق التفعيل بعض الوقت.',
+        submissionError: 'خطأ في الإرسال',
+        cardTitle: 'الدفع بالبطاقة البنكية',
+        cardDescription: 'انقر على الزر أدناه للمتابعة إلى الدفع عبر شريكنا الآمن. بعد الدفع، يجب عليك تقديم إثبات للتفعيل اليدوي.',
+        payNow: 'ادفع الآن (50$)',
+        paymentProofNote: 'بعد الدفع بنجاح، يرجى العودة وتقديم الإثبات عبر خيار "الدفع بالعملات الرقمية"، باستخدام لقطة شاشة من إيصال الدفع.',
+        selectPayment: 'اختر طريقة الدفع',
+        selectPaymentDesc: 'اختر كيف ترغب في الدفع مقابل الخطة المميزة.',
+        requestPending: 'الطلب قيد المراجعة',
+        requestPendingDesc: 'طلب التفعيل الخاص بك قيد المراجعة حاليًا. سنقوم بإعلامك بمجرد الموافقة عليه.',
+    },
+    es: {
+        cryptoTitle: 'Pagar con Criptomonedas',
+        cryptoDescription: 'Envíe el equivalente a $50 a la dirección USDT (TRC20) a continuación. Después del pago, suba una captura de pantalla y su ID de transacción.',
+        walletAddress: 'Dirección de la Billetera (USDT TRC20)',
+        copy: 'Copiar',
+        copied: '¡Copiado!',
+        transactionId: 'ID de Transacción',
+        paymentScreenshot: 'Captura de Pantalla del Pago',
+        uploadScreenshot: 'Haga clic para subir una captura de pantalla',
+        submitRequest: 'Enviar Solicitud de Activación',
+        submitting: 'Enviando...',
+        requestSubmitted: 'Solicitud Enviada',
+        requestSubmittedDesc: 'Su solicitud ha sido enviada para su revisión. La activación puede tardar un tiempo.',
+        submissionError: 'Error de Envío',
+        cardTitle: 'Pagar con Tarjeta Bancaria',
+        cardDescription: 'Haga clic en el botón de abajo para proceder con el pago a través de nuestro socio seguro. Después del pago, debe presentar una prueba para la activación manual.',
+        payNow: 'Pagar Ahora ($50)',
+        paymentProofNote: 'Después de un pago exitoso, por favor regrese y presente la prueba a través de la opción "Pagar con Criptomonedas", usando la captura de pantalla de su recibo de pago.',
+        selectPayment: 'Seleccione el Método de Pago',
+        selectPaymentDesc: 'Elija cómo le gustaría pagar el plan Premium.',
+        requestPending: 'Solicitud Pendiente',
+        requestPendingDesc: 'Su solicitud de activación está actualmente en revisión. Le notificaremos una vez que sea aprobada.',
+    },
 };
 
 const WALLET_ADDRESS = "TBEJ333HrfBnsdJqWn3x2tV5GZ3hY3g5R7";
 
 function SubmitButton({ t, isEnabled }: { t: any, isEnabled: boolean }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending || !isEnabled} className="w-full">
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          {t.submitting}
-        </>
-      ) : (
-        t.submitRequest
-      )}
-    </Button>
-  );
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" disabled={pending || !isEnabled} className="w-full">
+            {pending ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t.submitting}
+                </>
+            ) : (
+                t.submitRequest
+            )}
+        </Button>
+    );
 }
 
 function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: UserProfile | null, t: any, setDialogOpen: (open: boolean) => void }) {
@@ -122,10 +123,10 @@ function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: Use
     const [isCopied, setIsCopied] = useState(false);
 
     const handleCopy = () => {
-      navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
-      });
+        navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+        });
     };
 
     useEffect(() => {
@@ -172,7 +173,7 @@ function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: Use
     const handleImageClick = () => {
         fileInputRef.current?.click();
     };
-    
+
     const isFormEnabled = transactionId.trim() !== '' && screenshotDataUrl !== '';
 
     return (
@@ -182,20 +183,20 @@ function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: Use
             <input type="hidden" name="screenshotDataUrl" value={screenshotDataUrl} />
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t.walletAddress}</label>
-              <div className="flex items-center gap-2">
-                  <Input 
-                      readOnly 
-                      value={WALLET_ADDRESS} 
-                      className="font-mono text-sm"
-                  />
-                  <Button type="button" variant="outline" size="icon" onClick={handleCopy}>
-                      {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-              </div>
-              {isCopied && <p className="text-xs text-green-500 text-center">{t.copied}</p>}
+                <label className="text-sm font-medium">{t.walletAddress}</label>
+                <div className="flex items-center gap-2">
+                    <Input
+                        readOnly
+                        value={WALLET_ADDRESS}
+                        className="font-mono text-sm"
+                    />
+                    <Button type="button" variant="outline" size="icon" onClick={handleCopy}>
+                        {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                </div>
+                {isCopied && <p className="text-xs text-green-500 text-center">{t.copied}</p>}
             </div>
-            
+
             <div className="space-y-2">
                 <label htmlFor="transactionId" className="text-sm font-medium">{t.transactionId}</label>
                 <Input
@@ -210,7 +211,7 @@ function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: Use
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">{t.paymentScreenshot}</label>
-                <div 
+                <div
                     className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed bg-muted text-muted-foreground transition-colors hover:border-primary/50"
                     onClick={handleImageClick}
                 >
@@ -232,7 +233,7 @@ function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: Use
                 />
             </div>
 
-            <SubmitButton t={t} isEnabled={isFormEnabled}/>
+            <SubmitButton t={t} isEnabled={isFormEnabled} />
         </form>
     );
 }
@@ -294,10 +295,10 @@ function UpgradeDialog({ children, userProfile, t }: { children: React.ReactNode
         if (paymentMethod === 'card') return t.cardTitle;
         return t.selectPayment;
     };
-    
+
     const getDialogDescription = () => {
         if (paymentMethod === 'crypto') return t.cryptoDescription;
-        if (paymentMethod === 'card') return ""; 
+        if (paymentMethod === 'card') return "";
         return t.selectPaymentDesc;
     };
 
@@ -326,38 +327,40 @@ export default function PricingPage() {
 
 
     const initialPlans = [
-      {
-        name: 'Free',
-        price: '$0',
-        description: 'Perfect for getting started',
-        features: ['1 analysis per day', 'Basic chart tools', 'Email support'],
-        cta: 'Your Current Plan',
-      },
-      {
-        name: 'Premium',
-        price: '$20 / month',
-        description: 'For active traders',
-        features: [
-          '5 analyses per day',
-          'Advanced chart tools',
-          'Priority email support',
-          'Access to exclusive webinars',
-        ],
-        cta: 'Upgrade to Premium',
-        isPrimary: true,
-      },
-      {
-        name: 'Aura Plan',
-        price: 'Contact Us',
-        description: 'For institutions and professionals',
-        features: [
-          'Unlimited analyses',
-          'All Premium features',
-          'Direct line to analysts',
-          'Personalized strategy sessions',
-        ],
-        cta: 'Contact for Access',
-      },
+        {
+            name: 'Free',
+            price: '$0',
+            description: 'Perfect for getting started',
+            features: ['1 analysis per day', 'Basic chart tools', 'Email support'],
+            cta: 'Your Current Plan',
+        },
+        {
+            name: 'Premium',
+            price: '$50',
+            originalPrice: '$100',
+            discount: '-50%',
+            description: 'For active traders',
+            features: [
+                '5 analyses per day',
+                'Advanced chart tools',
+                'Priority email support',
+                'Access to exclusive webinars',
+            ],
+            cta: 'Upgrade to Premium',
+            isPrimary: true,
+        },
+        {
+            name: 'Aura Plan',
+            price: 'Contact Us',
+            description: 'For institutions and professionals',
+            features: [
+                'Unlimited analyses',
+                'All Premium features',
+                'Direct line to analysts',
+                'Personalized strategy sessions',
+            ],
+            cta: 'Contact for Access',
+        },
     ];
 
     useEffect(() => {
@@ -372,7 +375,7 @@ export default function PricingPage() {
                 setUserProfile({ ...doc.data(), uid: user.uid, email: user.email } as UserProfile);
             }
         });
-        
+
         const requestsQuery = query(
             collection(firestore, 'activationRequests'),
             where('userId', '==', user.uid),
@@ -421,7 +424,7 @@ export default function PricingPage() {
                                 </Button>
                             );
                         }
-                        
+
                         if (isLoading) {
                             return (
                                 <Button className="w-full" disabled>
@@ -434,21 +437,21 @@ export default function PricingPage() {
                         if (hasPendingRequest) {
                             return (
                                 <Button className="w-full" disabled>
-                                     <Clock className="mr-2 h-4 w-4" />
+                                    <Clock className="mr-2 h-4 w-4" />
                                     {t.requestPending}
                                 </Button>
                             );
                         }
 
                         return (
-                           <UpgradeDialog userProfile={userProfile} t={t}>
-                             <Button
-                                className="w-full"
-                                variant={plan.isPrimary ? 'default' : 'secondary'}
-                              >
-                                {plan.cta}
-                              </Button>
-                           </UpgradeDialog>
+                            <UpgradeDialog userProfile={userProfile} t={t}>
+                                <Button
+                                    className="w-full"
+                                    variant={plan.isPrimary ? 'default' : 'secondary'}
+                                >
+                                    {plan.cta}
+                                </Button>
+                            </UpgradeDialog>
                         );
                     };
 
@@ -462,7 +465,15 @@ export default function PricingPage() {
                         >
                             <CardHeader className="text-center">
                                 <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                                <p className="text-4xl font-bold">{plan.price}</p>
+                                <div className="flex flex-col items-center justify-center">
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-4xl font-bold">{plan.price}</p>
+                                        {(plan as any).discount && <Badge variant="destructive">{(plan as any).discount}</Badge>}
+                                    </div>
+                                    {(plan as any).originalPrice && (
+                                        <span className="text-lg text-muted-foreground line-through">{(plan as any).originalPrice}</span>
+                                    )}
+                                </div>
                                 <CardDescription>{plan.description}</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-grow">
@@ -482,7 +493,7 @@ export default function PricingPage() {
                     );
                 })}
             </div>
-             {hasPendingRequest && (
+            {hasPendingRequest && (
                 <Alert className="max-w-md mx-auto card-glow">
                     <Clock className="h-4 w-4" />
                     <AlertTitle>{t.requestPending}</AlertTitle>

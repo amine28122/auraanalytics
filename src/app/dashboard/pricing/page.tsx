@@ -26,7 +26,7 @@ type UserProfile = {
 const translations = {
     en: {
         cryptoTitle: 'Pay with Crypto',
-        cryptoDescription: 'Send the equivalent of $100 to the USDT (TRC20) address below. After payment, upload a screenshot and your transaction ID.',
+        cryptoDescription: 'Send the equivalent of $50 to the USDT (TRC20) address below. After payment, upload a screenshot and your transaction ID.',
         walletAddress: 'Wallet Address (USDT TRC20)',
         copy: 'Copy',
         copied: 'Copied!',
@@ -40,7 +40,7 @@ const translations = {
         submissionError: 'Submission Error',
         cardTitle: 'Pay with Bank Card',
         cardDescription: 'Click the button below to proceed with the payment via our secure partner. After payment, you must submit proof for manual activation.',
-        payNow: 'Pay Now ($100)',
+        payNow: 'Pay Now ($50)',
         paymentProofNote: 'After successful payment, please come back and submit the proof via the "Pay with Crypto" option, using your payment receipt screenshot.',
         selectPayment: 'Select Payment Method',
         selectPaymentDesc: 'Choose how you would like to pay for the Premium plan.',
@@ -55,7 +55,7 @@ const translations = {
     },
     ar: {
         cryptoTitle: 'الدفع بالعملات الرقمية',
-        cryptoDescription: 'أرسل ما يعادل 100 دولارًا إلى عنوان USDT (TRC20) أدناه. بعد الدفع، قم بتحميل لقطة شاشة ومعرف المعاملة الخاص بك.',
+        cryptoDescription: 'أرسل ما يعادل 50 دولارًا إلى عنوان USDT (TRC20) أدناه. بعد الدفع، قم بتحميل لقطة شاشة ومعرف المعاملة الخاص بك.',
         walletAddress: 'عنوان المحفظة (USDT TRC20)',
         copy: 'نسخ',
         copied: 'تم النسخ!',
@@ -69,7 +69,7 @@ const translations = {
         submissionError: 'خطأ في الإرسال',
         cardTitle: 'الدفع بالبطاقة البنكية',
         cardDescription: 'انقر على الزر أدناه للمتابعة إلى الدفع عبر شريكنا الآمن. بعد الدفع، يجب عليك تقديم إثبات للتفعيل اليدوي.',
-        payNow: 'ادفع الآن (100$)',
+        payNow: 'ادفع الآن (50$)',
         paymentProofNote: 'بعد الدفع بنجاح، يرجى العودة وتقديم الإثبات عبر خيار "الدفع بالعملات الرقمية"، باستخدام لقطة شاشة من إيصال الدفع.',
         selectPayment: 'اختر طريقة الدفع',
         selectPaymentDesc: 'اختر كيف ترغب في الدفع مقابل الخطة المميزة.',
@@ -84,7 +84,7 @@ const translations = {
     },
     es: {
         cryptoTitle: 'Pagar con Criptomonedas',
-        cryptoDescription: 'Envíe el equivalente a $100 a la dirección USDT (TRC20) a continuación. Después del pago, suba una captura de pantalla y su ID de transacción.',
+        cryptoDescription: 'Envíe el equivalente a $50 a la dirección USDT (TRC20) a continuación. Después del pago, suba una captura de pantalla y su ID de transacción.',
         walletAddress: 'Dirección de la Billetera (USDT TRC20)',
         copy: 'Copiar',
         copied: '¡Copiado!',
@@ -98,7 +98,7 @@ const translations = {
         submissionError: 'Error de Envío',
         cardTitle: 'Pagar con Tarjeta Bancaria',
         cardDescription: 'Haga clic en el botón de abajo para proceder con el pago a través de nuestro socio seguro. Después del pago, debe presentar una prueba para la activación manual.',
-        payNow: 'Pagar Ahora ($100)',
+        payNow: 'Pagar Ahora ($50)',
         paymentProofNote: 'Después de un pago exitoso, por favor regrese y presente la prueba a través de la opción "Pagar con Criptomonedas", usando la captura de pantalla de su recibo de pago.',
         selectPayment: 'Seleccione el Método de Pago',
         selectPaymentDesc: 'Elija cómo le gustaría pagar el plan Premium.',
@@ -416,8 +416,8 @@ export default function PricingPage() {
         },
         {
             name: 'Premium',
-            price: '$100 / month',
-            originalPrice: '$200',
+            price: '$50',
+            originalPrice: '$100',
             discount: '-50%',
             description: 'For active traders',
             features: [

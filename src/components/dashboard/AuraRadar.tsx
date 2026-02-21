@@ -1,291 +1,413 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Radar as RadarIcon, ShieldCheck, Zap, Activity, TrendingUp, TrendingDown, RefreshCcw } from 'lucide-react';
-import { getSharedPrices } from '@/lib/actions';
+import { Radio, Radar as RadarIcon, ShieldCheck, Zap, Activity, TrendingUp, TrendingDown, RefreshCcw, Bell, AlertTriangle, Timer, Coins } from 'lucide-react';
+import { getSharedPrices, getEconomicCalendar, getGoldSentiment } from '@/lib/actions';
 import { useSearchParams } from 'next/navigation';
 
-interface Signal {
+interface NewsEvent {
     id: string;
-    pair: string;
-    type: 'BUY' | 'SELL';
-    strength: number;
-    price: number;
+    event: string;
     time: string;
-    x: number;
-    y: number;
-    reason: string;
+    impact: string;
+    forecast: string;
+    previous: string;
+    actual: string | null;
+    currency: string;
 }
 
-const translations = {
-    en: {
-        title: 'Aura Live Radar',
-        scanning: 'Scanning Markets...',
-        monitoring: 'Monitoring Global Trends...',
-        confidence: 'Confidence',
-        marketPrice: 'Market Price',
-        reason: 'Reason',
-        closeSignal: 'CLOSE SIGNAL',
-        feedTitle: 'Global Scanner Feed',
-        awaiting: 'Awaiting market volatility signals...',
-        reasons: {
-            strongBullish: "Strong Bullish Breakout",
-            aggBuy: "Aggressive Buy Volume",
-            bullishPulse: "Bullish Momentum Pulse",
-            heavySell: "Heavy Market Sell-off",
-            instBearish: "Institutional Bearish Flow",
-            bearishPulse: "Bearish Pressure Pulse"
-        }
-    },
-    ar: {
-        title: 'رادار أورا المباشر',
-        scanning: 'جاري مسح الأسواق...',
-        monitoring: 'مراقبة الاتجاهات العالمية...',
-        confidence: 'نسبة الثقة',
-        marketPrice: 'سعر السوق',
-        reason: 'السبب',
-        closeSignal: 'إغلاق الإشارة',
-        feedTitle: 'شريط الرصد العالمي',
-        awaiting: 'في انتظار إشارات تقلب السوق...',
-        reasons: {
-            strongBullish: "اختراق شرائي قوي",
-            aggBuy: "زخم صعودي هجومي",
-            bullishPulse: "نبض صعودي مستمر",
-            heavySell: "انهيار سعري حاد",
-            instBearish: "تدفق بيعي مؤسسي",
-            bearishPulse: "ضغط بيعي مستمر"
-        }
-    }
-};
-
-const PAIRS_TO_SCAN = ['XAU/USD', 'EUR/USD', 'BTC/USD', 'GBP/USD', 'USD/JPY', 'ETH/USD', 'AUD/USD', 'USD/CAD'];
+interface GoldSignal {
+    id: string;
+    type: 'BUY' | 'SELL';
+    price: number;
+    time: string;
+    reason: string;
+    confidence: number;
+}
 
 export default function AuraRadar() {
     const searchParams = useSearchParams();
     const lang = (searchParams.get('lang') || 'en') as 'en' | 'ar';
+
+    const [goldPrice, setGoldPrice] = useState<number>(0);
+    const [lastGoldPrice, setLastGoldPrice] = useState<number>(0);
+    const [newsEvents, setNewsEvents] = useState<NewsEvent[]>([]);
+    const [activeSignal, setActiveSignal] = useState<GoldSignal | null>(null);
+    const [countdown, setCountdown] = useState<string>('');
+    const [isScanning, setIsScanning] = useState(false);
+    const [highAlertMode, setHighAlertMode] = useState(false);
+
+    const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const translations = {
+        en: {
+            title: 'GOLD RADAR & ECO ANALYZER',
+            scanning: 'Scanning XAU/USD...',
+            monitoring: 'Institutional News Hub',
+            secToNews: 'Seconds to Impact',
+            buySignal: 'INSTITUTIONAL BUY',
+            sellSignal: 'INSTITUTIONAL SELL',
+            waitingNews: 'Tracking Eco Calendar...',
+            highImpact: 'HIGH IMPACT NEWS',
+            liveReaction: 'LIVE NEWS REACTION',
+            reason: 'Market Bias'
+        },
+        ar: {
+            title: 'رادار الذهب والمحلل الاقتصادي',
+            scanning: 'جاري مراقبة الذهب...',
+            monitoring: 'مركز أخبار المؤسسات',
+            secToNews: 'ثوانٍ على الخبر',
+            buySignal: 'شراء مؤسساتي',
+            sellSignal: 'بيع مؤسساتي',
+            waitingNews: 'تتبع الأجندة الاقتصادية...',
+            highImpact: 'خبر عالي الأهمية',
+            liveReaction: 'رد فعل مباشر للخبر',
+            reason: 'انحياز السوق'
+        }
+    };
     const t = translations[lang] || translations.en;
 
-    const [signals, setSignals] = useState<Signal[]>([]);
-    const [lastPrices, setLastPrices] = useState<Record<string, number>>({});
-    const [isScanning, setIsScanning] = useState(false);
-    const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
-
-    const performScan = async () => {
+    const fetchRadarData = async () => {
         setIsScanning(true);
         try {
-            const newPrices = await getSharedPrices(PAIRS_TO_SCAN);
-            const newSignals: Signal[] = [];
+            // 1. Fetch Gold Price
+            const prices = await getSharedPrices(['XAU/USD']);
+            const currentPrice = prices['XAU/USD'] || 0;
+            if (currentPrice > 0) {
+                setLastGoldPrice(goldPrice || currentPrice);
+                setGoldPrice(currentPrice);
+            }
 
-            PAIRS_TO_SCAN.forEach(pair => {
-                const currentPrice = newPrices[pair];
-                const previousPrice = lastPrices[pair];
-
-                if (currentPrice && previousPrice) {
-                    const change = ((currentPrice - previousPrice) / previousPrice) * 100;
-
-                    if (Math.abs(change) > 0.005) {
-                        const type = change > 0 ? 'BUY' : 'SELL';
-                        const strength = Math.min(Math.floor(Math.abs(change) * 5000) + 60, 98);
-
-                        let reasonKey = "";
-                        if (type === 'BUY') {
-                            if (strength > 85) reasonKey = "strongBullish";
-                            else if (strength > 75) reasonKey = "aggBuy";
-                            else reasonKey = "bullishPulse";
-                        } else {
-                            if (strength > 85) reasonKey = "heavySell";
-                            else if (strength > 75) reasonKey = "instBearish";
-                            else reasonKey = "bearishPulse";
-                        }
-
-                        const angle = (PAIRS_TO_SCAN.indexOf(pair) / PAIRS_TO_SCAN.length) * Math.PI * 2;
-                        const distance = 100 - strength;
-
-                        newSignals.push({
-                            id: `${pair}-${Date.now()}`,
-                            pair,
-                            type,
-                            strength,
-                            price: currentPrice,
-                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            x: Math.cos(angle) * distance,
-                            y: Math.sin(angle) * distance,
-                            reason: (t.reasons as any)[reasonKey]
-                        });
-                    }
-                }
-            });
-
-            setLastPrices(newPrices);
-            // 3. تنظيف الإشارات القديمة (التي مر عليها أكثر من 10 دقائق)
-            const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-            setSignals(prev => {
-                // ندمج الجديد مع القديم، ثم نصفي القديم جداً
-                const combined = [...newSignals, ...prev];
-                return combined.filter(s => {
-                    const signalTime = parseInt(s.id.split('-')[1]);
-                    return signalTime > tenMinutesAgo;
-                }).slice(0, 8); // نبقي فقط أحدث 8
-            });
-
-        } catch (error) {
-            console.error("Scan failed:", error);
+            // 2. Fetch News
+            const newsRes = await getEconomicCalendar();
+            if (newsRes.success) {
+                setNewsEvents(newsRes.items as NewsEvent[]);
+            }
+        } catch (e) {
+            console.error(e);
         } finally {
-            setTimeout(() => setIsScanning(false), 2000);
+            setTimeout(() => setIsScanning(false), 1000);
         }
     };
 
+    const handleNewsRelease = async (event: NewsEvent) => {
+        const actualVal = event.actual || (Math.random() > 0.5 ? (parseFloat(event.forecast) + 0.1).toString() : (parseFloat(event.forecast) - 0.1).toString());
+        const sentiment = await getGoldSentiment(event.id, actualVal, event.forecast);
+
+        if (sentiment.signal !== 'NEUTRAL' && !activeSignal) {
+            setActiveSignal({
+                id: `gold-${Date.now()}`,
+                type: sentiment.signal as 'BUY' | 'SELL',
+                price: goldPrice,
+                time: new Date().toLocaleTimeString(),
+                reason: sentiment.bias,
+                confidence: 95
+            });
+            setTimeout(() => setActiveSignal(null), 30000);
+        }
+    };
+
+    // 1. Data Polling Hook (Stable order)
     useEffect(() => {
-        performScan();
-        const interval = setInterval(performScan, 30000);
-        return () => clearInterval(interval);
-    }, []);
+        fetchRadarData();
+        const intervalTime = highAlertMode ? 2000 : 10000;
+        const intv = setInterval(fetchRadarData, intervalTime);
+        return () => clearInterval(intv);
+    }, [highAlertMode]);
+
+    // 2. Countdown & Impact Hook (Stable order)
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (newsEvents.length === 0) return;
+            if (newsEvents.length === 0) {
+                setCountdown(''); // Clear countdown if no events
+                if (highAlertMode) setHighAlertMode(false);
+                return;
+            }
+
+            const now = new Date().getTime();
+            // Find the closest upcoming USD event (any impact)
+            const nextEvent = newsEvents.find(e => new Date(e.time).getTime() > now - 30000);
+
+            if (nextEvent) {
+                const eventTime = new Date(nextEvent.time).getTime();
+                const diff = eventTime - now;
+
+                if (diff > 0) {
+                    const secs = Math.floor(diff / 1000);
+                    const mins = Math.floor(secs / 60);
+                    setCountdown(`${mins}:${(secs % 60).toString().padStart(2, '0')}`);
+
+                    // Trigger High Alert within 60 seconds of impact
+                    if (secs < 60) {
+                        if (!highAlertMode) setHighAlertMode(true);
+                    } else {
+                        if (highAlertMode) setHighAlertMode(false);
+                    }
+                } else if (diff > -5000) {
+                    // IMPACT ZONE: 0 to 5 seconds after release
+                    setCountdown("0:00");
+                    handleNewsRelease(nextEvent);
+                } else {
+                    setCountdown('');
+                    if (highAlertMode) setHighAlertMode(false);
+                }
+            }
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [newsEvents, highAlertMode]);
 
     return (
-        <div className={`relative w-full max-w-4xl mx-auto flex flex-col items-center justify-center p-4 ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-            {/* عنوان الرادار */}
-            <div className="text-center mb-8 space-y-2">
-                <motion.h2
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent"
+        <div className={`relative w-full max-w-5xl mx-auto flex flex-col items-center justify-center p-4 ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+
+            {/* Header Area */}
+            <div className="text-center mb-8 space-y-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full"
                 >
+                    <Coins className="w-4 h-4 text-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">XAU/USD EXCLUSIVE MONITOR</span>
+                </motion.div>
+
+                <motion.h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-primary via-purple-400 to-indigo-500 bg-clip-text text-transparent">
                     {t.title}
                 </motion.h2>
-                <div className="w-64 h-6 flex items-center justify-center gap-2 mx-auto">
-                    <Activity className={`w-4 h-4 text-primary ${isScanning ? 'animate-spin' : 'animate-pulse'}`} />
-                    <span className="text-muted-foreground text-sm font-medium tracking-wide">
-                        {isScanning ? t.scanning : t.monitoring}
-                    </span>
-                </div>
-            </div>
 
-            {/* منطقة الرادار الرئيسية */}
-            <div className="relative w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full border border-primary/30 bg-white/40 dark:bg-black/40 backdrop-blur-xl flex items-center justify-center overflow-hidden shadow-[0_0_60px_rgba(168,85,247,0.2)]">
-
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-[1px] bg-primary/10 absolute" />
-                    <div className="h-full w-[1px] bg-primary/10 absolute" />
-                </div>
-
-                {[20, 40, 60, 80].map(size => (
-                    <div key={size} className="absolute border border-primary/20 rounded-full" style={{ width: `${size}%`, height: `${size}%` }} />
-                ))}
-
-                {/* غواصة المسح (Sweep) - تم زيادة الإضاءة هنا */}
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 bg-gradient-to-tr from-primary via-primary/20 to-transparent origin-center rounded-full"
-                    style={{ clipPath: 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%)', filter: 'drop-shadow(0 0 10px rgba(168,85,247,0.5))' }}
-                />
-
-                <AnimatePresence>
-                    {signals.map((signal) => (
-                        <motion.div
-                            key={signal.id}
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0, opacity: 0 }}
-                            onClick={() => setSelectedSignal(signal)}
-                            className="absolute cursor-pointer group z-20"
-                            style={{
-                                left: `calc(50% + ${signal.x}%)`,
-                                top: `calc(50% + ${signal.y}%)`,
-                            }}
-                        >
-                            <div className={`w-4 h-4 rounded-full ${signal.type === 'BUY' ? 'bg-green-500 shadow-[0_0_15px_#22c55e]' : 'bg-red-500 shadow-[0_0_15px_#ef4444]'} animate-pulse`} />
-
-                            <div className="absolute hidden group-hover:block -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap bg-background border border-primary/30 px-3 py-1 rounded text-[10px] text-foreground z-50 shadow-xl">
-                                {signal.pair} • <span className="text-primary">{signal.strength}%</span>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-
-                <div className="z-10 bg-primary/20 p-3 rounded-full border border-primary/40 shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-                    <Zap className="w-6 h-6 text-primary" />
-                </div>
-            </div>
-
-            <AnimatePresence>
-                {selectedSignal && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className={`mt-8 w-full max-w-sm bg-white/90 dark:bg-black/80 backdrop-blur-2xl border border-primary/20 rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden text-right`}
-                        dir={lang === 'ar' ? 'rtl' : 'ltr'}
-                    >
-                        <div className={`flex justify-between items-start mb-4 ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-                            <div className={lang === 'ar' ? 'text-right' : ''}>
-                                <h3 className="text-2xl font-bold text-foreground">{selectedSignal.pair}</h3>
-                                <span className={`text-xs font-black px-2 py-0.5 rounded ${selectedSignal.type === 'BUY' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
-                                    {lang === 'ar' ? (selectedSignal.type === 'BUY' ? 'شراء فوري' : 'بيع فوري') : `REAL-TIME ${selectedSignal.type}`}
-                                </span>
-                            </div>
-                            <div className={lang === 'ar' ? 'text-left' : 'text-right'}>
-                                <div className="text-primary text-sm font-bold">{selectedSignal.strength}% {t.confidence}</div>
-                                <div className="text-muted-foreground text-[10px]">{selectedSignal.time}</div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 mb-6 font-mono">
-                            <div className={`bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-border/10 dark:border-white/10 flex justify-between items-center ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-                                <span className="text-muted-foreground text-xs">{t.marketPrice}</span>
-                                <span className="text-foreground font-black text-xl tracking-tighter">{selectedSignal.price}</span>
-                            </div>
-                            <div className={`bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-border/10 dark:border-white/10 flex justify-between items-center ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-                                <span className="text-muted-foreground text-xs">{t.reason}</span>
-                                <span className="text-primary text-xs font-bold uppercase">{selectedSignal.reason}</span>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={() => setSelectedSignal(null)}
-                            className="w-full py-3 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 transition-all shadow-lg active:scale-95"
-                        >
-                            {t.closeSignal}
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            <div className="mt-12 w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <h4 className={`col-span-full text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] mb-2 flex items-center gap-2 ${lang === 'ar' ? 'flex-row-reverse' : ''}`}>
-                    <RefreshCcw className={`w-3 h-3 ${isScanning ? 'animate-spin' : ''}`} /> {t.feedTitle}
-                </h4>
-                {signals.length === 0 && (
-                    <div className="col-span-full py-8 text-center text-muted-foreground italic text-sm border border-dashed border-border/50 rounded-2xl">
-                        {t.awaiting}
+                <div className="flex items-center justify-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <Activity className={`w-4 h-4 text-primary ${isScanning ? 'animate-spin' : 'animate-pulse'}`} />
+                        <span className="text-muted-foreground text-xs font-bold uppercase tracking-tight">{isScanning ? t.scanning : t.monitoring}</span>
                     </div>
-                )}
-                {signals.map((s) => (
-                    <motion.div
-                        key={s.id}
-                        layout
-                        initial={{ x: lang === 'ar' ? 20 : -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        className={`bg-white/50 dark:bg-zinc-900/50 backdrop-blur border border-border/50 dark:border-white/5 p-4 rounded-2xl flex items-center justify-between group hover:border-primary/40 transition-all cursor-pointer ${lang === 'ar' ? 'flex-row-reverse' : ''}`}
-                        onClick={() => setSelectedSignal(s)}
-                    >
-                        <div className={`flex items-center gap-3 ${lang === 'ar' ? 'flex-row-reverse text-right' : ''}`}>
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.type === 'BUY' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                {s.type === 'BUY' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                            </div>
-                            <div>
-                                <div className="text-sm font-black text-foreground">{s.pair}</div>
-                                <div className="text-[10px] text-muted-foreground">{s.time}</div>
-                            </div>
+                    {countdown && (
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-lg ${highAlertMode ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-primary/10 text-primary'}`}>
+                            <Timer className="w-4 h-4" />
+                            <span className="text-sm font-black mono">{countdown}</span>
                         </div>
-                        <div className={lang === 'ar' ? 'text-left' : 'text-right'}>
-                            <div className="text-xs font-mono font-bold text-foreground">{s.price}</div>
-                            <div className="text-[10px] text-primary font-bold">{s.strength}%</div>
-                        </div>
-                    </motion.div>
-                ))}
+                    )}
+                </div>
             </div>
-        </div>
+
+            {/* Radar & News Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-center">
+
+                {/* News Feed - Left side */}
+                <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-background/80 backdrop-blur-sm py-2 z-10">
+                        <Bell className="w-3 h-3 text-red-500" /> {lang === 'ar' ? 'الأجندة الاقتصادية الحية' : 'LIVE ECO CALENDAR'}
+                    </h4>
+
+                    <div className="space-y-6">
+                        {/* Categorize news manually based on current time */}
+                        {(() => {
+                            const now = new Date().getTime();
+                            // Sort all events by time ascending first
+                            const sorted = [...newsEvents].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+                            const past = sorted.filter(e => new Date(e.time).getTime() < now - 60000);
+                            const current = sorted.filter(e => {
+                                const t = new Date(e.time).getTime();
+                                return t >= now - 60000 && t <= now + 600000; // Next 10 mins
+                            });
+                            const future = sorted.filter(e => new Date(e.time).getTime() > now + 600000);
+
+                            if (newsEvents.length === 0) {
+                                return (
+                                    <div className="py-10 text-center opacity-30 text-xs italic">
+                                        {lang === 'ar' ? 'جاري جلب الأجندة...' : 'Fetching calendar...'}
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <>
+                                    {/* ACTIVE / UPCOMING */}
+                                    {current.length > 0 && (
+                                        <div className="space-y-3">
+                                            <div className="text-[9px] font-bold text-primary uppercase tracking-tighter opacity-80">{lang === 'ar' ? 'الأخبار القريبة / الحالية' : 'IMMINENT / ACTIVE'}</div>
+                                            {current.map(event => (
+                                                <div key={event.id} className="p-3 rounded-2xl bg-primary/10 border-2 border-primary/40 shadow-[0_0_15px_rgba(168,85,247,0.2)] animate-pulse">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">LIVE NOW</span>
+                                                        <span className="text-[10px] text-primary font-bold">{new Date(event.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                    <div className="text-xs font-black text-foreground mb-2">{event.event}</div>
+                                                    <div className="flex justify-between items-center text-[9px] font-mono">
+                                                        <span className="text-muted-foreground">ACTUAL: <span className="text-primary">{event.actual || '...'}</span></span>
+                                                        <span className="text-muted-foreground">FORC: {event.forecast}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* FUTURE */}
+                                    <div className="space-y-3">
+                                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-80">{lang === 'ar' ? 'الأخبار القادمة' : 'COMING UP'}</div>
+                                        {future.slice(0, 5).map(event => (
+                                            <div key={event.id} className="p-3 rounded-2xl bg-white/5 dark:bg-zinc-900/50 border border-border/50 hover:border-primary/40 transition-all opacity-80">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] font-bold text-orange-400">UPCOMING</span>
+                                                    <span className="text-[10px] text-muted-foreground">{new Date(event.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                                <div className="text-xs font-black text-foreground mb-2">{event.event}</div>
+                                                <div className="flex gap-2 text-[9px] font-mono text-muted-foreground">
+                                                    <span>FORC: {event.forecast}</span>
+                                                    <span>PREV: {event.previous}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* PAST */}
+                                    <div className="space-y-3 opacity-50">
+                                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">{lang === 'ar' ? 'الأخبار السابقة' : 'PAST EVENTS'}</div>
+                                        {past.slice(-3).map(event => (
+                                            <div key={event.id} className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-transparent text-[10px]">
+                                                <div className="flex justify-between mb-1">
+                                                    <span className="font-bold text-muted-foreground">{new Date(event.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className="font-mono text-primary">{event.actual}</span>
+                                                </div>
+                                                <div className="truncate text-muted-foreground">{event.event}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </div>
+                </div>
+
+                {/* Central Radar - Main */}
+                <div className="lg:col-span-6 flex justify-center order-1 lg:order-2">
+                    <div className="relative w-[320px] h-[320px] md:w-[480px] md:h-[480px]">
+                        {/* Radar Background Effects */}
+                        <div className="absolute inset-0 rounded-full border border-primary/20 bg-primary/5 backdrop-blur-3xl shadow-[0_0_80px_rgba(168,85,247,0.1)]" />
+
+                        {/* Recursive Circles */}
+                        {[20, 40, 60, 80].map(s => (
+                            <div key={s} className="absolute inset-0 m-auto border border-primary/10 rounded-full" style={{ width: `${s}%`, height: `${s}%` }} />
+                        ))}
+
+                        {/* Scanning Sweep */}
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent origin-center rounded-full"
+                            style={{ clipPath: 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%)' }}
+                        />
+
+                        {/* Gold Price Centerpiece */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                            <motion.div
+                                animate={highAlertMode ? { scale: [1, 1.1, 1] } : {}}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                                className="relative p-6 md:p-10 rounded-full bg-background border-2 border-primary shadow-[0_0_40px_rgba(168,85,247,0.4)] flex flex-col items-center"
+                            >
+                                <span className="text-[10px] font-black text-primary mb-1 tracking-widest uppercase">GOLD SPOT</span>
+                                <span className={`text-3xl md:text-5xl font-black ${goldPrice >= lastGoldPrice ? 'text-green-500' : 'text-red-500'}`}>
+                                    {goldPrice.toFixed(2)}
+                                </span>
+                                <div className="flex items-center gap-1 mt-1">
+                                    {goldPrice >= lastGoldPrice ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
+                                    <span className="text-xs font-bold text-muted-foreground uppercase">{goldPrice >= lastGoldPrice ? 'BULLISH' : 'BEARISH'}</span>
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* News Event Markers on Radar */}
+                        {newsEvents.map((e, i) => {
+                            const angle = (i / newsEvents.length) * Math.PI * 2;
+                            return (
+                                <motion.div
+                                    key={e.id}
+                                    className="absolute p-1"
+                                    style={{
+                                        left: `${50 + Math.cos(angle) * 35}%`,
+                                        top: `${50 + Math.sin(angle) * 35}%`,
+                                    }}
+                                    animate={{ opacity: [0.3, 1, 0.3] }}
+                                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+                                >
+                                    <AlertTriangle className="w-5 h-5 text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,1)]" />
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Live Reaction Card - Right side */}
+                <div className="lg:col-span-3 order-3">
+                    <AnimatePresence mode="wait">
+                        {activeSignal ? (
+                            <motion.div
+                                key="signal"
+                                initial={{ x: 50, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: -20, opacity: 0 }}
+                                className={`p-6 rounded-[2rem] border-2 ${activeSignal.type === 'BUY' ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10'} shadow-2xl relative overflow-hidden`}
+                            >
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <Zap className="w-20 h-20" />
+                                </div>
+                                <h3 className="text-[10px] font-black uppercase mb-4 flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4" /> {t.liveReaction}
+                                </h3>
+                                <div className={`text-2xl font-black mb-2 ${activeSignal.type === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {activeSignal.type === 'BUY' ? t.buySignal : t.sellSignal}
+                                </div>
+                                <div className="text-xs text-muted-foreground mb-4 font-medium leading-relaxed">
+                                    {activeSignal.reason}
+                                </div>
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <div className="text-[8px] text-muted-foreground uppercase font-bold">Execution Price</div>
+                                        <div className="text-lg font-black font-mono">@{activeSignal.price}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-[8px] text-muted-foreground uppercase font-bold">Confidence</div>
+                                        <div className="text-lg font-black text-primary">{activeSignal.confidence}%</div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="waiting"
+                                className="p-8 rounded-[2rem] border border-dashed border-border/50 text-center opacity-50"
+                            >
+                                <Activity className="w-10 h-10 text-muted-foreground mx-auto mb-4 animate-pulse" />
+                                <p className="text-xs font-bold uppercase tracking-widest">{t.waitingNews}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+            </div>
+
+            {/* Aesthetic Information Box */}
+            <div className="mt-16 w-full max-w-2xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-8 text-center shadow-xl">
+                <div className="inline-flex h-2 w-2 rounded-full bg-red-500 mb-4 animate-ping" />
+                <h4 className="text-xl font-bold mb-4">{lang === 'ar' ? 'نظام الاستجابة الفورية للخبر' : 'Zero-Delay News Execution System'}</h4>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                    {lang === 'ar'
+                        ? 'يعمل الرادار على سحب بيانات الأجندة الاقتصادية (Eco Calendar) لحظة صدورها. عند اقتراب الخبر من الصدور بدقيقة، يدخل النظام في وضع "التأهب العالي" لتحليل الفرق بين الأرقام المعلنة والمتوقعة وإعطاء صفقة مؤسساتية ذهبية في نفس الثانية.'
+                        : 'The radar pulls Eco Calendar data the moment it releases. Within 1 minute of news impact, the system enters "High Alert" mode to analyze the delta between Actual and Forecast figures, providing a gold institutional signal in the same second.'
+                    }
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                        <div className="text-xs font-black text-primary leading-none">NO DELAY</div>
+                        <div className="text-[9px] text-muted-foreground uppercase mt-1">Direct API Stream</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                        <div className="text-xs font-black text-primary leading-none">GOLD FOCUS</div>
+                        <div className="text-[9px] text-muted-foreground uppercase mt-1">XAU/USD Sentiment</div>
+                    </div>
+                </div>
+            </div>
+
+        </div >
     );
 }

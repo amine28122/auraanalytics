@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, memo, useState } from 'react';
-import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, CandlestickSeries, Time } from 'lightweight-charts';
+import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, CandlestickSeries, AreaSeries, LineSeries, Time } from 'lightweight-charts';
 
 interface LightweightChartProps {
     symbol: string;
@@ -11,15 +11,24 @@ interface LightweightChartProps {
     theme?: 'light' | 'dark';
     markers?: any[];
     extraLines?: { price: number; color: string; title: string }[]; // Institutional Levels
+    predictionPath?: { time: number; value: number }[]; // Futuristic Path
+    liquidityBands?: { upper: any[], lower: any[] }; // Dynamic Reversal Bands
+    showAuraIndicator?: boolean;
     onUpdatePosition?: (id: string | number, updates: { sl?: number | null, tp?: number | null }) => void;
 }
 
-function LightweightChart({ symbol, interval, positions, selectedPositionId, theme = 'dark', markers = [], extraLines = [], onUpdatePosition }: LightweightChartProps) {
+function LightweightChart({ symbol, interval, positions, selectedPositionId, theme = 'dark', markers = [], extraLines = [], predictionPath = [], liquidityBands = { upper: [], lower: [] }, showAuraIndicator = false, onUpdatePosition }: LightweightChartProps) {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartInstance = useRef<IChartApi | null>(null);
     const [series, setSeries] = useState<ISeriesApi<"Candlestick"> | null>(null);
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const linesRef = useRef<any[]>([]);
+    const ema20Ref = useRef<any>(null);
+    const ema50Ref = useRef<any>(null);
+    const ema200Ref = useRef<any>(null);
+    const bbUpperRef = useRef<any>(null);
+    const bbLowerRef = useRef<any>(null);
+    const predictionRef = useRef<any>(null);
     const dragInfo = useRef<{ id: string | number, type: 'sl' | 'tp' | 'auto', initialPrice?: number } | null>(null);
 
     // Refs to avoid chart recreation while allowing access to latest props in event listeners
@@ -71,8 +80,8 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         seriesRef.current = candlestickSeries;
         setSeries(candlestickSeries);
 
-        // Fetch Historical Data
-        fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=200`)
+        // Fetch Historical Data - Increased to 1000 for deep history
+        fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=1000`)
             .then(res => res.json())
             .then(data => {
                 const candleData = data.map((d: any) => ({
@@ -90,13 +99,14 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
         ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
             const kline = message.k;
-            candlestickSeries.update({
+            const update = {
                 time: (kline.t / 1000) as Time,
                 open: parseFloat(kline.o),
                 high: parseFloat(kline.h),
                 low: parseFloat(kline.l),
                 close: parseFloat(kline.c),
-            });
+            };
+            candlestickSeries.update(update);
         };
 
         // Dragging Logic
@@ -272,6 +282,11 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
             window.removeEventListener('resize', handleResize);
             ws.close();
             chart.remove();
+            chartInstance.current = null;
+            // Clear indicator refs as they belong to the destroyed chart
+            [ema20Ref, ema50Ref, ema200Ref, bbUpperRef, bbLowerRef].forEach(ref => {
+                ref.current = null;
+            });
         };
     }, [symbol, interval, theme]); // Keep dependencies minimal for chart recreation
 
@@ -365,18 +380,136 @@ function LightweightChart({ symbol, interval, positions, selectedPositionId, the
 
     // Update Markers (Signals)
     useEffect(() => {
+        let isMounted = true;
         if (series) {
             try {
-                // Safety check: ensure setMarkers exists before calling
+                // EMA Calculation Function
+                const calculateEMA = (data: any[], period: number) => {
+                    const k = 2 / (period + 1);
+                    let emaData = [];
+                    let prevEma = data[0].close;
+
+                    for (let i = 0; i < data.length; i++) {
+                        const ema = (data[i].close - prevEma) * k + prevEma;
+                        emaData.push({ time: data[i].time, value: ema });
+                        prevEma = ema;
+                    }
+                    return emaData;
+                };
+
+                // Bollinger Bands Calculation
+                const calculateBB = (data: any[], period: number, stdDev: number) => {
+                    let bbData = { upper: [] as any[], middle: [] as any[], lower: [] as any[] };
+                    for (let i = period - 1; i < data.length; i++) {
+                        const slice = data.slice(i - period + 1, i + 1);
+                        const mean = slice.reduce((a, b) => a + b.close, 0) / period;
+                        const variance = slice.reduce((a, b) => a + Math.pow(b.close - mean, 2), 0) / period;
+                        const sd = Math.sqrt(variance);
+                        bbData.upper.push({ time: data[i].time, value: mean + (stdDev * sd) });
+                        bbData.middle.push({ time: data[i].time, value: mean });
+                        bbData.lower.push({ time: data[i].time, value: mean - (stdDev * sd) });
+                    }
+                    return bbData;
+                };
+
+                fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=1000`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!isMounted) return;
+                        const candleData = data.map((d: any) => ({
+                            time: (d[0] / 1000) as Time,
+                            close: parseFloat(d[4]),
+                        }));
+
+                        const chart = chartInstance.current;
+                        if (!chart) return;
+
+                        // Only remove if they belong to the current chartInstance
+                        [ema20Ref, ema50Ref, ema200Ref, bbUpperRef, bbLowerRef, predictionRef].forEach(ref => {
+                            if (ref.current) {
+                                try {
+                                    chart.removeSeries(ref.current);
+                                } catch (err) {
+                                    console.warn("Could not remove series:", err);
+                                }
+                                ref.current = null;
+                            }
+                        });
+
+                        if (!showAuraIndicator) return;
+
+                        const ema20Data = calculateEMA(candleData, 20);
+                        const ema50Data = calculateEMA(candleData, 50);
+                        const ema200Data = calculateEMA(candleData, 200);
+
+                        // Render Institutional Liquidity Envelopes (The "Two Lines")
+                        if (liquidityBands.upper.length > 0) {
+                            bbUpperRef.current = chart.addSeries(LineSeries, {
+                                color: '#ef4444',
+                                lineWidth: 2,
+                                lineStyle: 0,
+                                title: 'LIQUIDITY CEILING (REVERSAL ZONE)',
+                            });
+                            bbUpperRef.current.setData(liquidityBands.upper);
+
+                            bbLowerRef.current = chart.addSeries(LineSeries, {
+                                color: '#22c55e',
+                                lineWidth: 2,
+                                lineStyle: 0,
+                                title: 'LIQUIDITY FLOOR (REVERSAL ZONE)',
+                            });
+                            bbLowerRef.current.setData(liquidityBands.lower);
+                        }
+
+                        // Futuristic Prediction Path (Projected Trajectory)
+                        if (predictionPath.length > 0) {
+                            predictionRef.current = chart.addSeries(LineSeries, {
+                                color: '#00f2ff', // Vibrant Cyan
+                                lineWidth: 4,
+                                lineStyle: 0, // Solid
+                                title: 'INSTITUTIONAL ROAD',
+                                lastValueVisible: true,
+                                priceLineVisible: false,
+                            });
+                            predictionRef.current.setData(predictionPath);
+                        }
+                        // Render EMA Ribbon
+                        ema20Ref.current = chart.addSeries(AreaSeries, {
+                            lineColor: '#3b82f6',
+                            topColor: 'rgba(59, 130, 246, 0.1)',
+                            bottomColor: 'rgba(59, 130, 246, 0.0)',
+                            lineWidth: 2,
+                            title: 'EMA 20',
+                        });
+                        ema20Ref.current.setData(ema20Data);
+
+                        ema50Ref.current = chart.addSeries(LineSeries, {
+                            color: '#8b5cf6',
+                            lineWidth: 2,
+                            title: 'EMA 50',
+                        });
+                        ema50Ref.current.setData(ema50Data);
+
+                        ema200Ref.current = chart.addSeries(LineSeries, {
+                            color: '#f59e0b',
+                            lineWidth: 2,
+                            lineStyle: 2,
+                            title: 'EMA 200',
+                        });
+                        ema200Ref.current.setData(ema200Data);
+
+                    });
+
                 const s = series as any;
                 if (typeof s.setMarkers === 'function') {
-                    s.setMarkers(markers);
+                    s.setMarkers(showAuraIndicator ? markers : []);
                 }
             } catch (e) {
                 console.warn("Failed to set markers:", e);
             }
         }
-    }, [series, markers]);
+        return () => { isMounted = false; };
+    }, [series, markers, symbol, interval, showAuraIndicator, predictionPath]);
 
     return (
         <div ref={chartContainerRef} className="w-full h-full relative" />

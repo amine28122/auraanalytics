@@ -9,26 +9,26 @@ export default function RadarPage() {
 
     const translations = {
         en: {
-            howItWorksTitle: 'How AURA Radar Works',
-            desc: 'The **Aura Radar** is a sophisticated monitoring system that tracks live institutional order flow and market imbalances across global currency and commodity markets.',
-            li1Title: 'Live Monitoring',
-            li1Desc: 'It scans major liquid pairs every 30 seconds for sudden price shifts.',
-            li2Title: 'Momentum Engine',
-            li2Desc: 'It identifies high-volatility breakouts by comparing real-time candle data.',
-            li3Title: 'Automated Hub',
-            li3Desc: 'Opportunities are pinpointed on the radar the moment they emerge, requiring no manual action.',
-            footer: 'Professional Market Scanning Infrastructure'
+            howItWorksTitle: 'AURA Gold Radar Logic',
+            desc: 'The **Aura Radar** has been recalibrated to focus exclusively on Gold (XAU/USD). It synchronizes with the Global Economic Calendar to hunt for volatility during high-impact news releases.',
+            li1Title: 'Gold Spot Tracking',
+            li1Desc: 'Real-time monitoring of Gold price action and institutional liquidity flows.',
+            li2Title: 'Eco Calendar Sync',
+            li2Desc: 'Direct integration with USD high-impact news (NFP, CPI, Fed Rates) for immediate reaction.',
+            li3Title: 'Zero-Delay Execution',
+            li3Desc: 'The system analyzes news results the millisecond they release and issues a BUY or SELL signal for Gold.',
+            footer: 'Elite Gold Analysis Infrastructure'
         },
         ar: {
-            howItWorksTitle: 'كيف يعمل رادار أورا',
-            desc: 'نظام **رادار أورا** هو نظام مراقبة متطور يتتبع تدفق الأوامر المؤسسية واختلالات السوق الحية عبر أسواق العملات والسلع العالمية.',
-            li1Title: 'مراقبة حية',
-            li1Desc: 'يقوم بمسح الأزواج الرئيسية ذات السيولة العالية كل 30 ثانية بحثاً عن تحركات مفاجئة.',
-            li2Title: 'محرك الزخم',
-            li2Desc: 'يحدد الاختراقات السعرية عالية التقلب من خلال مقارنة بيانات الشموع في الوقت الفعلي.',
-            li3Title: 'مركز تلقائي',
-            li3Desc: 'يتم تحديد الفرص فور ظهورها على الرادار، ولا يتطلب أي تدخل يدوي.',
-            footer: 'بنية تحتية احترافية لمسح السوق'
+            howItWorksTitle: 'منطق رادار أورا للذهب',
+            desc: 'تمت إعادة معايرة **رادار أورا** ليركز حصرياً على الذهب (XAU/USD). يتزامن مع الأجندة الاقتصادية العالمية لاصطياد التقلبات أثناء صدور الأخبار عالية التأثير.',
+            li1Title: 'تتبع سعر الذهب',
+            li1Desc: 'مراقبة فورية لحركة سعر الذهب وتدفقات السيولة المؤسسية.',
+            li2Title: 'تزامن الأجندة الاقتصادية',
+            li2Desc: 'تكامل مباشر مع أخبار الدولار عالية التأثير (الوظائف، التضخم، الفائدة) للرد الفوري.',
+            li3Title: 'تنفيذ بدون تأخير',
+            li3Desc: 'يقوم النظام بتحليل نتائج الأخبار في ملي ثانية من صدورها ويعطي إشارة شراء أو بيع للذهب.',
+            footer: 'بنية تحتية احترافية لتحليل الذهب'
         }
     };
 
