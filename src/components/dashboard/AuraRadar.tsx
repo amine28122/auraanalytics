@@ -193,14 +193,52 @@ export default function AuraRadar() {
             {/* Radar & News Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-center">
 
-                {/* News Feed - Left side */}
+                {/* Sidebar: AI Analysis & News Feed */}
                 <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-background/80 backdrop-blur-sm py-2 z-10">
+
+                    {/* 1. TOP SPOT: AI LIVE ACTION / SIGNAL */}
+                    <AnimatePresence mode="wait">
+                        {activeSignal ? (
+                            <motion.div
+                                key="signal"
+                                initial={{ y: -20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 10, opacity: 0 }}
+                                className={`p-4 rounded-3xl border-2 ${activeSignal.type === 'BUY' ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10'} shadow-[0_0_20px_rgba(34,197,94,0.2)] relative overflow-hidden`}
+                            >
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">{t.liveReaction}</span>
+                                </div>
+                                <div className={`text-xl font-black mb-1 ${activeSignal.type === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {activeSignal.type === 'BUY' ? t.buySignal : t.sellSignal}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground font-bold mb-3 leading-tight uppercase">
+                                    {activeSignal.reason}
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-mono border-t border-white/5 pt-2">
+                                    <span className="font-bold">PRICE: {activeSignal.price}</span>
+                                    <span className="text-primary font-black">{activeSignal.confidence}% ACCURACY</span>
+                                </div>
+                            </motion.div>
+                        ) : highAlertMode ? (
+                            <motion.div
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                className="p-4 rounded-3xl border border-primary/30 bg-primary/5 text-center"
+                            >
+                                <Zap className="w-6 h-6 text-primary mx-auto mb-2 animate-bounce" />
+                                <div className="text-[10px] font-black text-primary uppercase">{lang === 'ar' ? 'جاري تحليل الخبر...' : 'ANALYZING NEWS DATA...'}</div>
+                                <div className="text-[9px] text-muted-foreground mt-1 uppercase">Zero-Delay Signal Imminent</div>
+                            </motion.div>
+                        ) : null}
+                    </AnimatePresence>
+
+                    {/* 2. CALENDAR HEADER */}
+                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-background/80 backdrop-blur-sm py-2 z-10 border-b border-border/10">
                         <Bell className="w-3 h-3 text-red-500" /> {lang === 'ar' ? 'الأجندة الاقتصادية الحية' : 'LIVE ECO CALENDAR'}
                     </h4>
 
                     <div className="space-y-6">
-                        {/* Categorize news manually based on current time */}
                         {(() => {
                             const now = new Date().getTime();
                             // Sort all events by time ascending first
@@ -235,7 +273,7 @@ export default function AuraRadar() {
                                                     </div>
                                                     <div className="text-xs font-black text-foreground mb-2">{event.event}</div>
                                                     <div className="flex justify-between items-center text-[9px] font-mono">
-                                                        <span className="text-muted-foreground">ACTUAL: <span className="text-primary">{event.actual || '...'}</span></span>
+                                                        <span className="text-muted-foreground">ACTUAL: <span className="text-primary font-bold">{event.actual || 'WAITING...'}</span></span>
                                                         <span className="text-muted-foreground">FORC: {event.forecast}</span>
                                                     </div>
                                                 </div>
@@ -244,10 +282,10 @@ export default function AuraRadar() {
                                     )}
 
                                     {/* FUTURE */}
-                                    <div className="space-y-3">
-                                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-80">{lang === 'ar' ? 'الأخبار القادمة' : 'COMING UP'}</div>
-                                        {future.slice(0, 5).map(event => (
-                                            <div key={event.id} className="p-3 rounded-2xl bg-white/5 dark:bg-zinc-900/50 border border-border/50 hover:border-primary/40 transition-all opacity-80">
+                                    <div className="space-y-3 pt-2">
+                                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-80 border-l-2 border-orange-400 pl-2">{lang === 'ar' ? 'الأخبار القادمة' : 'COMING UP'}</div>
+                                        {future.slice(0, 10).map(event => (
+                                            <div key={event.id} className="p-3 rounded-2xl bg-white/5 dark:bg-zinc-900/50 border border-border/50 hover:border-primary/40 transition-all">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <span className="text-[9px] font-bold text-orange-400">UPCOMING</span>
                                                     <span className="text-[10px] text-muted-foreground">{new Date(event.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -262,15 +300,15 @@ export default function AuraRadar() {
                                     </div>
 
                                     {/* PAST */}
-                                    <div className="space-y-3 opacity-50">
-                                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">{lang === 'ar' ? 'الأخبار السابقة' : 'PAST EVENTS'}</div>
-                                        {past.slice(-3).map(event => (
+                                    <div className="space-y-3 opacity-50 pt-2 border-t border-white/5">
+                                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter border-l-2 border-gray-500 pl-2">{lang === 'ar' ? 'الأخبار السابقة' : 'PAST EVENTS'}</div>
+                                        {past.slice(-5).map(event => (
                                             <div key={event.id} className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-transparent text-[10px]">
                                                 <div className="flex justify-between mb-1">
                                                     <span className="font-bold text-muted-foreground">{new Date(event.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    <span className="font-mono text-primary">{event.actual}</span>
+                                                    <span className="font-mono text-primary font-bold">{event.actual}</span>
                                                 </div>
-                                                <div className="truncate text-muted-foreground">{event.event}</div>
+                                                <div className="truncate text-[10px] text-muted-foreground font-medium">{event.event}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -338,50 +376,11 @@ export default function AuraRadar() {
                     </div>
                 </div>
 
-                {/* Live Reaction Card - Right side */}
-                <div className="lg:col-span-3 order-3">
-                    <AnimatePresence mode="wait">
-                        {activeSignal ? (
-                            <motion.div
-                                key="signal"
-                                initial={{ x: 50, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                exit={{ x: -20, opacity: 0 }}
-                                className={`p-6 rounded-[2rem] border-2 ${activeSignal.type === 'BUY' ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10'} shadow-2xl relative overflow-hidden`}
-                            >
-                                <div className="absolute top-0 right-0 p-4 opacity-10">
-                                    <Zap className="w-20 h-20" />
-                                </div>
-                                <h3 className="text-[10px] font-black uppercase mb-4 flex items-center gap-2">
-                                    <ShieldCheck className="w-4 h-4" /> {t.liveReaction}
-                                </h3>
-                                <div className={`text-2xl font-black mb-2 ${activeSignal.type === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
-                                    {activeSignal.type === 'BUY' ? t.buySignal : t.sellSignal}
-                                </div>
-                                <div className="text-xs text-muted-foreground mb-4 font-medium leading-relaxed">
-                                    {activeSignal.reason}
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <div className="text-[8px] text-muted-foreground uppercase font-bold">Execution Price</div>
-                                        <div className="text-lg font-black font-mono">@{activeSignal.price}</div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-[8px] text-muted-foreground uppercase font-bold">Confidence</div>
-                                        <div className="text-lg font-black text-primary">{activeSignal.confidence}%</div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="waiting"
-                                className="p-8 rounded-[2rem] border border-dashed border-border/50 text-center opacity-50"
-                            >
-                                <Activity className="w-10 h-10 text-muted-foreground mx-auto mb-4 animate-pulse" />
-                                <p className="text-xs font-bold uppercase tracking-widest">{t.waitingNews}</p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                {/* Right Side: Empty for cleaner aesthetic, or for more analytics later */}
+                <div className="lg:col-span-3 hidden lg:block opacity-20 pointer-events-none">
+                    <div className="p-10 border border-dashed border-primary/20 rounded-[3rem] h-full flex items-center justify-center">
+                        <RadarIcon className="w-20 h-20 text-primary" />
+                    </div>
                 </div>
 
             </div>
