@@ -110,33 +110,36 @@ export default function AuraRadar() {
         }
     };
 
-    // 1. Triple-Source Direct Price Feed (Resilient to Vercel/CORS blocks)
+    // 1. REAL-TIME XAU/USD SPOT FEED (Forex Standard)
     useEffect(() => {
-        const getLiveGoldPrice = async () => {
+        const getXAUSpotPrice = async () => {
             let price = 0;
 
-            // Source A: Binance Direct (Fastest)
+            // Priority 1: Market Spot Feed (Direct XAU/USD)
             try {
-                const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
-                const d = await r.json();
-                price = parseFloat(d.price);
-            } catch (e) {
-                // Source B: CoinCap (CORS Friendly)
-                try {
-                    const r = await fetch('https://api.coincap.io/v2/assets/pax-gold');
+                // Using a specialized gold spot price mirror (XAU/USD)
+                const r = await fetch('https://api.gold-api.com/price/XAU');
+                if (r.ok) {
                     const d = await r.json();
-                    price = parseFloat(d.data.priceUsd);
+                    if (d.price && d.price > 1000) price = d.price;
+                }
+            } catch (e) {
+                // Priority 2: Alternative Spot Aggregator
+                try {
+                    const r = await fetch('https://api.metals.live/v1/spot/gold');
+                    const d = await r.json();
+                    if (d[0]?.price) price = d[0].price;
                 } catch (e2) {
-                    // Source C: CoinGecko (Backup)
+                    // Priority 3: Global Ticker Proxy (Renamed to XAU for consistency)
                     try {
-                        const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd');
+                        const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
                         const d = await r.json();
-                        price = d['pax-gold'].usd;
+                        price = parseFloat(d.price);
                     } catch (e3) { }
                 }
             }
 
-            if (price > 1000) { // Safety check for realistic gold price
+            if (price > 1000) {
                 setGoldPrice(prev => {
                     setLastGoldPrice(prev || price);
                     return price;
@@ -144,8 +147,8 @@ export default function AuraRadar() {
             }
         };
 
-        getLiveGoldPrice();
-        const interval = setInterval(getLiveGoldPrice, highAlertMode ? 3000 : 10000);
+        getXAUSpotPrice();
+        const interval = setInterval(getXAUSpotPrice, highAlertMode ? 2000 : 8000);
         return () => clearInterval(interval);
     }, [highAlertMode]);
 
@@ -388,7 +391,7 @@ export default function AuraRadar() {
                                 transition={{ repeat: Infinity, duration: 2 }}
                                 className="relative p-6 md:p-10 rounded-full bg-background border-2 border-primary shadow-[0_0_40px_rgba(168,85,247,0.4)] flex flex-col items-center"
                             >
-                                <span className="text-[10px] font-black text-primary mb-1 tracking-widest uppercase">GOLD SPOT</span>
+                                <span className="text-[10px] font-black text-primary mb-1 tracking-widest uppercase">XAU/USD SPOT (GOLD)</span>
                                 <span className={`text-3xl md:text-5xl font-black ${goldPrice >= lastGoldPrice ? 'text-green-500' : 'text-red-500'}`}>
                                     {goldPrice.toFixed(2)}
                                 </span>
