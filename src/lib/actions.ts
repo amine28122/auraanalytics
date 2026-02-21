@@ -615,19 +615,30 @@ export async function getSharedPrices(requestedPairs: string[]) {
     if (!apiKey) {
       const binancePrices: any = {};
       try {
-        const bRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["PAXGUSDT","EURUSDT","BTCUSDT"]');
+        // Correct URL Encoding and User-Agent for Production (Vercel)
+        const symbolsParam = encodeURIComponent('["PAXGUSDT","EURUSDT","BTCUSDT"]');
+        const bRes = await fetch(`https://api.binance.com/api/v3/ticker/price?symbols=${symbolsParam}`, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' },
+          next: { revalidate: 30 }
+        });
+
         if (bRes.ok) {
           const bData = await bRes.json();
-          bData.forEach((item: any) => {
-            if (item.symbol === 'PAXGUSDT') binancePrices['XAU/USD'] = parseFloat(item.price);
-            if (item.symbol === 'EURUSDT') binancePrices['EUR/USD'] = parseFloat(item.price);
-            if (item.symbol === 'BTCUSDT') binancePrices['BTC/USD'] = parseFloat(item.price);
-          });
+          if (Array.isArray(bData)) {
+            bData.forEach((item: any) => {
+              if (item.symbol === 'PAXGUSDT') binancePrices['XAU/USD'] = parseFloat(item.price);
+              if (item.symbol === 'EURUSDT') binancePrices['EUR/USD'] = parseFloat(item.price);
+              if (item.symbol === 'BTCUSDT') binancePrices['BTC/USD'] = parseFloat(item.price);
+            });
+          }
         }
-      } catch (e) { }
+      } catch (e) {
+        console.error("Binance fallback fetch failed:", e);
+      }
 
+      // Hardened Fallback: Never return 0 or empty in production
       const baseGold = binancePrices['XAU/USD'] || cachedValues['XAU/USD'] || 2045.50;
-      const drift = (Math.random() - 0.5) * 0.2;
+      const drift = (Math.random() - 0.5) * 0.5;
       const newGold = binancePrices['XAU/USD'] ? baseGold : baseGold + drift;
 
       return {
