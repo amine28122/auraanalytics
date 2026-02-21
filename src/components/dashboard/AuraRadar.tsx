@@ -110,44 +110,54 @@ export default function AuraRadar() {
         }
     };
 
-    // 1. Data Polling & Price Fallback
+    // 1. Triple-Source Direct Price Feed (Resilient to Vercel/CORS blocks)
     useEffect(() => {
-        const fastPriceScan = async () => {
-            // Priority 0: Try direct client-side fetch from Binance (Bypasses Vercel IP blocks)
+        const getLiveGoldPrice = async () => {
+            let price = 0;
+
+            // Source A: Binance Direct (Fastest)
             try {
-                const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
-                if (res.ok) {
-                    const data = await res.json();
-                    const p = parseFloat(data.price);
-                    if (p > 0) {
-                        setLastGoldPrice(goldPrice || p);
-                        setGoldPrice(p);
-                        return; // Found real price, skip server poll for this frame
-                    }
+                const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
+                const d = await r.json();
+                price = parseFloat(d.price);
+            } catch (e) {
+                // Source B: CoinCap (CORS Friendly)
+                try {
+                    const r = await fetch('https://api.coincap.io/v2/assets/pax-gold');
+                    const d = await r.json();
+                    price = parseFloat(d.data.priceUsd);
+                } catch (e2) {
+                    // Source C: CoinGecko (Backup)
+                    try {
+                        const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd');
+                        const d = await r.json();
+                        price = d['pax-gold'].usd;
+                    } catch (e3) { }
                 }
-            } catch (e) { }
+            }
 
-            // Priority 1: Server Side Poll (Syncs with news/database)
-            fetchRadarData();
-        };
-
-        fastPriceScan();
-        const intervalTime = highAlertMode ? 3000 : 15000;
-        const intv = setInterval(fastPriceScan, intervalTime);
-        return () => clearInterval(intv);
-    }, [highAlertMode, goldPrice]);
-
-    // 2. News Processing & Secondary Data
-    useEffect(() => {
-        const fetchNewsOnly = async () => {
-            const newsRes = await getEconomicCalendar();
-            if (newsRes.success) {
-                setNewsEvents(newsRes.items as NewsEvent[]);
+            if (price > 1000) { // Safety check for realistic gold price
+                setGoldPrice(prev => {
+                    setLastGoldPrice(prev || price);
+                    return price;
+                });
             }
         };
-        fetchNewsOnly();
-        const intv = setInterval(fetchNewsOnly, 60000);
-        return () => clearInterval(intv);
+
+        getLiveGoldPrice();
+        const interval = setInterval(getLiveGoldPrice, highAlertMode ? 3000 : 10000);
+        return () => clearInterval(interval);
+    }, [highAlertMode]);
+
+    // 2. News Processing (Official Feed)
+    useEffect(() => {
+        const fetchNews = async () => {
+            const newsRes = await getEconomicCalendar();
+            if (newsRes.success) setNewsEvents(newsRes.items as NewsEvent[]);
+        };
+        fetchNews();
+        const interval = setInterval(fetchNews, 60000);
+        return () => clearInterval(interval);
     }, []);
 
     // 2. Countdown & Impact Hook (Stable order)
