@@ -190,6 +190,6 @@ export default function DashboardPage() {
             </div>
 
             <UnifiedAnalysis />
-        </div>
+        </div >
     );
 }

@@ -11,21 +11,17 @@ interface ThemeContextType {
 }
 
 // Provide a default value to avoid the "must be used within ThemeProvider" error during SSR or edge cases
-const ThemeContext = createContext<ThemeContextType>({
-    theme: 'dark',
-    toggleTheme: () => { },
-    setTheme: () => { },
-});
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>('dark');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // Read theme from localStorage or default to dark
         const savedTheme = localStorage.getItem('theme') as Theme | null;
         const initialTheme = savedTheme || 'dark';
         setThemeState(initialTheme);
-        document.documentElement.classList.toggle('dark', initialTheme === 'dark');
         setMounted(true);
     }, []);
 
@@ -44,6 +40,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+            {/* We still render children even if not mounted to allow for SSR SEO, 
+                but useTheme consumers can check for mounted if needed or rely on the script in header */}
             {children}
         </ThemeContext.Provider>
     );
@@ -51,5 +49,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
     const context = useContext(ThemeContext);
+    if (context === undefined) {
+        // Fallback for SSR or if used outside provider - matches the default script in layout.tsx
+        return {
+            theme: 'dark' as Theme,
+            toggleTheme: () => { },
+            setTheme: () => { },
+        };
+    }
     return context;
 }

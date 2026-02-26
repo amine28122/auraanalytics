@@ -22,6 +22,7 @@ import {
   Upload, Loader2, Info, Zap, Trash2, Camera, VideoOff, BrainCircuit, X, PlusCircle, Lock, CheckCircle2, TrendingUp
 } from 'lucide-react';
 
+import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { TradeSignals } from './trade-signals';
 import { useAuth, useFirebase } from '@/firebase';
@@ -256,36 +257,125 @@ const ImageUploader = ({
   t: any
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && fileInputRef.current) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      fileInputRef.current.files = dataTransfer.files;
+      const event = { target: fileInputRef.current } as React.ChangeEvent<HTMLInputElement>;
+      onFileChange(event);
+    }
+  };
 
   return (
-    <div className="space-y-2">
-      <h3 className="font-semibold text-sm text-muted-foreground">{title}</h3>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <h3 className="font-bold text-xs uppercase tracking-[0.2em] text-primary/80 flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          {title}
+        </h3>
+        {imageData && (
+          <Badge variant="outline" className="text-[9px] bg-primary/5 border-primary/20 text-primary">
+            Image Loaded
+          </Badge>
+        )}
+      </div>
+
       <div
-        className="relative flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed bg-muted/50 p-2 text-muted-foreground"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          "relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 transition-all duration-500",
+          imageData
+            ? "border-primary/30 bg-black/40 shadow-[0_0_20px_rgba(var(--primary),0.1)]"
+            : isDragging
+              ? "border-primary bg-primary/5 scale-[1.02] shadow-[0_0_30px_rgba(var(--primary),0.2)]"
+              : "border-dashed border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/10"
+        )}
       >
+        {/* Futuristic Background Grid */}
+        {!imageData && (
+          <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+          />
+        )}
+
         {imageData ? (
-          <>
-            <Image src={imageData} alt="Preview" fill className="object-contain rounded-md p-1" />
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              className="absolute right-1 top-1 h-7 w-7 z-10"
-              onClick={onRemove}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative h-full w-full p-2 group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+            <Image src={imageData} alt="Preview" fill className="object-contain rounded-lg shadow-2xl" />
+
+            <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="h-9 px-4 rounded-full shadow-xl bg-red-600 hover:bg-red-700"
+                onClick={onRemove}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t.remove}
+              </Button>
+            </div>
+          </motion.div>
         ) : (
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 w-full justify-center px-4">
-            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="mr-2 h-5 w-5" />
-              {t.upload}
-            </Button>
-            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onCameraClick}>
-              <Camera className="mr-2 h-5 w-5" />
-              {t.capture}
-            </Button>
+          <div className="relative z-10 flex flex-col items-center gap-6 p-6 text-center">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full animate-pulse" />
+              <div className="relative h-16 w-16 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center shadow-inner group-hover:border-primary/50 transition-colors">
+                <Upload className={cn("h-8 w-8 transition-all duration-500", isDragging ? "text-primary scale-110" : "text-muted-foreground")} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground tracking-wide">
+                Drop your chart here or use tools below
+              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                PNG, JPG up to 10MB
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 w-full max-w-[280px]">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1 bg-white/[0.05] hover:bg-white/[0.1] border-white/5 h-10"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {t.upload}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1 bg-white/[0.05] hover:bg-white/[0.1] border-white/5 h-10"
+                onClick={onCameraClick}
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                {t.capture}
+              </Button>
+            </div>
+
             <Input
               ref={fileInputRef}
               type="file"
@@ -295,10 +385,21 @@ const ImageUploader = ({
             />
           </div>
         )}
+
+        {/* Scan Line Animation (only when image is present) */}
+        {imageData && (
+          <motion.div
+            initial={{ top: '-10%' }}
+            animate={{ top: '110%' }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="absolute left-0 right-0 h-[2px] bg-primary/40 shadow-[0_0_15px_rgba(var(--primary),1)] z-30 pointer-events-none"
+          />
+        )}
       </div>
     </div>
   )
 }
+
 
 function AnalysisSchoolsSelector({ t, userPlan }: { t: any; userPlan?: 'Free' | 'Premium' | 'Aura Plan' }) {
   const form = useFormContext<z.infer<typeof FormSchema>>();
