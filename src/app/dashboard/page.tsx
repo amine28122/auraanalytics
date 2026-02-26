@@ -2,6 +2,7 @@
 
 import { UnifiedAnalysis } from '@/components/dashboard/unified-analysis';
 import { MarketSessions } from '@/components/dashboard/market-sessions';
+import { AILiveStatus } from '@/components/dashboard/ai-live-status';
 import { useAuth, useFirebase } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -79,12 +80,17 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-8" dir={dir}>
             <MarketSessions />
 
-            {/* ── Page title ── */}
-            <div className="flex w-full flex-col gap-1">
-                <h1 className="font-headline text-3xl font-bold tracking-tighter">
-                    {t.title}
-                </h1>
-                <p className="text-muted-foreground text-sm">{t.description}</p>
+            {/* ── Page title & AI Live Status ── */}
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                    <h1 className="font-headline text-3xl font-bold tracking-tighter">
+                        {t.title}
+                    </h1>
+                    <p className="text-muted-foreground text-sm">{t.description}</p>
+                </div>
+                <div className="w-fit max-w-full">
+                    <AILiveStatus />
+                </div>
             </div>
 
             {/* ── Refer & Earn compact banner ── */}

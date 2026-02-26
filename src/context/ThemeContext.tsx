@@ -18,7 +18,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // Read theme from localStorage or default to dark
         const savedTheme = localStorage.getItem('theme') as Theme | null;
         const initialTheme = savedTheme || 'dark';
         setThemeState(initialTheme);
@@ -38,10 +37,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.classList.toggle('dark', newTheme === 'dark');
     };
 
+    // Stable context value
+    const value = React.useMemo(() => ({
+        theme,
+        toggleTheme,
+        setTheme
+    }), [theme]);
+
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-            {/* We still render children even if not mounted to allow for SSR SEO, 
-                but useTheme consumers can check for mounted if needed or rely on the script in header */}
+        <ThemeContext.Provider value={value}>
             {children}
         </ThemeContext.Provider>
     );
@@ -49,13 +53,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
     const context = useContext(ThemeContext);
-    if (context === undefined) {
-        // Fallback for SSR or if used outside provider - matches the default script in layout.tsx
+
+    // If context is undefined (e.g. during SSR or if used outside Provider), 
+    // provide a safe fallback that matches the default application state.
+    if (!context) {
         return {
             theme: 'dark' as Theme,
             toggleTheme: () => { },
             setTheme: () => { },
         };
     }
+
     return context;
 }
