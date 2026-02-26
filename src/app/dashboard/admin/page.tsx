@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFirebase } from '@/firebase';
-import { collection, onSnapshot, query, doc, updateDoc, Timestamp, writeBatch, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, updateDoc, Timestamp, writeBatch, where, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Loader2, Edit, CalendarDays, RefreshCw, AlertCircle, Check, Paperclip,
   ExternalLink, Mail, KeySquare, Users, Crown, Gem, DollarSign,
-  BarChart2, Search, Wallet, Activity, TrendingUp, Clock, Star, MessageSquare, Trash2, ThumbsUp, ThumbsDown
+  BarChart2, Search, Wallet, Activity, TrendingUp, Clock, Star, MessageSquare, Trash2, ThumbsUp, ThumbsDown, User
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -1266,20 +1266,36 @@ function ReviewsAdminPanel() {
 
   useEffect(() => {
     if (!firestore) return;
-    const { collection: col, onSnapshot: snap, query: q, orderBy } = require('firebase/firestore');
-    const reviewsQ = q(col(firestore, 'reviews'), orderBy('createdAt', 'desc'));
-    const unsub = snap(reviewsQ, (snapshot: any) => {
-      const data = snapshot.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : new Date().toISOString(),
-        approvedAt: doc.data().approvedAt?.toDate ? doc.data().approvedAt.toDate().toISOString() : undefined,
-      }));
-      setReviews(data);
-      setLoading(false);
-    });
+
+    setLoading(true);
+    const reviewsQ = query(collection(firestore, 'reviews'), orderBy('createdAt', 'desc'));
+
+    const unsub = onSnapshot(reviewsQ,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            ...d,
+            createdAt: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : new Date().toISOString(),
+            approvedAt: d.approvedAt?.toDate ? d.approvedAt.toDate().toISOString() : undefined,
+          } as Review & { id: string };
+        });
+        setReviews(data);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Reviews snapshot error:", err);
+        toast({
+          variant: "destructive",
+          title: "Error fetching reviews",
+          description: err.message
+        });
+        setLoading(false);
+      }
+    );
     return () => unsub();
-  }, [firestore]);
+  }, [firestore, toast]);
 
   const handleApprove = async (id: string) => {
     setProcessingId(id);
