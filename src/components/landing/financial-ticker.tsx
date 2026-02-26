@@ -1,30 +1,33 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Script from 'next/script';
 
 type Theme = 'light' | 'dark';
 
 interface FinancialTickerProps {
   theme?: Theme;
+  isFixed?: boolean;
 }
 
-export default function FinancialTicker({ theme = 'dark' }: FinancialTickerProps) {
+export default function FinancialTicker({ theme = 'dark', isFixed = true }: FinancialTickerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     // We need to re-render the widget when theme changes
     // This is a bit of a hack as the third-party script doesn't have a clean API for this
-    const container = document.querySelector('.pts-assets-ticker');
-    if (container) {
-      container.innerHTML = ''; // Clear it
+    if (containerRef.current) {
+      containerRef.current.innerHTML = ''; // Clear it
       const script = document.createElement('script');
       script.src = "https://wm.pandats.com/pts-assets-ticker/pts-assets-ticker.js";
       script.async = true;
-      container.appendChild(script);
+      containerRef.current.appendChild(script);
     }
   }, [theme]);
 
   return (
-    <div className="fixed top-0 left-0 right-0 w-full z-50">
+    <div className={isFixed ? "fixed top-0 left-0 right-0 w-full z-50" : "w-full z-20 relative"}>
       <div
+        ref={containerRef}
         className="pts-assets-ticker ruler"
         data-brand-slug="aura"
         data-icons="true"

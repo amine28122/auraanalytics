@@ -25,6 +25,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardDescription, CardHeader } from '../ui/card';
 import { CardTitle as CardTitleComponent } from '../ui/card';
 import { formatDistanceToNow } from 'date-fns';
+import { useTheme } from '@/context/ThemeContext';
 
 type Theme = 'light' | 'dark';
 
@@ -79,7 +80,7 @@ export function Header() {
   const { firestore } = useFirebase();
   const searchParams = useSearchParams();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [theme, setTheme] = useState<Theme>('dark');
+  const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
 
   const lang = (userProfile?.language || searchParams.get('lang') || 'en') as 'en' | 'ar' | 'es';
@@ -98,20 +99,6 @@ export function Header() {
         console.error("Error updating language:", error);
       }
     }
-  };
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    const initialTheme = savedTheme || 'dark';
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
   useEffect(() => {

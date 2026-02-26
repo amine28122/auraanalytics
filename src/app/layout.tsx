@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 
 // IMPORTANT: Replace with your actual production URL
@@ -140,10 +141,12 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <LanguageProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+            <Toaster />
+            <WhatsAppButton />
+          </ThemeProvider>
         </LanguageProvider>
-        <Toaster />
-        <WhatsAppButton />
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7139106139007097"

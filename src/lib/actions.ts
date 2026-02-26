@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { generateTradeSignals, type GenerateTradeSignalsOutput, type TradeSignal as AITradeSignal } from '@/ai/flows/generate-trade-signals';
 import { initializeServerFirebase } from '@/firebase/server-init';
@@ -907,13 +908,13 @@ export async function getApprovedReviews(): Promise<{ success: boolean; items: R
   const { firestore } = initializeServerFirebase();
 
   try {
+    // Fetch approved reviews without ordering to avoid index requirement
     const snapshot = await firestore
       .collection('reviews')
       .where('status', '==', 'approved')
-      .orderBy('approvedAt', 'desc')
       .get();
 
-    const items = snapshot.docs.map(doc => {
+    let items = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -928,15 +929,24 @@ export async function getApprovedReviews(): Promise<{ success: boolean; items: R
       } as Review;
     });
 
+    // Sort in memory instead of Firestore to avoid composite index requirement
+    items = items.sort((a, b) => {
+      const dateA = a.approvedAt ? new Date(a.approvedAt).getTime() : 0;
+      const dateB = b.approvedAt ? new Date(b.approvedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
     const total = items.length;
     const avg = total > 0 ? items.reduce((acc, r) => acc + r.rating, 0) / total : 0;
     const fiveStarPct = total > 0 ? Math.round((items.filter(r => r.rating === 5).length / total) * 100) : 0;
 
     return { success: true, items, stats: { avg: Math.round(avg * 10) / 10, total, fiveStarPct } };
   } catch (e: any) {
+    console.error("Error fetching approved reviews:", e);
     return { success: false, items: [], stats: { avg: 0, total: 0, fiveStarPct: 0 } };
   }
 }
+
 
 export async function approveReview(reviewId: string): Promise<{ success: boolean; error?: string }> {
   const { firestore } = initializeServerFirebase();
@@ -945,6 +955,7 @@ export async function approveReview(reviewId: string): Promise<{ success: boolea
       status: 'approved',
       approvedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+    revalidatePath('/reviews');
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
@@ -957,6 +968,7 @@ export async function rejectReview(reviewId: string): Promise<{ success: boolean
     await firestore.collection('reviews').doc(reviewId).update({
       status: 'rejected',
     });
+    revalidatePath('/reviews');
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
@@ -967,6 +979,7 @@ export async function deleteReview(reviewId: string): Promise<{ success: boolean
   const { firestore } = initializeServerFirebase();
   try {
     await firestore.collection('reviews').doc(reviewId).delete();
+    revalidatePath('/reviews');
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };

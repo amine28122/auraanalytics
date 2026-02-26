@@ -8,12 +8,13 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Languages, Sun, Moon, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FinancialTicker from './financial-ticker';
+import { useTheme } from '@/context/ThemeContext';
 
 export function LandingHeader() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const lastScrollY = useRef(0);
-    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+    const { theme, toggleTheme } = useTheme();
     const { lang, setLang, t } = useLanguage();
 
     const navLinks = [
@@ -23,23 +24,6 @@ export function LandingHeader() {
         { href: "/about", label: t.about },
         { href: "/reviews", label: t.reviews },
     ];
-
-    useEffect(() => {
-        const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        setTheme(currentTheme);
-    }, []);
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    };
 
     useEffect(() => {
         const handleScroll = () => {

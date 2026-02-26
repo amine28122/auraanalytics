@@ -11,10 +11,9 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function PublicReviewsPage() {
-  const { items, stats } = await getApprovedReviews();
+  const { items: realReviews, stats: realStats } = await getApprovedReviews();
 
-  // Inject pre-approved seed reviews if Firestore is empty
-  const seedReviews = items.length > 0 ? items : [
+  const seedReviews = [
     {
       id: 'seed-1', name: 'Ahmed Al-Mansouri', role: 'Full-time Forex Trader', country: 'UAE',
       review: 'AURA transformed my entire approach to trading. The multi-timeframe analysis catches institutional moves I used to miss entirely. My win rate went from 42% to 71% in just 3 months.',
@@ -62,11 +61,20 @@ export default async function PublicReviewsPage() {
     },
   ];
 
-  const seedStats = items.length > 0 ? stats : {
-    avg: 4.9,
-    total: seedReviews.length,
-    fiveStarPct: 89
+  // Combine real reviews with seed reviews, real ones first
+  const combinedReviews = [...realReviews, ...seedReviews];
+
+  // Recalculate stats for the combined list
+  const total = combinedReviews.length;
+  const avg = combinedReviews.reduce((acc, r) => acc + r.rating, 0) / total;
+  const fiveStarPct = Math.round((combinedReviews.filter(r => r.rating === 5).length / total) * 100);
+
+  const finalStats = {
+    avg: Math.round(avg * 10) / 10,
+    total,
+    fiveStarPct
   };
 
-  return <ReviewsPageClient reviews={seedReviews} stats={seedStats} />;
+  return <ReviewsPageClient reviews={combinedReviews} stats={finalStats} />;
 }
+
