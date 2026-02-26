@@ -833,3 +833,143 @@ export async function getNews(lang: 'en' | 'ar' | 'es' = 'en') {
 
   return { success: false, error: 'Could not fetch news.' };
 }
+
+// ==========================================
+// REVIEWS SYSTEM
+// ==========================================
+
+export type Review = {
+  id: string;
+  name: string;
+  role: string;
+  country: string;
+  review: string;
+  rating: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  approvedAt?: string;
+};
+
+const reviewSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(60),
+  role: z.string().min(2, 'Role must be at least 2 characters').max(80),
+  country: z.string().min(2).max(60),
+  review: z.string().min(20, 'Review must be at least 20 characters').max(1000),
+  rating: z.number().min(1).max(5),
+});
+
+export type ReviewFormState = {
+  error: string | null;
+  message: string | null;
+};
+
+export async function submitReview(
+  prevState: ReviewFormState,
+  formData: FormData
+): Promise<ReviewFormState> {
+  const { firestore } = initializeServerFirebase();
+
+  const validatedFields = reviewSchema.safeParse({
+    name: formData.get('name'),
+    role: formData.get('role'),
+    country: formData.get('country'),
+    review: formData.get('review'),
+    rating: Number(formData.get('rating')),
+  });
+
+  if (!validatedFields.success) {
+    const errorMessage =
+      Object.values(validatedFields.error.flatten().fieldErrors).flat()[0] ||
+      'Invalid data submitted.';
+    return { error: errorMessage, message: null };
+  }
+
+  const { name, role, country, review, rating } = validatedFields.data;
+
+  try {
+    await firestore.collection('reviews').add({
+      name,
+      role,
+      country,
+      review,
+      rating,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { error: null, message: 'Your review has been submitted and is awaiting approval. Thank you!' };
+  } catch (e: any) {
+    return { error: `Submission failed: ${e.message}`, message: null };
+  }
+}
+
+export async function getApprovedReviews(): Promise<{ success: boolean; items: Review[]; stats: { avg: number; total: number; fiveStarPct: number } }> {
+  const { firestore } = initializeServerFirebase();
+
+  try {
+    const snapshot = await firestore
+      .collection('reviews')
+      .where('status', '==', 'approved')
+      .orderBy('approvedAt', 'desc')
+      .get();
+
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        role: data.role,
+        country: data.country,
+        review: data.review,
+        rating: data.rating,
+        status: data.status,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+        approvedAt: data.approvedAt?.toDate ? data.approvedAt.toDate().toISOString() : undefined,
+      } as Review;
+    });
+
+    const total = items.length;
+    const avg = total > 0 ? items.reduce((acc, r) => acc + r.rating, 0) / total : 0;
+    const fiveStarPct = total > 0 ? Math.round((items.filter(r => r.rating === 5).length / total) * 100) : 0;
+
+    return { success: true, items, stats: { avg: Math.round(avg * 10) / 10, total, fiveStarPct } };
+  } catch (e: any) {
+    return { success: false, items: [], stats: { avg: 0, total: 0, fiveStarPct: 0 } };
+  }
+}
+
+export async function approveReview(reviewId: string): Promise<{ success: boolean; error?: string }> {
+  const { firestore } = initializeServerFirebase();
+  try {
+    await firestore.collection('reviews').doc(reviewId).update({
+      status: 'approved',
+      approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+export async function rejectReview(reviewId: string): Promise<{ success: boolean; error?: string }> {
+  const { firestore } = initializeServerFirebase();
+  try {
+    await firestore.collection('reviews').doc(reviewId).update({
+      status: 'rejected',
+    });
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+export async function deleteReview(reviewId: string): Promise<{ success: boolean; error?: string }> {
+  const { firestore } = initializeServerFirebase();
+  try {
+    await firestore.collection('reviews').doc(reviewId).delete();
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+

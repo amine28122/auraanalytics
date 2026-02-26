@@ -10,6 +10,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { RadarProvider } from '@/context/radar-context';
+import { PriceTicker } from '@/components/dashboard/price-ticker';
 
 function DashboardLayoutContent({
   children,
@@ -37,6 +38,9 @@ function DashboardLayoutContent({
     <div className="flex min-h-screen w-full flex-col bg-background">
       {/* Full-width Header at the top */}
       <Header />
+
+      {/* Live Price Ticker below header */}
+      <PriceTicker />
 
       {/* Sidebar and Main Content below Header */}
       <div className="flex flex-1 overflow-hidden">

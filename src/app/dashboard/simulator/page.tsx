@@ -158,8 +158,8 @@ export default function SimulatorPage() {
 
             for (let i = bandPeriod; i < len; i++) {
                 const s = closes.slice(i - bandPeriod, i + 1);
-                const m = s.reduce((a, b) => a + b, 0) / s.length;
-                const v = s.reduce((a, b) => a + Math.pow(b - m, 2), 0) / s.length;
+                const m = s.reduce((a: number, b: number) => a + b, 0) / s.length;
+                const v = s.reduce((a: number, b: number) => a + Math.pow(b - m, 2), 0) / s.length;
                 const sd = Math.sqrt(v);
                 uBands[i] = m + (multiplier * sd);
                 lBands[i] = m - (multiplier * sd);

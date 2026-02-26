@@ -1,42 +1,53 @@
 'use client';
 
 import { UnifiedAnalysis } from '@/components/dashboard/unified-analysis';
+import { MarketSessions } from '@/components/dashboard/market-sessions';
 import { useAuth, useFirebase } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Gift } from 'lucide-react';
+import { Gift, Users, DollarSign, TrendingUp, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-
 
 type UserProfile = {
     language?: 'en' | 'ar' | 'es';
-}
+    totalReferrals?: number;
+    pendingEarnings?: number;
+    totalEarnings?: number;
+};
 
 const translations = {
     en: {
         title: 'Unified Chart Analysis',
         description: 'Get trade signals by uploading or capturing a chart.',
-        referTitle: 'Refer & Earn $10',
-        referDesc: 'Get $10 for every new user you invite to AURA. Start building your network today.',
-        referButton: 'Start Inviting',
+        referTitle: 'Refer & Earn',
+        referBtn: 'View Program',
+        balance: 'Balance',
+        referrals: 'Referrals',
+        perUser: '$10 per user',
+        noReferrals: 'No referrals yet — start sharing!',
     },
     ar: {
         title: 'تحليل موحد للرسوم البيانية',
         description: 'احصل على إشارات تداول عن طريق رفع أو التقاط صورة للرسم البياني.',
-        referTitle: 'ادعُ واكسب 10$',
-        referDesc: 'احصل على 10$ لكل مستخدم جديد تدعوه إلى أورا. ابدأ ببناء شبكتك اليوم.',
-        referButton: 'ابدأ الدعوة',
+        referTitle: 'أحل واكسب',
+        referBtn: 'عرض البرنامج',
+        balance: 'الرصيد',
+        referrals: 'الإحالات',
+        perUser: '10$ لكل مستخدم',
+        noReferrals: 'لا توجد إحالات بعد — ابدأ المشاركة!',
     },
     es: {
         title: 'Análisis de Gráficos Unificado',
         description: 'Obtenga señales de trading subiendo o capturando un gráfico.',
-        referTitle: 'Refiere y Gana $10',
-        referDesc: 'Obtén $10 por cada nuevo usuario que invites a AURA. Comienza a construir tu red hoy.',
-        referButton: 'Comenzar a Invitar',
-    }
-}
+        referTitle: 'Referir y Ganar',
+        referBtn: 'Ver Programa',
+        balance: 'Balance',
+        referrals: 'Referidos',
+        perUser: '$10 por usuario',
+        noReferrals: '¡Aún no tienes referidos!',
+    },
+};
 
 export default function DashboardPage() {
     const { user } = useAuth();
@@ -46,51 +57,137 @@ export default function DashboardPage() {
     useEffect(() => {
         if (user && firestore) {
             const userDocRef = doc(firestore, 'users', user.uid);
-            const unsubscribe = onSnapshot(userDocRef, (doc) => {
-                if (doc.exists()) {
-                    setUserProfile(doc.data() as UserProfile);
+            const unsubscribe = onSnapshot(userDocRef, (snap) => {
+                if (snap.exists()) {
+                    setUserProfile(snap.data() as UserProfile);
                 }
             });
             return () => unsubscribe();
         }
     }, [user, firestore]);
 
-    const lang = userProfile?.language || 'en';
+    const lang = (userProfile?.language || 'en') as 'en' | 'ar' | 'es';
     const t = translations[lang] || translations.en;
     const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
+    const totalReferrals = userProfile?.totalReferrals ?? 0;
+    const pendingEarnings = userProfile?.pendingEarnings ?? 0;
+    const totalEarnings = userProfile?.totalEarnings ?? 0;
+    const hasReferrals = totalReferrals > 0;
+
     return (
         <div className="flex flex-col gap-8" dir={dir}>
-            <div className="flex w-full flex-col gap-2">
+            <MarketSessions />
+
+            {/* ── Page title ── */}
+            <div className="flex w-full flex-col gap-1">
                 <h1 className="font-headline text-3xl font-bold tracking-tighter">
                     {t.title}
                 </h1>
-                <p className="text-muted-foreground">
-                    {t.description}
-                </p>
+                <p className="text-muted-foreground text-sm">{t.description}</p>
             </div>
 
-            <Card className="bg-gradient-to-r from-violet-600/10 via-purple-500/10 to-indigo-500/10 border-violet-500/20 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Gift className="h-32 w-32 -mr-8 -mt-8" />
+            {/* ── Refer & Earn compact banner ── */}
+            <div className="relative rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-600/8 via-purple-500/5 to-indigo-500/8 overflow-hidden">
+                {/* Decorative glow */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-violet-500/10 blur-2xl" />
+                    <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-indigo-500/10 blur-2xl" />
                 </div>
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 gap-4 relative z-10">
-                    <div className="space-y-1">
-                        <h3 className="font-headline text-lg font-bold flex items-center gap-2 text-violet-600 dark:text-violet-400">
-                            <Gift className="h-5 w-5" />
-                            {t.referTitle}
-                        </h3>
-                        <p className="text-sm text-muted-foreground max-w-md">
-                            {t.referDesc}
-                        </p>
+
+                <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 px-5 py-4">
+
+                    {/* Icon + label */}
+                    <div className="flex items-center gap-3 sm:w-auto w-full">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 border border-violet-500/25 flex-shrink-0">
+                            <Gift className="h-4 w-4 text-violet-400" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-black text-foreground leading-tight">{t.referTitle}</p>
+                            <p className="text-[10px] text-violet-400 font-bold">{t.perUser}</p>
+                        </div>
                     </div>
-                    <Button className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white" asChild>
+
+                    {/* Divider */}
+                    <div className="hidden sm:block h-10 w-px bg-border/60" />
+
+                    {/* Stats: Referrals + Balance */}
+                    <div className="flex items-center gap-5 flex-1">
+
+                        {/* Referral count */}
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted/50">
+                                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none">
+                                    {t.referrals}
+                                </p>
+                                <p className={`text-lg font-black tabular-nums leading-tight ${hasReferrals ? 'text-foreground' : 'text-muted-foreground/40'}`}>
+                                    {totalReferrals}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Vertical mini divider */}
+                        <div className="h-8 w-px bg-border/40" />
+
+                        {/* Available balance */}
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10">
+                                <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none">
+                                    {t.balance}
+                                </p>
+                                <p className={`text-lg font-black tabular-nums font-mono leading-tight ${pendingEarnings > 0 ? 'text-emerald-500' : 'text-muted-foreground/40'}`}>
+                                    ${pendingEarnings.toFixed(2)}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Total earned (only show if > 0) */}
+                        {totalEarnings > 0 && (
+                            <>
+                                <div className="h-8 w-px bg-border/40" />
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10">
+                                        <TrendingUp className="h-3.5 w-3.5 text-violet-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none">
+                                            Total
+                                        </p>
+                                        <p className="text-lg font-black tabular-nums font-mono leading-tight text-violet-400">
+                                            ${totalEarnings.toFixed(2)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* No referrals hint */}
+                        {!hasReferrals && (
+                            <p className="hidden md:block text-[10px] text-muted-foreground/50 italic flex-1">
+                                {t.noReferrals}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* CTA Button */}
+                    <Button
+                        size="sm"
+                        className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white gap-1.5 text-xs font-bold sm:w-auto w-full"
+                        asChild
+                    >
                         <Link href={`/dashboard/affiliate?lang=${lang}`}>
-                            {t.referButton}
+                            {t.referBtn}
+                            <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                     </Button>
                 </div>
-            </Card>
+            </div>
 
             <UnifiedAnalysis />
         </div>

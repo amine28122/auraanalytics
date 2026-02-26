@@ -34,10 +34,27 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ==========================================
+    // REVIEWS COLLECTION
+    // ==========================================
+    match /reviews/{reviewId} {
+      // Anyone (even unauthenticated) can submit a review
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.rating is number
+                    && request.resource.data.rating >= 1
+                    && request.resource.data.rating <= 5
+                    && request.resource.data.review is string
+                    && request.resource.data.review.size() >= 20;
+      
+      // Anyone can read approved reviews
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      
+      // Only admin can update (approve/reject) or delete
+      allow update, delete: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if isAdmin();
     }
   }
 }
-
-
