@@ -158,7 +158,7 @@ export async function getTradeSignals(
       transaction.update(userDocRef, updates);
     });
 
-    return { data: result, error: null, message: 'Analysis successful.', chartImage: chartDataLarge };
+    return { data: result, error: null, message: 'Analysis successful.' };
 
   } catch (e: any) {
     console.error(`AI analysis failed: ${e.message}`);

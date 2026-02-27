@@ -814,7 +814,7 @@ export function UnifiedAnalysis() {
         </Card>
       </FormProvider>
 
-      <TradeSignals result={state} />
+      <TradeSignals result={state} chartImage={largeImageData} />
 
       <CameraDialog
         open={!!cameraTarget}
