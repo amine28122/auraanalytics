@@ -83,11 +83,16 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
     promptParts.push(
       { text: '\n\nEntry Chart (Small Timeframe):\n' },
       dataUriToGoogleGenerativePart(validatedInput.chartDataSmall),
-      { text: `\n\n**Analysis Instructions (Multi-Timeframe):**\n            1.  Use the Main Chart (Large Timeframe) to determine the overall market context, trend direction, and key higher-timeframe support/resistance zones. This chart dictates the STRATEGY (i.e., are we looking for buys or sells?).\n            2.  Use the Entry Chart (Small Timeframe) to find a precise, low-risk entry point that aligns with the strategy from the large timeframe. Look for confirmation patterns (e.g., candlestick patterns, break of structure) on this smaller chart.\n            3.  The final signal(s) must be based on a confluence between BOTH timeframes. If they conflict, state that in the summary and lower the confidence.` }
+      {
+        text: `\n\n**Analysis Instructions (Multi-Timeframe):**\n            1.  Use the Main Chart (Large Timeframe) to determine the overall market context, trend direction, and key higher-timeframe support/resistance zones. This chart dictates the STRATEGY (i.e., are we looking for buys or sells?).\n            2.  Use the Entry Chart (Small Timeframe) to find a precise, low-risk entry point that aligns with the strategy from the large timeframe. Look for confirmation patterns (e.g., candlestick patterns, break of structure) on this smaller chart.
+            3.  The final signal(s) must be based on a confluence between BOTH timeframes. If they conflict, state that in the summary and lower the confidence.
+            4.  **STRICT RISK MANAGEMENT:** Your Stop Loss (SL) MUST be tight and professional. Avoid excessively wide SLs (e.g., no more than 30-50 pips for Forex or $5-$10 for Gold unless absolutely necessary). Always place the SL at the most recent 'Break of Structure' or 'Order Block' invalidation point on the Small Timeframe to maximize the Risk-to-Reward ratio. Aim for a minimum R:R of 1:2.` }
     );
   } else {
     promptParts.push(
-      { text: `\n\n**Analysis Instructions (Single Timeframe):**\n            1.  Perform a full analysis based on the single chart provided. Identify the trend, key levels, and any potential patterns to form your conclusion.` }
+      {
+        text: `\n\n**Analysis Instructions (Single Timeframe):**\n            1.  Perform a full analysis based on the single chart provided. Identify the trend, key levels, and any potential patterns to form your conclusion.
+            2.  **RISK MANAGEMENT:** Do not provide massive Stop Losses. Find the nearest logical point where the trade idea is invalidated and place the SL there to ensure a professional Risk-to-Reward ratio.` }
     );
   }
 

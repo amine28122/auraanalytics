@@ -16,8 +16,11 @@ function TradingViewWidget({ symbol = 'GOLD', theme = 'dark' }: { symbol?: strin
     script.type = "text/javascript";
     script.async = true;
 
-    // Logic for symbol: If it's GOLD, use TVC:GOLD. If others, use BINANCE:SYMBOLUSDT
-    const finalSymbol = symbol === 'GOLD' ? 'TVC:GOLD' : `BINANCE:${symbol}USDT`;
+    // Logic for symbol: 
+    // 1. If it's a known shorthand like GOLD, map it.
+    // 2. If it already contains a colon (e.g., TADAWUL:TASI or FX:EURUSD), use it as is.
+    // 3. Otherwise, default to BINANCE:SYMBOLUSDT for crypto.
+    const finalSymbol = symbol === 'GOLD' ? 'TVC:GOLD' : (symbol.includes(':') ? symbol : `BINANCE:${symbol}USDT`);
 
     script.innerHTML = JSON.stringify({
       "autosize": true,

@@ -105,6 +105,13 @@ export const translations = {
         join_network_desc: "From beginners to seasoned professionals, traders worldwide are leveraging AURA to gain a deeper understanding of the markets.",
         become_member: "Become a Member",
         founders_note: "Developed through the collaborative expertise of Mr. Nabil Hamdoun, Mr. El Amine, and Mr. Josef Mamulashvili, our proprietary strategy is the ultimate fusion of art and science in trading. It's the unique logic that powers every signal, giving you an unparalleled analytical edge.",
+        how_it_works: "The Analysis Workflow",
+        step_upload_title: "Visual Data Input",
+        step_upload_desc: "Upload any raw chart. Our OCR engine identifies price scales, pairs, and candle structures with sub-pixel precision.",
+        step_analyze_title: "Neural Synergy",
+        step_analyze_desc: "A confluence of ICT, SMC, and Elliott Wave logic is applied simultaneously to find the highest probability setups.",
+        step_trade_title: "Precision Execution",
+        step_trade_desc: "Receive an institutional-grade signal with dynamic Stop Loss placement and multi-tier Take Profit targets.",
     },
     ar: {
         aura_pro: "أورا برو",
@@ -210,5 +217,12 @@ export const translations = {
         join_network_desc: "من المبتدئين إلى المحترفين، المتداولون حول العالم يستخدمون أورا لفهم أعمق للأسواق.",
         become_member: "كن عضواً معنا",
         founders_note: "تم تطويرها من خلال الخبرة التعاونية لكل من السيد نبيل حمدون، والسيد الأمين، والسيد جوزيف مامولاشفيلي. استراتيجيتنا هي الاندماج الأمثل للفن والعلم في التداول.",
+        how_it_works: "منظومة التحليل المتكاملة",
+        step_upload_title: "إدخال البيانات البصرية",
+        step_upload_desc: "ارفع أي رسم بياني خام. محركنا يحدد مقاييس الأسعار وهيكلية الشموع بدقة متناهية.",
+        step_analyze_title: "المعالجة العصبية المركزية",
+        step_analyze_desc: "يتم تطبيق مفاهيم ICT و SMC وموجات إليوت بالتزامن لاقتناص أقوى فرص التداول.",
+        step_trade_title: "التنفيذ المؤسساتي",
+        step_trade_desc: "احصل على إشارة احترافية بوقف خسارة ديناميكي وأهداف ربحية متعددة المستويات.",
     }
 };

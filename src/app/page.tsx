@@ -22,6 +22,7 @@ import PerformanceChart from '@/components/landing/performance-chart';
 import GlobalCommunity from '@/components/landing/global-community';
 import { InstallPwaButton } from '@/components/install-pwa-button';
 import FinancialTicker from '@/components/landing/financial-ticker';
+import HowItWorks from '@/components/landing/how-it-works';
 
 
 type Theme = 'light' | 'dark';
@@ -159,6 +160,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <HowItWorks />
+
         {/* Aura Pro Roadmap Section */}
         <section id="aura-pro" className="py-24 relative overflow-hidden bg-background">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
