@@ -65,7 +65,7 @@ function dataUriToGoogleGenerativePart(dataUri: string): Part {
 export async function generateTradeSignals(input: GenerateTradeSignalsInput): Promise<GenerateTradeSignalsOutput> {
   const validatedInput = GenerateTradeSignalsInputSchema.parse(input);
 
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const promptParts: Part[] = [
     { text: `You are a professional trading analyst. Your task is to analyze the provided chart image(s) and generate actionable, structured trading signals.\n\n        **IMPORTANT FIRST STEP: Image Validation**\n        1.  First, analyze the image provided in 'chartDataLarge'.\n        2.  Determine if the image is a financial chart. If it is NOT a financial chart (e.g., it's a picture of a car, an animal, a person, etc.), you MUST set 'isChart' to false and provide an appropriate error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        3.  If it IS a chart, determine if it is clear enough to be analyzed. If the chart is too blurry, pixelated, or the numbers and candlesticks are unreadable, you MUST set 'isClear' to false and provide an error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        4.  If the image is a clear financial chart, set both 'isChart' and 'isClear' to true and proceed with the full analysis below.\n\n        The user's preferred language is ${validatedInput.language}. ALL text in your response, especially in the 'analysisSummary' and 'validationError' fields, MUST be in this language.\n\n` },

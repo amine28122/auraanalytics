@@ -20,6 +20,7 @@ function DashboardLayoutContent({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,8 +35,6 @@ function DashboardLayoutContent({
       </div>
     );
   }
-
-  const { theme } = useTheme();
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
