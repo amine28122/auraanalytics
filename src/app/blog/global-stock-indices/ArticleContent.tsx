@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, TrendingUp, BarChart3, Globe2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function StockIndicesArticle() {
@@ -69,6 +70,7 @@ export default function StockIndicesArticle() {
                         <>
                             <p className="text-xl font-medium text-foreground/80 italic">مؤشرات الأسهم هي قلب الرأسمالية العالمية النابض. في أورا، لا نرى المؤشرات مجرد أرقام، بل نراها فرصاً ذهبية تتكرر يومياً للمتداول الذكي.</p>
 
+                            <EzoicAd id={110} />
                             <h2>المقدمة: ما هي المؤشرات ولماذا يفضلها المحترفون؟</h2>
                             <p>المؤشر (Index) هو مقياس إحصائي يقيس قيمة قسم من سوق الأسهم. بدلاً من المراهنة على نجاح شركة واحدة مثل آبل، أنت تتداول أداء أقوى 100 شركة تكنولوجيا في العالم مجتمعة. هذا يقلل من مخاطر الصدمات الفردية ويزيد من إمكانية تحليل اتجاه السوق العام.</p>
 

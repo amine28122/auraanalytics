@@ -9,6 +9,8 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function AdvancedSchoolsArticle() {
@@ -69,6 +71,7 @@ export default function AdvancedSchoolsArticle() {
                         <>
                             <p>يتطلب التداول في العصر الحديث أكثر من مجرد النظر إلى متوسط متحرك بسيط أو مؤشر RSI. فخوارزميات المؤسسات التي تحرك ثروات اليوم هي أكثر تطوراً بكثير. في AURA، قمنا بتطوير منهجية "المدارس المتقدمة"—وهي نهج شامل يجمع بين القوة التنبؤية لنظرية موجات إليوت مع التنفيذ المنطقي لمفاهيم ICT.</p>
 
+                            <EzoicAd id={110} />
                             <h2>تطور التداول: من التجزئة إلى المؤسساتية</h2>
                             <p>يعتمد معظم متداولي التجزئة على المؤشرات المتأخرة. ومع ذلك، تتداول المؤسسات بناءً على تسليم السعر والسيولة. لاحتراف الأسواق، يجب على المرء الانتقال من التساؤل "ماذا يقول مؤشر RSI؟" إلى "أين تدخل الأموال الذكية؟". استراتيجية المدارس المتقدمة هي الجسر بين هذين العالمين.</p>
 

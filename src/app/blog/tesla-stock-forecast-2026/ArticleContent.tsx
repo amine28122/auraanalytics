@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Car, Zap, Bot, ShieldCheck, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 
 export default function TeslaAnalysisArticle() {
     const { lang } = useLanguage();
@@ -70,7 +71,8 @@ export default function TeslaAnalysisArticle() {
                             </section>
 
                             <section>
-                                <h2>1. حلم الـ Robotaxi يتحول لواقع تجاري</h2>
+                                <EzoicAd id={110} />
+                            <h2>1. حلم الـ Robotaxi يتحول لواقع تجاري</h2>
                                 <p>بحلول منتصف 2026، من المتوقع أن تبدأ أولى أساطيل "روبوتاكسي" تيسلا في العمل في مدن مختارة في تكساس وكاليفورنيا. هذا يعني تحول نموذج الربح من بيع "منتج" (السيارة) إلى بيع "خدمة" (النقل الذاتي)، وهو ما سيفجر هوامش الربح لتصل إلى مستويات شركات البرمجيات.</p>
                                 <div className="p-8 bg-red-500/5 rounded-3xl border border-red-500/20 my-10">
                                     <div className="flex items-center gap-4 mb-6">

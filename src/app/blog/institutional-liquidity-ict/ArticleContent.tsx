@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function InstitutionalLiquidityArticle() {
@@ -69,6 +70,7 @@ export default function InstitutionalLiquidityArticle() {
                         <>
                             <p>سيولة السوق هي شريان الحياة للتداول. بدونها، لا يمكن للسعر أن يتحرك. تتطلب المؤسسات—البنوك الكبرى، صناديق التحوط، والبنوك المركزية—كميات هائلة من السيولة لتنفيذ أوامرها دون التسبب في انزلاق سعري مفرط.</p>
 
+                            <EzoicAd id={110} />
                             <h2>أسطورة العرض والطلب</h2>
                             <p>مناطق العرض والطلب التقليدية لدى التجزئة هي غالباً المكان الذي "تكمن" فيه السيولة. تعرف البنوك الكبرى أن متداولي التجزئة يضعون أوامر وقف الخسارة فوق أو تحت هذه المناطق مباشرة. هذا يخلق "تجمعاً للسيولة" تستخدمه المؤسسات لملء مراكزها الأكبر بكثير.</p>
 

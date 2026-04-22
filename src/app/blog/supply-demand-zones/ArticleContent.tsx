@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, Target, Layers, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function SupplyDemandArticle() {
@@ -66,6 +67,7 @@ export default function SupplyDemandArticle() {
                         <>
                             <p className="text-2xl font-light text-foreground/70 leading-relaxed mb-16">هل تساءلت يوماً لماذا يتوقف السعر فجأة عند نقطة ما وينعكس بقوة؟ الجواب يكمن في مبدأ اقتصادي بسيط ولكنه عميق للغاية: التوازن بين العرض والطلب. في هذا الدليل، سنغوص في أعماق آليات السوق لنكشف لك كيف تكتشف المناطق التي "تنتظر" فيها البنوك الكبرى تفعيل صفقاتها.</p>
 
+                            <EzoicAd id={110} />
                             <h2>المقدمة: الاقتصاد وراء الشارت</h2>
                             <p>في كل ثانية تمر، هناك صراع دائم بين المشترين والبائعين. عندما يتفوق الطلب على العرض، يرتفع السعر. وعندما يتفوق العرض على الطلب، ينخفض السعر. لكن ما يهمنا كمتداولين محترفين ليس "الحركة" نفسها، بل "المنطقة" التي تسببت في هذا الاختلال الكبير في التوازن.</p>
 

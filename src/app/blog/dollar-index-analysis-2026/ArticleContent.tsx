@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Globe, ShieldAlert, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 
 export default function DXYAnalysisArticle() {
     const { lang } = useLanguage();
@@ -66,6 +67,7 @@ export default function DXYAnalysisArticle() {
                                 <p className="mb-0">استقر مؤشر الدخسي (DXY) عند <strong>98.25</strong>، وهو ما يعد انخفاضاً جوهرياً عن قمم عام 2024. المحللون يتوقعون كسر حاجز الـ 95 قريباً.</p>
                             </div>
 
+                            <EzoicAd id={110} />
                             <h2>أولاً: الأبعاد الجيوسياسية وفقدان الثقة</h2>
                             <p>لم يعد الدولار هو الخيار الوحيد للتسويات الدولية. تحركات مجموعة "بريكس" وتعزيز التبادل بالعملات المحلية أضعف الطلب الهيكلي على الدولار. هذا التحول ليس مؤقتاً، بل هو "تغيير في النظام العالمي" كما يصفه العديد من الاقتصاديين.</p>
 

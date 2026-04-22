@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Binary, Cloud, Search, MousePointer2, TrendingUp, BarChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 
 export default function GoogleAnalysisArticle() {
     const { lang } = useLanguage();
@@ -75,7 +76,8 @@ export default function GoogleAnalysisArticle() {
                             </section>
 
                             <section>
-                                <h2>1. هيمنة Gemini في كل مكان</h2>
+                                <EzoicAd id={110} />
+                            <h2>1. هيمنة Gemini في كل مكان</h2>
                                 <p>أصبح Gemini ليس مجرد بوت دردشة، بل هو العمود الفقري لجميع منتجات جوجل. من محرك البحث (Search Generative Experience) الذي يعطي إجابات دقيقة ومخصصة، إلى أندرويد 17 الذي أصبح يعمل كوكيل ذكاء اصطناعي كامل.</p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
                                     <div className="p-6 bg-card rounded-2xl border border-white/5">

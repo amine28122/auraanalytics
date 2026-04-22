@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, Triangle, Ruler, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function HarmonicPatternsArticle() {
@@ -68,6 +69,7 @@ export default function HarmonicPatternsArticle() {
                         <>
                             <p className="text-2xl font-light text-foreground/70 leading-relaxed mb-16">هل تعتقد أن حركة الأسواق عشوائية؟ النماذج التوافقية أو "الهرمونيك" تثبت العكس تماماً. هي لغة الأرقام والنسب الذهبية (فيبوناتشي) التي تعيد رسم ملامح المستقبل من خلال أنماط هندسية متكررة بدقة مذهلة.</p>
 
+                            <EzoicAd id={110} />
                             <h2>المقدمة: السيمفونية الرياضية للأسعار</h2>
                             <p>تعتمد النماذج التوافقية على فكرة أن حركة السعر تتبع نسباً رياضية ثابتة، تماماً مثلما نجدها في الطبيعة والكون. بدمج التحليل الفني مع نسب فيبوناتشي، نتمكن من تحديد "نقاط الانعكاس المحتملة" (PRZ) بدقة لا توفرها الأدوات التقليدية.</p>
 

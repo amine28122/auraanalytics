@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function CryptoCyclesArticle() {
@@ -69,6 +70,7 @@ export default function CryptoCyclesArticle() {
                         <>
                             <p>أهلاً بك في عالم الكريبتو، حيث تتحرك الأسواق بسرعة البرق. فهم "دورة السوق" هو الفرق بين أن تكون مستثمراً ناجحاً أو ضحية للتحركات العنيفة. الأسواق لا تتحرك في خطوط مستقيمة، بل في دورات نفسية واقتصادية متكررة.</p>
 
+                            <EzoicAd id={110} />
                             <h2>المراحل الأربعة لدورة الكريبتو</h2>
                             <p>تمر العملات الرقمية عبر أربع مراحل أساسية: التجميع (Accumulation)، الارتفاع (Markup)، التوزيع (Distribution)، والانخفاض (Markdown). معرفة المرحلة الحالية تحميك من الشراء عند القمة.</p>
 

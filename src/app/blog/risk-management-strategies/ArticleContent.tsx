@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function RiskManagementArticle() {
@@ -69,6 +70,7 @@ export default function RiskManagementArticle() {
                         <>
                             <p>في عالم التداول، ليس الأذكى هو من يربح، بل هو من "يبقى على قيد الحياة". إدارة المخاطر ليست مجرد معادلة حسابية، بل هي الفارق بين الثراء وبين خسارة كل شيء في ليلة واحدة.</p>
 
+                            <EzoicAd id={110} />
                             <h2>قاعدة الـ 1%: لماذا هي مقدسة؟</h2>
                             <p>ينصح المحترفون دائماً بعدم المخاطرة بأكثر من 1% من رصيد الحساب في الصفقة الواحدة. هذا يعني أنك ستحتاج إلى 100 خسارة متتالية لتصفير حسابك، وهذا أمر مستحيل تقريباً إذا كنت تملك استراتيجية مدروسة.</p>
 

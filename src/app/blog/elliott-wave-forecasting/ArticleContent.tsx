@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function ElliottWaveArticle() {
@@ -69,6 +70,7 @@ export default function ElliottWaveArticle() {
                         <>
                             <p>اكتشف رالف نيلسون إليوت في ثلاثينيات القرن العشرين أن الأسواق المالية لا تتحرك بطريقة فوضوية، بل في دورات متكررة أو "موجات". هذه الموجات هي انعكاس للنفسية البشرية الجماعية—تتناوب بين التفاؤل والتشاؤم.</p>
 
+                            <EzoicAd id={110} />
                             <h2>النفسية الجوهرية للسوق</h2>
                             <p>الأسواق تحركها الحالة المزاجية الاجتماعية. تقوم نظرية موجات إليوت بقياس هذا المزاج في أنماط. عندما يكون الناس في حالة نشوة، نرى الاندفاع المكون من 5 موجات. وعندما يشعرون بالخوف، نرى التصحيح المكون من 3 موجات.</p>
 

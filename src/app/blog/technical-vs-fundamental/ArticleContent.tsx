@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, Newspaper, BarChart2, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function TechVsFundArticle() {
@@ -68,6 +69,7 @@ export default function TechVsFundArticle() {
                         <>
                             <p className="text-2xl font-light text-foreground/70 leading-relaxed mb-16">هل تتبع الخبر أم تتبع الشارت؟ هذا هو السؤال الأزلي الذي يفرق بين المعسكرات في عالم التداول. الحقيقة الصادمة هي أن كبار مديري الصناديق لا يختارون جانباً واحداً؛ بل يستخدمون كلاهما بذكاء وتناغم تام.</p>
 
+                            <EzoicAd id={110} />
                             <h2>المقدمة: صراع الجبابرة في التداول</h2>
                             <p>التحليل الأساسي يخبرك "لماذا" قد يتحرك السوق، بينما التحليل الفني يخبرك "متى" وبأي "سعر" يجب أن تدخل. في هذا المقال التفصيلي، سننهي الجدل القائم ونبني لك جسراً يربط بين واقع الاقتصاد وجمال التحليل الفني.</p>
 

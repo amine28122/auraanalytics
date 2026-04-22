@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, TrendingUp, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 
 export default function GoldAnalysisArticle() {
     const { lang } = useLanguage();
@@ -66,6 +67,7 @@ export default function GoldAnalysisArticle() {
                                 <p className="mb-0">يتداول الذهب حالياً عند مستويات <strong>4,400 دولار للأونصة</strong>، مكملاً مسيرة الصعود القوية التي بدأت في أواخر عام 2024. التوقعات تشير إلى استمرار هذا الزخم ليصل إلى 5,000 دولار بحلول نهاية العام.</p>
                             </div>
 
+                            <EzoicAd id={110} />
                             <h2>أولاً: الدوافع الأساسية للصعود (Fundamental Drivers)</h2>
                             <h3>1. مشتريات البنوك المركزية</h3>
                             <p>استمرت البنوك المركزية العالمية في زيادة احتياطياتها من الذهب بمعدلات تاريخية. الصين والهند والعديد من دول الأسواق الناشئة تسعى لتقليل الاعتماد على الدولار الأمريكي، مما يخلق طلباً دائماً وقوياً يرفع الأسعار.</p>

@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function TradingPsychologyArticle() {
@@ -69,6 +70,7 @@ export default function TradingPsychologyArticle() {
                         <>
                             <p>يعتقد الكثيرون أن التداول يتعلق بالرياضيات والاحتمالات فقط، لكن الحقيقة الصادمة هي أن 90% من نجاح التداول يعتمد على الحالة النفسية. بدون الانضباط العقلي، ستفشل حتى أفضل الاستراتيجيات التقنية في العالم.</p>
 
+                            <EzoicAd id={110} />
                             <h2>عدو المتداول الأول: الخوف والطمع</h2>
                             <p>الخوف يجعلك تخرج من الصفقات الرابحة مبكراً، والطمع يجعلك تتمسك بالصفقات الخاسرة على أمل الارتداد. إدارة هذه المشاعر هي ما يميز المتداول المحترف عن الهاوي.</p>
 

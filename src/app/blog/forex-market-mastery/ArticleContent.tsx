@@ -9,6 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function ForexMasteryArticle() {
@@ -69,6 +70,7 @@ export default function ForexMasteryArticle() {
                         <>
                             <p className="text-xl font-medium text-foreground/80 italic">مرحباً بك في أعمق دليل تعليمي حول سوق الفوركس، حيث سنتجاوز القشور لندخل في صلب الآليات التي تحرك تريليونات الدولارات يومياً.</p>
 
+                            <EzoicAd id={110} />
                             <h2>المقدمة: لماذا الفوركس هو الملك؟</h2>
                             <p>سوق صرف العملات الأجنبية (Forex) ليس مجرد شاشة وأرقام؛ هو انعكاس لقوة الأمم. بمتوسط تداول يومي يتجاوز 6.6 تريليون دولار، يتفوق الفوركس على جميع أسواق الأسهم العالمية مجتمعة. في هذا المقال، سنفكك شفرة هذا السوق لنجعلك تتداول بجانب "الأموال الذكية" بدلاً من أن تكون ضحية لها.</p>
 

@@ -9,15 +9,13 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, GraduationCap, PlayCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function AuraDemoGuideArticle() {
     const { lang, t } = useLanguage();
-    const [mounted, setMounted] = React.useState(false);
-
-    React.useEffect(() => {
-        setMounted(true);
-    }, []);
+    // SSR fix for Ezoic
 
     return (
         <div className={cn("min-h-screen bg-background text-foreground pb-20 antialiased overflow-x-hidden", lang === 'ar' && "font-['Cairo']")} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -69,6 +67,7 @@ export default function AuraDemoGuideArticle() {
                         <>
                             <p className="text-xl font-medium text-foreground/80 italic">أكبر خطأ يقع فيه المتداول الجديد هو البدء بالمال الحقيقي قبل "تطبيع" عينه على حركة السوق. في أورا، أوجدنا الحل الجذري لهذه المشكلة عبر الحساب التجريبي الأكثر تطوراً في الوطن العربي.</p>
 
+                            <EzoicAd id={110} />
                             <h2>المقدمة: لماذا التعليم أولاً؟</h2>
                             <p>التداول هو المهنة الوحيدة التي يظن الناس أنهم يمكنهم النجاح فيها دون دراسة لسنوات. هل تتخيل جراحاً يجري عملية بمليون دولار دون تدريب؟ بالتأكيد لا. منصة أورا التعليمية توفر لك "مشرحة" السوق لتعمل فيها بأمان تام وبدون مخاطرة مالية.</p>
 
