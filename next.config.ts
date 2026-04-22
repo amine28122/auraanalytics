@@ -46,6 +46,15 @@ const nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ['rss-parser'],
+  async redirects() {
+    return [
+      {
+        source: '/ads.txt',
+        destination: 'https://srv.adstxtmanager.com/19390/auraanalyticspro.com',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);
