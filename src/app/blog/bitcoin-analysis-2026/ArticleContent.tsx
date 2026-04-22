@@ -9,6 +9,8 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Zap, BarChart3, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EzoicAd } from '@/components/EzoicAd';
+
 
 export default function BitcoinAnalysisArticle() {
     const { lang } = useLanguage();
@@ -75,7 +77,10 @@ export default function BitcoinAnalysisArticle() {
                                 <p className="mb-0">تشير البيانات On-Chain إلى وجود "فراغ سعري" كبير فوق مستويات 92,000 دولار. وبمجرد كسر هذا المستوى، لا يوجد أي عائق فني يمنع الوصول إلى 120,000 دولار في وقت قياسي.</p>
                             </div>
 
+                            <EzoicAd id={110} />
+
                             <h2>2. دورة الـ 4 سنوات والعرض المحدود</h2>
+
                             <p>نحن الآن في المرحلة الأكثر حدة من الدورة الصاعدة التي تلي التنصيف الأخير. مع تناقص العرض المتاح في المنصات، أي طلب جديد يترجم فوراً إلى صعود انفجاري في السعر.</p>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
