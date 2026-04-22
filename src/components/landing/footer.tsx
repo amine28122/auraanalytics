@@ -59,8 +59,8 @@ export default function Footer() {
               </ul>
             </div>
           </div>
-        </div>
-        <div className="mt-12 border-t border-border/10 pt-8 text-center text-muted-foreground/80">
+        <div className="mt-12 border-t border-border/10 pt-8 text-center text-muted-foreground/80 flex flex-col items-center gap-6">
+          <div id="ezoic-accreditation-container"></div>
           <p>&copy; {new Date().getFullYear()} AURA. {t.all_rights_reserved}</p>
         </div>
       </div>
