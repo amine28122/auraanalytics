@@ -199,7 +199,7 @@ export function Sidebar() {
       <div className={`flex h-20 items-center border-b border-sidebar-border ${isCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
         {!isCollapsed && (
           <span className="font-headline text-xl font-bold text-sidebar-foreground">
-            AURA ANALYTICS
+            AURA ANALYTICS PRO
           </span>
         )}
         <button
