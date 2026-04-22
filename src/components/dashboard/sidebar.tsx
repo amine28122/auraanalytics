@@ -4,6 +4,8 @@
 import Link from 'next/link';
 import { AuraAcademyLogo } from '../logo';
 import { SidebarNav } from './sidebar-nav';
+import { EzoicAd } from '../EzoicAd';
+
 import { useAuth, useFirebase } from '@/firebase';
 import { doc, onSnapshot, Timestamp, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -194,6 +196,7 @@ export function Sidebar() {
   const usageInfo = getUsageInfo(userProfile);
 
 
+
   return (
     <div className={`hidden flex-col bg-sidebar md:flex fixed left-0 top-16 h-[calc(100vh-64px)] transition-all duration-300 z-20 ${isCollapsed ? 'w-20' : 'w-72'}`}>
       <div className={`flex h-20 items-center border-b border-sidebar-border ${isCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
@@ -212,8 +215,16 @@ export function Sidebar() {
       </div>
       <div className="flex-1 overflow-y-auto">
         <SidebarNav lang={lang as 'en' | 'ar' | 'es'} className="px-4 py-2" isCollapsed={isCollapsed} />
+        
+        {/* Ezoic Sidebar Ad */}
+        {!isCollapsed && (
+          <div className="px-4 py-2 mt-4">
+             <EzoicAd id={106} />
+          </div>
+        )}
       </div>
       <div className="p-4 mt-auto border-t border-sidebar-border/50">
+
         {!isCollapsed && userProfile?.plan === 'Free' ? (
           <Card className="bg-sidebar-accent/50 border-sidebar-border">
             <CardHeader className="p-4 text-center">

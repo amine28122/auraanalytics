@@ -3,6 +3,8 @@
 import { UnifiedAnalysis } from '@/components/dashboard/unified-analysis';
 import { MarketSessions } from '@/components/dashboard/market-sessions';
 import { AILiveStatus } from '@/components/dashboard/ai-live-status';
+import { EzoicAd } from '@/components/EzoicAd';
+
 import { useAuth, useFirebase } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
@@ -80,7 +82,11 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-8" dir={dir}>
             <MarketSessions />
 
+            {/* Ezoic Dashboard Ad */}
+            <EzoicAd id={109} />
+
             {/* ── Page title & AI Live Status ── */}
+
             <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
                     <h1 className="font-headline text-3xl font-bold tracking-tighter">
