@@ -14,13 +14,8 @@ import { EzoicAd } from '@/components/EzoicAd';
 
 export default function AppleAnalysisArticle() {
     const { lang } = useLanguage();
-    const [mounted, setMounted] = React.useState(false);
-
-    React.useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return null;
+    // Remove mounted check to allow SSR for SEO and Ezoic crawlers
+    // if (!mounted) return null;
 
     return (
         <div className={cn("min-h-screen bg-background text-foreground pb-20 antialiased overflow-x-hidden", lang === 'ar' && "font-['Cairo']")} dir={lang === 'ar' ? 'rtl' : 'ltr'}>

@@ -14,13 +14,7 @@ import { EzoicAd } from '@/components/EzoicAd';
 
 export default function BitcoinAnalysisArticle() {
     const { lang } = useLanguage();
-    const [mounted, setMounted] = React.useState(false);
-
-    React.useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return null;
+    // Ensure content is rendered on server for Ezoic/SEO
 
     return (
         <div className={cn("min-h-screen bg-background text-foreground pb-20 antialiased overflow-x-hidden", lang === 'ar' && "font-['Cairo']")} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
