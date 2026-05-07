@@ -9,7 +9,8 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Binary, Cloud, Search, MousePointer2, TrendingUp, BarChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EzoicAd } from '@/components/EzoicAd';
+import { AuthorByline } from '@/components/blog/AuthorByline';
+
 
 export default function GoogleAnalysisArticle() {
     const { lang } = useLanguage();
@@ -66,6 +67,9 @@ export default function GoogleAnalysisArticle() {
                             </div>
                         </div>
                     </div>
+
+                <AuthorByline authorId="josef" />
+
                 </div>
 
                 <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-12 text-muted-foreground leading-relaxed">

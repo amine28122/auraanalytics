@@ -9,7 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Zap, BarChart3, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EzoicAd } from '@/components/EzoicAd';
+import { AuthorByline } from '@/components/blog/AuthorByline';
 
 
 export default function BitcoinAnalysisArticle() {
@@ -52,9 +52,11 @@ export default function BitcoinAnalysisArticle() {
                     </div>
                 </div>
 
-                <div className="aspect-video w-full rounded-3xl overflow-hidden mb-12 shadow-2xl border border-orange-500/20">
+                <div className="aspect-video w-full rounded-3xl overflow-hidden mb-8 shadow-2xl border border-orange-500/20">
                     <img src="/BITCOIN.png" alt="Bitcoin Analysis 2026" className="w-full h-full object-cover" />
                 </div>
+
+                <AuthorByline authorId="nabil" />
 
                 <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-8 text-muted-foreground leading-relaxed">
                     {lang === 'ar' ? (

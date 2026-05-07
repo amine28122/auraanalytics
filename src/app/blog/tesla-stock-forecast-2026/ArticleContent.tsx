@@ -9,7 +9,8 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Car, Zap, Bot, ShieldCheck, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EzoicAd } from '@/components/EzoicAd';
+import { AuthorByline } from '@/components/blog/AuthorByline';
+
 
 export default function TeslaAnalysisArticle() {
     const { lang } = useLanguage();
@@ -62,6 +63,9 @@ export default function TeslaAnalysisArticle() {
                         <span className="text-white/50 text-sm tracking-widest uppercase">Target: $800+</span>
                     </div>
                 </div>
+
+                <AuthorByline authorId="josef" />
+
 
                 <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-12 text-muted-foreground leading-relaxed">
                     {lang === 'ar' ? (

@@ -75,16 +75,50 @@ export default function PublicAboutUsPage() {
             </Button>
         </header>
         <main className="container mx-auto px-4 py-12 md:py-20">
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-16">
+            {/* Mission & Vision Section */}
+            <div className="max-w-4xl mx-auto text-center space-y-8">
+                <div className="space-y-4">
+                    <h1 className="font-headline text-4xl md:text-5xl font-bold tracking-tighter text-foreground">
+                        Empowering Traders Through <span className="text-primary">Data Intelligence</span>
+                    </h1>
+                    <p className="text-xl text-muted-foreground leading-relaxed">
+                        AURA Analytics is a premier financial technology firm dedicated to bridging the gap between complex market data and actionable trading insights. Our mission is to democratize institutional-grade analytics for retail traders worldwide.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mt-12">
+                    <div className="p-8 rounded-2xl bg-muted/30 border border-border/50 space-y-4">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <TrendingUp className="h-6 w-6" />
+                        </div>
+                        <h2 className="text-2xl font-bold">Our Mission</h2>
+                        <p className="text-muted-foreground">
+                            To provide traders with high-fidelity market analysis, predictive modeling, and strategic education, enabling them to navigate the global financial markets with confidence and precision.
+                        </p>
+                    </div>
+                    <div className="p-8 rounded-2xl bg-muted/30 border border-border/50 space-y-4">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <BrainCircuit className="h-6 w-6" />
+                        </div>
+                        <h2 className="text-2xl font-bold">Our Vision</h2>
+                        <p className="text-muted-foreground">
+                            To become the global standard for AI-driven financial analytics, fostering a community of informed, disciplined, and successful investors across all asset classes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Team Section */}
             <div className="flex w-full flex-col gap-2 items-center text-center">
                 <div className="flex items-center gap-3">
                 <Users className="h-8 w-8 text-primary" />
-                <h1 className="font-headline text-3xl font-bold tracking-tighter">
-                    About Our Team
-                </h1>
+                <h2 className="font-headline text-3xl font-bold tracking-tighter">
+                    Meet Our Expert Team
+                </h2>
                 </div>
-                <p className="text-muted-foreground">
-                Meet the experts behind AURA. Click on a member to learn more.
+                <p className="text-muted-foreground max-w-2xl">
+                Our team consists of veteran market analysts, data scientists, and developers with decades of combined experience in global financial markets.
                 </p>
             </div>
 
@@ -139,6 +173,21 @@ export default function PublicAboutUsPage() {
                 </DialogContent>
                 )}
             </Dialog>
+            {/* Values Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8">
+                <div className="text-center space-y-3">
+                    <h3 className="text-xl font-bold">Transparency</h3>
+                    <p className="text-sm text-muted-foreground">We believe in clear, honest analysis without hidden agendas or "black box" algorithms.</p>
+                </div>
+                <div className="text-center space-y-3">
+                    <h3 className="text-xl font-bold">Innovation</h3>
+                    <p className="text-sm text-muted-foreground">Continuously evolving our tools with the latest AI and market theory advancements.</p>
+                </div>
+                <div className="text-center space-y-3">
+                    <h3 className="text-xl font-bold">Integrity</h3>
+                    <p className="text-sm text-muted-foreground">Providing objective data and strategic education to foster responsible trading habits.</p>
+                </div>
+            </div>
             </div>
         </main>
     </div>

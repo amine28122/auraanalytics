@@ -14,7 +14,7 @@ export const WhatsAppButton = () => {
 
     // Replace this with your actual WhatsApp number
     // Format: CountryCode + Number (e.g., 212600000000 for Morocco)
-    const phoneNumber = '212664014193';
+    const phoneNumber = 'XXXXXXXXX';
     const message = encodeURIComponent('Hello, I need support with AURA Analytics.');
 
     return (

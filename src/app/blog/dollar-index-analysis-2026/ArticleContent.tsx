@@ -9,7 +9,8 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Globe, ShieldAlert, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EzoicAd } from '@/components/EzoicAd';
+import { AuthorByline } from '@/components/blog/AuthorByline';
+
 
 export default function DXYAnalysisArticle() {
     const { lang } = useLanguage();
@@ -54,6 +55,9 @@ export default function DXYAnalysisArticle() {
                 <div className="aspect-video w-full rounded-3xl overflow-hidden mb-12 shadow-2xl border border-blue-500/20">
                     <img src="/forex_market_mastery_banner.png" alt="DXY Index Analysis 2026" className="w-full h-full object-cover" />
                 </div>
+
+                <AuthorByline authorId="amine" />
+
 
                 <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-8 text-muted-foreground leading-relaxed">
                     {lang === 'ar' ? (

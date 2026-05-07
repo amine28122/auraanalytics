@@ -9,7 +9,7 @@ import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Cpu, ShoppingBag, Globe2, Layers, TrendingUp, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EzoicAd } from '@/components/EzoicAd';
+import { AuthorByline } from '@/components/blog/AuthorByline';
 
 
 export default function AppleAnalysisArticle() {
@@ -53,7 +53,7 @@ export default function AppleAnalysisArticle() {
                     </div>
                 </div>
 
-                <div className="aspect-video w-full rounded-3xl overflow-hidden mb-12 shadow-2xl border border-white/5 relative group">
+                <div className="aspect-video w-full rounded-3xl overflow-hidden mb-8 shadow-2xl border border-white/5 relative group">
                     <img src="/APPLE.png" alt="Apple AI Technology 2026" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent flex items-end p-8">
                         <div className="flex items-center gap-3">
@@ -67,6 +67,8 @@ export default function AppleAnalysisArticle() {
                         </div>
                     </div>
                 </div>
+
+                <AuthorByline authorId="josef" />
 
                 <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-12 text-muted-foreground leading-relaxed">
                     {lang === 'ar' ? (
