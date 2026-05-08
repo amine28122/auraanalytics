@@ -44,135 +44,9 @@ const WALLET_ADDRESS = "TBEJ333HrfBnsdJqWn3x2tV5GZ3hY3g5R7";
 const OFFER_END_DATE = '2026-01-21T00:00:00Z';
 
 
-function CryptoPaymentInfo({ t }: { t: any }) {
-    const [isCopied, setIsCopied] = useState(false);
+// This is a simplified, public version of the pricing page.
+// It does not require user authentication.
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000);
-        });
-    };
-
-    return (
-        <div className="space-y-6">
-            <div className="space-y-2">
-                <label className="text-sm font-medium">{t.walletAddress}</label>
-                <div className="flex items-center gap-2">
-                    <Input
-                        readOnly
-                        value={WALLET_ADDRESS}
-                        className="font-mono text-sm"
-                    />
-                    <Button type="button" variant="outline" size="icon" onClick={handleCopy}>
-                        {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                </div>
-                {isCopied && <p className="text-xs text-green-500 text-center">{t.copied}</p>}
-            </div>
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>{t.loginRequired}</AlertTitle>
-                <AlertDescription>
-                    {t.loginRequiredDesc}
-                </AlertDescription>
-            </Alert>
-            <Button asChild className="w-full">
-                <Link href="/auth">{t.loginToSubmit}</Link>
-            </Button>
-        </div>
-    );
-}
-
-
-function CardPaymentInfo({ t }: { t: any }) {
-    const handlePayNowClick = () => {
-        const paymentUrl = 'https://tawk.to/youssef.bennani99';
-        const width = 600;
-        const height = 800;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
-        window.open(paymentUrl, 'paymentWindow', `toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=${width}, height=${height}, top=${top}, left=${left}`);
-    };
-
-    return (
-        <div className="space-y-4 text-center">
-            <p>{t.cardDescription}</p>
-            <Button onClick={handlePayNowClick} className="w-full">{t.payNow}</Button>
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>{t.loginRequired}</AlertTitle>
-                <AlertDescription>
-                    {t.loginRequiredDesc}
-                </AlertDescription>
-            </Alert>
-            <Button asChild className="w-full" variant="secondary">
-                <Link href="/auth">{t.loginToSubmit}</Link>
-            </Button>
-        </div>
-    );
-}
-
-function UpgradeDialog({ children, t }: { children: React.ReactNode, t: any }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'card' | null>(null);
-
-    useEffect(() => {
-        if (!isOpen) {
-            setPaymentMethod(null);
-        }
-    }, [isOpen]);
-
-    const renderContent = () => {
-        if (paymentMethod === 'crypto') {
-            return <CryptoPaymentInfo t={t} />;
-        }
-
-        if (paymentMethod === 'card') {
-            return <CardPaymentInfo t={t} />;
-        }
-
-        return (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <button onClick={() => setPaymentMethod('crypto')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-6 text-center transition-all hover:border-primary hover:bg-primary/5">
-                    <Bitcoin className="h-10 w-10 text-primary" />
-                    <span className="font-semibold">{t.cryptoTitle}</span>
-                </button>
-                <button onClick={() => setPaymentMethod('card')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-6 text-center transition-all hover:border-primary hover:bg-primary/5">
-                    <CreditCard className="h-10 w-10 text-primary" />
-                    <span className="font-semibold">{t.cardTitle}</span>
-                </button>
-            </div>
-        );
-    };
-
-    const getDialogTitle = () => {
-        if (paymentMethod === 'crypto') return t.cryptoTitle;
-        if (paymentMethod === 'card') return t.cardTitle;
-        return "Select Payment Method";
-    };
-
-    const getDialogDescription = () => {
-        if (paymentMethod === 'crypto') return t.cryptoDescription;
-        if (paymentMethod === 'card') return "";
-        return "Choose how you would like to pay for the Premium plan.";
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-[480px]">
-                <DialogHeader>
-                    <DialogTitle>{getDialogTitle()}</DialogTitle>
-                    {getDialogDescription() && <DialogDescription>{getDialogDescription()}</DialogDescription>}
-                </DialogHeader>
-                <div className="py-4">
-                    {renderContent()}
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-}
 
 const CountdownTimer = ({ t }: { t: any }) => {
     const calculateTimeLeft = () => {
@@ -340,14 +214,21 @@ export default function PublicPricingPage() {
                                 }
 
                                 return (
-                                    <UpgradeDialog t={t}>
-                                        <Button
-                                            className="w-full"
-                                            variant={plan.isPrimary ? 'default' : 'secondary'}
-                                        >
-                                            {plan.cta}
-                                        </Button>
-                                    </UpgradeDialog>
+                                    <Button
+                                        className="w-full"
+                                        variant={plan.isPrimary ? 'default' : 'secondary'}
+                                        onClick={() => {
+                                            if (plan.name === 'Premium') {
+                                                window.location.href = process.env.NEXT_PUBLIC_JVZOO_CHECKOUT_URL || 'https://www.jvzoo.com/b/0/440581/3';
+                                            } else if (plan.ctaLink) {
+                                                window.location.href = plan.ctaLink;
+                                            } else {
+                                                window.location.href = '/auth';
+                                            }
+                                        }}
+                                    >
+                                        {plan.cta}
+                                    </Button>
                                 );
                             };
 

@@ -132,273 +132,7 @@ function SubmitButton({ t, isEnabled }: { t: any, isEnabled: boolean }) {
     );
 }
 
-function CryptoPaymentForm({ userProfile, t, setDialogOpen }: { userProfile: UserProfile | null, t: any, setDialogOpen: (open: boolean) => void }) {
-    const initialState: ActivationFormState = { error: null, message: null };
-    const [state, formAction] = useActionState(submitActivationRequest, initialState);
-    const { toast } = useToast();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [preview, setPreview] = useState<string | null>(null);
-    const [screenshotDataUrl, setScreenshotDataUrl] = useState<string>('');
-    const [transactionId, setTransactionId] = useState('');
-    const [isCopied, setIsCopied] = useState(false);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
-        });
-    };
-
-    useEffect(() => {
-        if (state.error) {
-            toast({
-                variant: 'destructive',
-                title: t.submissionError,
-                description: state.error,
-            });
-        }
-        if (state.message) {
-            toast({
-                title: t.requestSubmitted,
-                description: t.requestSubmittedDesc,
-            });
-            setDialogOpen(false);
-        }
-    }, [state, t, toast, setDialogOpen]);
-
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        try {
-            const options = {
-                maxSizeMB: 0.5,
-                maxWidthOrHeight: 1200,
-                useWebWorker: true,
-            };
-
-            const compressedFile = await imgCompression(file, options);
-            const dataUrl = await imgCompression.getDataUrlFromFile(compressedFile);
-            setPreview(dataUrl);
-            setScreenshotDataUrl(dataUrl);
-        } catch (error) {
-            console.error("Payment image error:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Image Error',
-                description: 'Failed to process the screenshot. Please try again.',
-            });
-        } finally {
-            e.target.value = '';
-        }
-    };
-
-    const handleImageClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const isFormEnabled = transactionId.trim() !== '' && screenshotDataUrl !== '';
-
-    return (
-        <form action={formAction} className="space-y-6">
-            <input type="hidden" name="userId" value={userProfile?.uid || ''} />
-            <input type="hidden" name="email" value={userProfile?.email || ''} />
-            <input type="hidden" name="screenshotDataUrl" value={screenshotDataUrl} />
-            <input type="hidden" name="planName" value="Premium" />
-
-            <div className="space-y-2">
-                <label className="text-sm font-medium">{t.walletAddress}</label>
-                <div className="flex items-center gap-2">
-                    <Input
-                        readOnly
-                        value={WALLET_ADDRESS}
-                        className="font-mono text-sm"
-                    />
-                    <Button type="button" variant="outline" size="icon" onClick={handleCopy}>
-                        {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                </div>
-                {isCopied && <p className="text-xs text-green-500 text-center">{t.copied}</p>}
-            </div>
-
-            <div className="space-y-2">
-                <label htmlFor="transactionId" className="text-sm font-medium">{t.transactionId}</label>
-                <Input
-                    id="transactionId"
-                    name="transactionId"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    placeholder="Enter transaction ID or hash"
-                    required
-                />
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-sm font-medium">{t.paymentScreenshot}</label>
-                <div
-                    className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed bg-muted text-muted-foreground transition-colors hover:border-primary/50"
-                    onClick={handleImageClick}
-                >
-                    {preview ? (
-                        <Image src={preview} alt="Screenshot preview" width={400} height={225} className="h-full w-full rounded-md object-contain" />
-                    ) : (
-                        <>
-                            <Upload className="h-8 w-8" />
-                            <span>{t.uploadScreenshot}</span>
-                        </>
-                    )}
-                </div>
-                <Input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept="image/png, image/jpeg, image/webp"
-                    onChange={handleFileChange}
-                />
-            </div>
-
-            <SubmitButton t={t} isEnabled={isFormEnabled} />
-        </form>
-    );
-}
-
-function CardPaymentInfo({ t }: { t: any }) {
-    const handlePayNowClick = () => {
-        const paymentUrl = 'https://tawk.to/youssef.bennani99';
-        const width = 600;
-        const height = 800;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
-        window.open(paymentUrl, 'paymentWindow', `toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, copyhistory=no, width=${width}, height=${height}, top=${top}, left=${left}`);
-    };
-
-    return (
-        <div className="space-y-4 text-center">
-            <p>{t.cardDescription}</p>
-            <Button onClick={handlePayNowClick} className="w-full">{t.payNow}</Button>
-            <p className="text-xs text-muted-foreground">{t.paymentProofNote}</p>
-        </div>
-    );
-}
-
-const JVZOO_BUY_URL = `https://www.jvzoo.com/b/${process.env.NEXT_PUBLIC_JVZOO_PRODUCT_ID || '0'}/0`;
-
-function JVZooPaymentInfo({ t }: { t: any }) {
-    return (
-        <div className="space-y-4 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
-                <ShoppingCart className="h-8 w-8 text-emerald-500" />
-            </div>
-            <div className="space-y-2">
-                <h3 className="font-bold text-lg">Pay via JVZoo</h3>
-                <p className="text-sm text-muted-foreground">
-                    Secure checkout via JVZoo. Supports credit cards, PayPal, and more.
-                    <br />
-                    <span className="font-semibold text-emerald-500">Your account is activated automatically after payment.</span>
-                </p>
-            </div>
-            <Alert className="border-emerald-500/30 bg-emerald-500/5 text-left">
-                <Check className="h-4 w-4 text-emerald-500" />
-                <AlertTitle className="text-emerald-500">Instant Activation</AlertTitle>
-                <AlertDescription className="text-emerald-500/80">
-                    No manual review needed. Your Premium account activates within seconds after payment.
-                </AlertDescription>
-            </Alert>
-            <Button
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => window.open(JVZOO_BUY_URL, '_blank')}
-            >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Proceed to JVZoo Checkout
-            </Button>
-            <p className="text-xs text-muted-foreground">
-                After payment, use the same email to register or log in to Aura Analytics to access your Premium features.
-            </p>
-        </div>
-    );
-}
-
-function UpgradeDialog({ children, userProfile, t }: { children: React.ReactNode, userProfile: UserProfile | null, t: any }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'card' | 'jvzoo' | null>(null);
-
-    useEffect(() => {
-        if (!isOpen) {
-            setPaymentMethod(null);
-        }
-    }, [isOpen]);
-
-    const renderContent = () => {
-        if (paymentMethod === 'crypto') {
-            return <CryptoPaymentForm userProfile={userProfile} t={t} setDialogOpen={setIsOpen} />;
-        }
-
-        if (paymentMethod === 'card') {
-            return <CardPaymentInfo t={t} />;
-        }
-
-        if (paymentMethod === 'jvzoo') {
-            return <JVZooPaymentInfo t={t} />;
-        }
-
-        return (
-            <div className="grid grid-cols-1 gap-4">
-                {/* JVZoo - Recommended (Auto-activation) */}
-                <button
-                    onClick={() => setPaymentMethod('jvzoo')}
-                    className="flex items-center gap-4 rounded-lg border-2 border-emerald-500/40 bg-emerald-500/5 p-4 text-left transition-all hover:border-emerald-500 hover:bg-emerald-500/10 relative"
-                >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-                        <ShoppingCart className="h-6 w-6 text-emerald-500" />
-                    </div>
-                    <div>
-                        <p className="font-bold text-foreground">Pay via JVZoo <span className="ml-1 text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">Recommended</span></p>
-                        <p className="text-xs text-muted-foreground">Credit Card, PayPal &amp; more. Instant auto-activation.</p>
-                    </div>
-                </button>
-                <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => setPaymentMethod('crypto')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-4 text-center transition-all hover:border-primary hover:bg-primary/5">
-                        <Bitcoin className="h-8 w-8 text-primary" />
-                        <span className="font-semibold text-sm">{t.cryptoTitle}</span>
-                    </button>
-                    <button onClick={() => setPaymentMethod('card')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-4 text-center transition-all hover:border-primary hover:bg-primary/5">
-                        <CreditCard className="h-8 w-8 text-primary" />
-                        <span className="font-semibold text-sm">{t.cardTitle}</span>
-                    </button>
-                </div>
-            </div>
-        );
-    };
-
-    const getDialogTitle = () => {
-        if (paymentMethod === 'crypto') return t.cryptoTitle;
-        if (paymentMethod === 'card') return t.cardTitle;
-        if (paymentMethod === 'jvzoo') return 'JVZoo Secure Checkout';
-        return t.selectPayment;
-    };
-
-    const getDialogDescription = () => {
-        if (paymentMethod === 'crypto') return t.cryptoDescription;
-        if (paymentMethod === 'card') return "";
-        if (paymentMethod === 'jvzoo') return '';
-        return t.selectPaymentDesc;
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-[480px]">
-                <DialogHeader>
-                    <DialogTitle>{getDialogTitle()}</DialogTitle>
-                    {getDialogDescription() && <DialogDescription>{getDialogDescription()}</DialogDescription>}
-                </DialogHeader>
-                <div className="py-4">
-                    {renderContent()}
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-}
 
 const CountdownTimer = ({ t }: { t: any }) => {
     const calculateTimeLeft = () => {
@@ -474,8 +208,8 @@ export default function PricingPage() {
         },
         {
             name: 'Premium',
-            price: '$50',
-            originalPrice: '$100',
+            price: '$100',
+            originalPrice: '$200',
             discount: '-50%',
             description: 'For active traders',
             features: [
@@ -535,6 +269,12 @@ export default function PricingPage() {
     const lang: keyof typeof translations = 'en';
     const t = translations[lang];
 
+    const handleUpgradeClick = () => {
+        const baseUrl = process.env.NEXT_PUBLIC_JVZOO_CHECKOUT_URL || "https://www.jvzoo.com/b/0/440581/3";
+        const checkoutUrl = `${baseUrl}?custom=${user?.uid || ''}`;
+        window.open(checkoutUrl, '_blank');
+    };
+
     return (
         <div className="flex flex-col gap-8">
             <div className="flex w-full flex-col gap-2 text-center">
@@ -552,14 +292,25 @@ export default function PricingPage() {
                     const isPremium = plan.name === 'Premium';
 
                     const buttonAction = () => {
-                        if (isCurrentPlan || !isPremium) {
+                        if (isCurrentPlan || plan.name === 'Aura Plan') {
+                            const ctaText = isCurrentPlan ? 'Your Current Plan' : plan.cta;
+                            const link = plan.name === 'Aura Plan' ? 'https://tawk.to/youssef.bennani99' : '#';
+                            
+                            if (plan.name === 'Aura Plan') {
+                                return (
+                                    <Button asChild className="w-full" variant="secondary">
+                                        <a href={link} target="_blank" rel="noopener noreferrer">{ctaText}</a>
+                                    </Button>
+                                );
+                            }
+
                             return (
                                 <Button
                                     className="w-full"
                                     variant={plan.isPrimary ? 'default' : 'secondary'}
                                     disabled
                                 >
-                                    {isCurrentPlan ? 'Your Current Plan' : plan.cta}
+                                    {ctaText}
                                 </Button>
                             );
                         }
@@ -583,14 +334,13 @@ export default function PricingPage() {
                         }
 
                         return (
-                            <UpgradeDialog userProfile={userProfile} t={t}>
-                                <Button
-                                    className="w-full"
-                                    variant={plan.isPrimary ? 'default' : 'secondary'}
-                                >
-                                    {plan.cta}
-                                </Button>
-                            </UpgradeDialog>
+                            <Button
+                                className="w-full"
+                                variant={plan.isPrimary ? 'default' : 'secondary'}
+                                onClick={handleUpgradeClick}
+                            >
+                                {plan.cta}
+                            </Button>
                         );
                     };
 
@@ -610,11 +360,7 @@ export default function PricingPage() {
                             )}
                             <CardHeader className="text-center">
                                 <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                                <div className="mt-4 flex items-baseline text-white">
-                                    <span className="text-5xl font-extrabold tracking-tight">$100</span>
-                                    <span className="ml-1 text-xl font-semibold">/month</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1">
+                                <div className="flex flex-col items-center justify-center">
                                     <div className="flex items-baseline gap-2">
                                         <p className="text-4xl font-bold">{plan.price}</p>
                                         {plan.discount && <Badge variant="destructive">{plan.discount}</Badge>}
