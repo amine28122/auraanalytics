@@ -5,7 +5,7 @@ import imgCompression from 'browser-image-compression';
 import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, CreditCard, Loader2, Upload, Bitcoin, Copy, Check, Clock } from 'lucide-react';
+import { CheckCircle, CreditCard, Loader2, Upload, Bitcoin, Copy, Check, Clock, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, useFirebase } from '@/firebase';
 import { collection, query, where, onSnapshot, doc, Unsubscribe } from 'firebase/firestore';
@@ -281,9 +281,46 @@ function CardPaymentInfo({ t }: { t: any }) {
     );
 }
 
+const JVZOO_BUY_URL = `https://www.jvzoo.com/b/${process.env.NEXT_PUBLIC_JVZOO_PRODUCT_ID || '0'}/0`;
+
+function JVZooPaymentInfo({ t }: { t: any }) {
+    return (
+        <div className="space-y-4 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+                <ShoppingCart className="h-8 w-8 text-emerald-500" />
+            </div>
+            <div className="space-y-2">
+                <h3 className="font-bold text-lg">Pay via JVZoo</h3>
+                <p className="text-sm text-muted-foreground">
+                    Secure checkout via JVZoo. Supports credit cards, PayPal, and more.
+                    <br />
+                    <span className="font-semibold text-emerald-500">Your account is activated automatically after payment.</span>
+                </p>
+            </div>
+            <Alert className="border-emerald-500/30 bg-emerald-500/5 text-left">
+                <Check className="h-4 w-4 text-emerald-500" />
+                <AlertTitle className="text-emerald-500">Instant Activation</AlertTitle>
+                <AlertDescription className="text-emerald-500/80">
+                    No manual review needed. Your Premium account activates within seconds after payment.
+                </AlertDescription>
+            </Alert>
+            <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => window.open(JVZOO_BUY_URL, '_blank')}
+            >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Proceed to JVZoo Checkout
+            </Button>
+            <p className="text-xs text-muted-foreground">
+                After payment, use the same email to register or log in to Aura Analytics to access your Premium features.
+            </p>
+        </div>
+    );
+}
+
 function UpgradeDialog({ children, userProfile, t }: { children: React.ReactNode, userProfile: UserProfile | null, t: any }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'card' | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'card' | 'jvzoo' | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
@@ -300,16 +337,35 @@ function UpgradeDialog({ children, userProfile, t }: { children: React.ReactNode
             return <CardPaymentInfo t={t} />;
         }
 
+        if (paymentMethod === 'jvzoo') {
+            return <JVZooPaymentInfo t={t} />;
+        }
+
         return (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <button onClick={() => setPaymentMethod('crypto')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-6 text-center transition-all hover:border-primary hover:bg-primary/5">
-                    <Bitcoin className="h-10 w-10 text-primary" />
-                    <span className="font-semibold">{t.cryptoTitle}</span>
+            <div className="grid grid-cols-1 gap-4">
+                {/* JVZoo - Recommended (Auto-activation) */}
+                <button
+                    onClick={() => setPaymentMethod('jvzoo')}
+                    className="flex items-center gap-4 rounded-lg border-2 border-emerald-500/40 bg-emerald-500/5 p-4 text-left transition-all hover:border-emerald-500 hover:bg-emerald-500/10 relative"
+                >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                        <ShoppingCart className="h-6 w-6 text-emerald-500" />
+                    </div>
+                    <div>
+                        <p className="font-bold text-foreground">Pay via JVZoo <span className="ml-1 text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">Recommended</span></p>
+                        <p className="text-xs text-muted-foreground">Credit Card, PayPal &amp; more. Instant auto-activation.</p>
+                    </div>
                 </button>
-                <button onClick={() => setPaymentMethod('card')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-6 text-center transition-all hover:border-primary hover:bg-primary/5">
-                    <CreditCard className="h-10 w-10 text-primary" />
-                    <span className="font-semibold">{t.cardTitle}</span>
-                </button>
+                <div className="grid grid-cols-2 gap-4">
+                    <button onClick={() => setPaymentMethod('crypto')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-4 text-center transition-all hover:border-primary hover:bg-primary/5">
+                        <Bitcoin className="h-8 w-8 text-primary" />
+                        <span className="font-semibold text-sm">{t.cryptoTitle}</span>
+                    </button>
+                    <button onClick={() => setPaymentMethod('card')} className="flex flex-col items-center justify-center gap-3 rounded-lg border p-4 text-center transition-all hover:border-primary hover:bg-primary/5">
+                        <CreditCard className="h-8 w-8 text-primary" />
+                        <span className="font-semibold text-sm">{t.cardTitle}</span>
+                    </button>
+                </div>
             </div>
         );
     };
@@ -317,12 +373,14 @@ function UpgradeDialog({ children, userProfile, t }: { children: React.ReactNode
     const getDialogTitle = () => {
         if (paymentMethod === 'crypto') return t.cryptoTitle;
         if (paymentMethod === 'card') return t.cardTitle;
+        if (paymentMethod === 'jvzoo') return 'JVZoo Secure Checkout';
         return t.selectPayment;
     };
 
     const getDialogDescription = () => {
         if (paymentMethod === 'crypto') return t.cryptoDescription;
         if (paymentMethod === 'card') return "";
+        if (paymentMethod === 'jvzoo') return '';
         return t.selectPaymentDesc;
     };
 
@@ -552,6 +610,10 @@ export default function PricingPage() {
                             )}
                             <CardHeader className="text-center">
                                 <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                                <div className="mt-4 flex items-baseline text-white">
+                                    <span className="text-5xl font-extrabold tracking-tight">$100</span>
+                                    <span className="ml-1 text-xl font-semibold">/month</span>
+                                </div>
                                 <div className="flex flex-col items-center gap-1">
                                     <div className="flex items-baseline gap-2">
                                         <p className="text-4xl font-bold">{plan.price}</p>
