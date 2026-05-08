@@ -333,6 +333,15 @@ export default function PricingPage() {
                             );
                         }
 
+                        if (plan.name === 'Premium') {
+                            const checkoutUrl = `https://www.jvzoo.com/b/0/440581/3${user?.uid ? `?custom=${user.uid}` : ''}`;
+                            return (
+                                <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="w-full flex justify-center">
+                                    <img src="https://i.jvzoo.com/0/440581/3" alt="Aura Analytics Pro" border="0" className="object-contain" />
+                                </a>
+                            );
+                        }
+
                         return (
                             <Button
                                 className="w-full"

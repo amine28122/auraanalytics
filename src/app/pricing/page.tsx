@@ -213,14 +213,20 @@ export default function PublicPricingPage() {
                                     );
                                 }
 
+                                if (plan.name === 'Premium') {
+                                    return (
+                                        <a href="https://www.jvzoo.com/b/0/440581/3" target="_blank" rel="noopener noreferrer" className="w-full flex justify-center">
+                                            <img src="https://i.jvzoo.com/0/440581/3" alt="Aura Analytics Pro" border="0" className="object-contain" />
+                                        </a>
+                                    );
+                                }
+
                                 return (
                                     <Button
                                         className="w-full"
                                         variant={plan.isPrimary ? 'default' : 'secondary'}
                                         onClick={() => {
-                                            if (plan.name === 'Premium') {
-                                                window.location.href = process.env.NEXT_PUBLIC_JVZOO_CHECKOUT_URL || 'https://www.jvzoo.com/b/0/440581/3';
-                                            } else if (plan.ctaLink) {
+                                            if (plan.ctaLink) {
                                                 window.location.href = plan.ctaLink;
                                             } else {
                                                 window.location.href = '/auth';
