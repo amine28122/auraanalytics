@@ -10,6 +10,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Cpu, ShoppingBag, Globe2, Layers, TrendingUp, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthorByline } from '@/components/blog/AuthorByline';
+import { EzoicAd } from '@/components/EzoicAd';
 
 
 export default function AppleAnalysisArticle() {
