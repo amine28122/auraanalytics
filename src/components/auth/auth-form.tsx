@@ -155,6 +155,28 @@ export function SocialSignInButtons() {
           }
         }
 
+        // Handle JVZoo Pending Registrations
+        try {
+          const salesRef = collection(firestore, "jvzooSales");
+          const pendingQuery = query(salesRef, where("email", "==", user.email), where("status", "==", "pending_registration"));
+          const pendingDocs = await getDocs(pendingQuery);
+          
+          if (!pendingDocs.empty) {
+            const saleDoc = pendingDocs.docs[0];
+            // Immediately activate Premium for this user since they paid before registering
+            await updateDoc(userDocRef, { 
+              plan: 'Premium', 
+              planStartDate: serverTimestamp() 
+            });
+            await updateDoc(doc(firestore, "jvzooSales", saleDoc.id), { 
+              status: 'activated', 
+              userId: user.uid 
+            });
+          }
+        } catch (e) {
+          console.error("Error checking pending JVZoo sales:", e);
+        }
+
         // Clear stored ref after successful registration
         sessionStorage.removeItem('aura_ref');
       } else {
