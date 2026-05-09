@@ -258,7 +258,6 @@ export default function PublicPricingPage() {
                             );
                         })}
                     </div>
-                    </div>
 
                     {/* JVZoo Disclaimer */}
                     <div className="mt-16 mx-auto max-w-4xl text-xs text-muted-foreground/60 text-justify space-y-4">
