@@ -108,14 +108,6 @@ const CountdownTimer = ({ t }: { t: any }) => {
 export default function PublicPricingPage() {
     const initialPlans = [
         {
-            name: 'Free',
-            price: '$0',
-            description: 'Perfect for getting started',
-            features: ['1 analysis per day', 'Basic chart tools', 'Email support'],
-            cta: 'Get Started',
-            ctaLink: '/auth',
-        },
-        {
             name: 'Premium',
             price: '$100',
             originalPrice: '$200',
@@ -130,21 +122,7 @@ export default function PublicPricingPage() {
             cta: 'Upgrade to Premium',
             isPrimary: true,
             isOffer: true,
-        },
-        {
-            name: 'Aura Plan',
-            price: 'Contact Us',
-            description: 'For institutions and professionals',
-            features: [
-                'Unlimited analyses',
-                'All Premium features',
-                'Direct line to analysts',
-                'Personalized strategy sessions',
-            ],
-            cta: 'Contact for Access',
-            ctaLink: 'https://tawk.to/youssef.bennani99',
-            isExternal: true
-        },
+        }
     ];
 
     const lang: keyof typeof translations = 'en'; // Default to English for public page
@@ -183,15 +161,12 @@ export default function PublicPricingPage() {
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingSchema) }}
             />
             <header className="flex items-center justify-between p-4 border-b">
-                <Link href="/" className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                     <AuraAcademyLogo iconOnly className="h-10 w-10" />
                     <span className="font-headline text-2xl font-bold">AURA</span>
-                </Link>
-                <Button asChild>
-                    <Link href="/auth">Sign In</Link>
-                </Button>
+                </div>
             </header>
-            <main className="container mx-auto px-4 py-12 md:py-20">
+            <main className="container mx-auto px-4 py-12 md:py-20 flex justify-center">
                 <div className="flex flex-col gap-8">
                     <div className="flex w-full flex-col gap-2 text-center">
                         <h1 className="font-headline text-4xl font-bold tracking-tighter">
@@ -202,7 +177,7 @@ export default function PublicPricingPage() {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-1 max-w-md mx-auto">
                         {initialPlans.map((plan) => {
                             const buttonAction = () => {
                                 if (plan.ctaLink) {
@@ -283,8 +258,6 @@ export default function PublicPricingPage() {
                             );
                         })}
                     </div>
-                    <div className="text-center text-sm text-muted-foreground">
-                        <p>For the Aura Plan, please contact us through our chat support.</p>
                     </div>
 
                     {/* JVZoo Disclaimer */}
