@@ -56,8 +56,8 @@ export default function PlanComparison() {
                                 </div>
                                 <CardDescription>{t.premium_desc}</CardDescription>
                                 <div className="flex items-baseline gap-2 pt-4">
-                                    <p className="text-4xl font-bold">$50</p>
-                                    <p className="text-2xl font-bold text-muted-foreground line-through">$100</p>
+                                    <p className="text-4xl font-bold">$100</p>
+                                    <p className="text-2xl font-bold text-muted-foreground line-through">$200</p>
                                     <p className="text-lg font-normal text-muted-foreground">{t.month}</p>
                                 </div>
                             </CardHeader>
