@@ -60,6 +60,9 @@ export default function PlanComparison() {
                                     <p className="text-2xl font-bold text-muted-foreground line-through">$200</p>
                                     <p className="text-lg font-normal text-muted-foreground">{t.month}</p>
                                 </div>
+                                <p className="text-xs text-muted-foreground mt-2 bg-muted/50 px-2 py-1 rounded-md inline-block w-fit">
+                                    Billed automatically every month. Cancel anytime.
+                                </p>
                             </CardHeader>
                             <CardContent className="flex-grow">
                                 <ul className="space-y-4">

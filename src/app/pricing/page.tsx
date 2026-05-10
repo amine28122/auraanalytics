@@ -227,45 +227,55 @@ export default function PublicPricingPage() {
                                             <span className="text-[0.6rem] font-semibold">{t.newYearOfferSub}</span>
                                         </Badge>
                                     )}
-                                    <CardHeader className="text-center">
-                                        <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                                        <div className="flex flex-col items-center justify-center">
-                                            <div className="flex items-baseline gap-2">
-                                                <p className="text-4xl font-bold">{plan.price}</p>
-                                                {plan.discount && <Badge variant="destructive">{plan.discount}</Badge>}
+                                        <CardHeader className="text-center">
+                                            <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="flex items-baseline gap-2">
+                                                    <p className="text-4xl font-bold">{plan.price}</p>
+                                                    <span className="text-lg text-muted-foreground font-medium">/ month</span>
+                                                    {plan.discount && <Badge variant="destructive">{plan.discount}</Badge>}
+                                                </div>
+                                                {plan.originalPrice && (
+                                                    <span className="text-lg text-muted-foreground line-through">{plan.originalPrice}</span>
+                                                )}
+                                                <p className="text-sm text-muted-foreground mt-2 font-medium bg-muted/50 px-3 py-1 rounded-full inline-block">Billed automatically every month. Cancel anytime.</p>
                                             </div>
-                                            {plan.originalPrice && (
-                                                <span className="text-lg text-muted-foreground line-through">{plan.originalPrice}</span>
-                                            )}
-                                        </div>
-                                        <CardDescription>{plan.description}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <ul className="space-y-3">
-                                            {plan.features.map((feature) => (
-                                                <li key={feature} className="flex items-center gap-3">
-                                                    <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
-                                                    <span className="text-sm">{feature}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        {plan.isOffer && <CountdownTimer t={t} />}
-                                    </CardContent>
-                                    <CardFooter>
-                                        {buttonAction()}
-                                    </CardFooter>
-                                </Card>
-                            );
-                        })}
-                    </div>
+                                            <CardDescription className="mt-4">{plan.description}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="flex-grow">
+                                            <ul className="space-y-3">
+                                                {plan.features.map((feature) => (
+                                                    <li key={feature} className="flex items-center gap-3">
+                                                        <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
+                                                        <span className="text-sm">{feature}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            {plan.isOffer && <CountdownTimer t={t} />}
+                                        </CardContent>
+                                        <CardFooter className="flex flex-col gap-3">
+                                            {buttonAction()}
+                                            <div className="text-center w-full">
+                                                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                                                    <Info className="h-3 w-3" />
+                                                    Recurring subscription. You can cancel at any time.
+                                                </p>
+                                            </div>
+                                        </CardFooter>
+                                    </Card>
+                                );
+                            })}
+                        </div>
 
-                    {/* JVZoo Disclaimer */}
-                    <div className="mt-16 mx-auto max-w-4xl text-xs text-muted-foreground/60 text-justify space-y-4">
-                        <p>Disclaimer: Please note that this product does not provide any guarantee of income or success. The results achieved by the product owner or any other individuals mentioned are not indicative of future success or earnings. This website is not affiliated with Facebook or any of its associated entities. Once you navigate away from Facebook, the responsibility for the content and its usage lies solely with the user. All content on this website, including but not limited to text, images, and multimedia, is protected by copyright law and the Digital Millennium Copyright Act. Unauthorized copying, duplication, modification, or theft, whether intentional or unintentional, is strictly prohibited. Violators will be prosecuted to the fullest extent of the law.</p>
-                        <p>We want to clarify that JVZoo serves as the retailer for the products featured on this site. JVZoo® is a registered trademark of BBC Systems Inc., a Florida corporation located at 1809 E. Broadway Street, Suite 125, Oviedo, FL 32765, USA, and is used with permission. The role of JVZoo as a retailer does not constitute an endorsement, approval, or review of these products or any claims, statements, or opinions used in their promotion.</p>
+                        {/* JVZoo Disclaimer */}
+                        <div className="mt-16 mx-auto max-w-4xl text-xs text-muted-foreground/60 text-justify space-y-4 bg-muted/20 p-6 rounded-xl border border-border/50">
+                            <h3 className="font-semibold text-sm text-foreground/80 mb-2">Important Recurring Billing & Compliance Information</h3>
+                            <p><strong>Recurring Billing Terms:</strong> By purchasing the Premium plan, you are agreeing to an ongoing subscription. You will be automatically billed <strong>$100 every month</strong> until you cancel. You may cancel your subscription at any time by logging into your JVZoo customer portal or by contacting our support team. There are no hidden fees or cancellation penalties.</p>
+                            <p><strong>Disclaimer:</strong> Please note that this product does not provide any guarantee of income or success. The results achieved by the product owner or any other individuals mentioned are not indicative of future success or earnings. This website is not affiliated with Facebook or any of its associated entities. Once you navigate away from Facebook, the responsibility for the content and its usage lies solely with the user. All content on this website, including but not limited to text, images, and multimedia, is protected by copyright law and the Digital Millennium Copyright Act. Unauthorized copying, duplication, modification, or theft, whether intentional or unintentional, is strictly prohibited. Violators will be prosecuted to the fullest extent of the law.</p>
+                            <p>We want to clarify that JVZoo serves as the retailer for the products featured on this site. JVZoo® is a registered trademark of BBC Systems Inc., a Florida corporation located at 1809 E. Broadway Street, Suite 125, Oviedo, FL 32765, USA, and is used with permission. The role of JVZoo as a retailer does not constitute an endorsement, approval, or review of these products or any claims, statements, or opinions used in their promotion.</p>
+                        </div>
                     </div>
-                </div>
-            </main>
-        </div>
-    );
-}
+                </main>
+            </div>
+        );
+    }
