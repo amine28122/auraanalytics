@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LandingHeader } from '@/components/landing/header';
 import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, LayoutGrid, Wrench, Info } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, HelpCircle, LayoutGrid, Wrench, Info, Target, TrendingUp, ShieldAlert, BarChart4 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { AuthorByline } from '@/components/blog/AuthorByline';
@@ -32,13 +32,13 @@ export default function AdvancedSchoolsArticle() {
                     <Button variant="ghost" className="mb-8 p-0 hover:bg-transparent text-primary" asChild>
                         <Link href="/blog" className="flex items-center gap-2">
                             {lang === 'ar' ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-                            {lang === 'ar' ? 'العودة للمدونة' : 'Back to Blog'}
+                            {lang === 'ar' ? 'العودة لمركز التحليل' : 'Back to Analysis Center'}
                         </Link>
                     </Button>
 
-                    <Badge className="mb-4 bg-primary/20 text-primary border-primary/30 py-1 px-4">Strategy</Badge>
+                    <Badge className="mb-4 bg-primary/20 text-primary border-primary/30 py-1 px-4">Institutional Strategy</Badge>
                     <h1 className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight">
-                        {lang === 'ar' ? 'احتراف الأسواق باستراتيجية المدارس المتقدمة: غوص عميق في منطق المؤسسات' : 'Mastering the Markets with Advanced Schools Strategy: An Institutional Deep Dive'}
+                        {lang === 'ar' ? 'احتراف الأسواق باستراتيجية المدارس المتقدمة: الدليل الشامل للتداول المؤسساتي' : 'Mastering the Markets with Advanced Schools Strategy: The Comprehensive Guide to Institutional Trading'}
                     </h1>
 
                     <div className="flex flex-wrap items-center gap-6 text-muted-foreground border-y border-border/10 py-6">
@@ -48,7 +48,7 @@ export default function AdvancedSchoolsArticle() {
                         </div>
                         <div className="flex items-center gap-2">
                             <Clock className="h-5 w-5" />
-                            <span>25 min read</span>
+                            <span>45 min read</span>
                         </div>
                         <div className="flex items-center gap-4 ms-auto">
                             <Share2 className="h-4 w-4 cursor-pointer hover:text-primary transition-colors" />
@@ -60,124 +60,183 @@ export default function AdvancedSchoolsArticle() {
                 </div>
 
                 <div className="aspect-video w-full rounded-3xl overflow-hidden mb-12 shadow-2xl border border-border/10">
-                    <img src="/6.png" alt="Advanced Schools Strategy" className="w-full h-full object-cover" />
+                    <img src="/6.png" alt="Advanced Schools Strategy Illustration" className="w-full h-full object-cover" />
                 </div>
 
                 <AuthorByline authorId="hajar" />
 
-                <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-8 text-muted-foreground leading-relaxed
+                <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-12 text-muted-foreground leading-relaxed
                 prose-headings:text-foreground prose-headings:font-headline 
                 prose-h2:text-3xl prose-h2:mt-16 prose-h2:mb-6 prose-h2:border-l-4 prose-h2:border-primary prose-h2:pl-4
                 prose-h3:text-2xl prose-h3:mt-10
                 prose-blockquote:border-s-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-4 prose-blockquote:px-8 prose-blockquote:rounded-e-xl prose-blockquote:italic
                 prose-strong:text-foreground prose-strong:font-bold">
+                    
                     {lang === 'ar' ? (
                         <>
-                            <p className="text-xl font-medium text-foreground">يتطلب التداول في العصر الحديث أكثر من مجرد النظر إلى متوسط متحرك بسيط أو مؤشر RSI. فخوارزميات المؤسسات التي تحرك ثروات اليوم هي أكثر تطوراً بكثير. في AURA، قمنا بتطوير منهجية "المدارس المتقدمة"—وهي نهج شامل يجمع بين القوة التنبؤية لنظرية موجات إليوت مع التنفيذ المنطقي لمفاهيم ICT.</p>
+                            <p className="text-2xl font-medium text-foreground leading-relaxed">في عالم المال اليوم، لم يعد التداول مجرد لعبة أرقام، بل أصبح صراعاً بين خوارزميات المؤسسات الضخمة وصغار المتداولين. إذا كنت لا تزال تعتمد على المؤشرات التقليدية، فأنت تقاتل بسيف خشبي في عصر الليزر. هذا الدليل يشرح لك منهجية "المدارس المتقدمة" التي نعتمدها في AURA.</p>
 
                             <EzoicAd id={110} />
+
+                            <h2>مقدمة: لماذا يفشل 95% من المتداولين؟</h2>
+                            <p>الحقيقة المرة هي أن الأسواق المالية مصممة لسحب السيولة من المتداولين غير الواعين. تعتمد معظم الدورات التعليمية على مفاهيم "التجزئة" (Retail Concepts) التي تجاوزها الزمن. الدعم والمقاومة الكلاسيكية، نماذج الرأس والكتفين التقليدية.. كلها أصبحت "فخاخاً للسيولة" (Liquidity Traps). استراتيجية المدارس المتقدمة تقلب الطاولة، حيث تعلمك التفكير كصانع سوق وليس كضحية.</p>
+
+                            <h2>الفصل الأول: الخريطة الكونية - نظرية موجات إليوت</h2>
+                            <p>تعتبر موجات إليوت العمود الفقري لأي تحليل ناجح. هي ليست مجرد طريقة للعد، بل هي دراسة لسيكولوجية الجماهير المترجمة على الشارت. الأسواق تتحرك في دورات من 5 موجات دافعة و3 موجات تصحيحية.</p>
                             
-                            <h2>تطور التداول: من التجزئة إلى المؤسساتية</h2>
-                            <p>يعتمد معظم متداولي التجزئة على المؤشرات المتأخرة. ومع ذلك، تتداول المؤسسات بناءً على تسليم السعر والسيولة. لاحتراف الأسواق، يجب على المرء الانتقال من التساؤل "ماذا يقول مؤشر RSI؟" إلى "أين تدخل الأموال الذكية؟". استراتيجية المدارس المتقدمة هي الجسر بين هذين العالمين.</p>
+                            <h3>1.1 القوة التنبؤية للموجة الثالثة</h3>
+                            <p>في منهجيتنا، نحن لا نتداول كل حركة. نحن نبحث عن "قلب الاتجاه". الموجة الثالثة هي الأقوى والأطول، وهي المكان الذي تتجمع فيه أموال المؤسسات. من خلال دمج مستويات فيبوناتشي (1.618 و 2.618)، نستطيع توقع أهداف هذه الموجة بدقة مذهلة.</p>
 
-                            <h2>1. الخريطة الاستراتيجية: نظرية موجات إليوت</h2>
-                            <p>توفر موجات إليوت "الخريطة". إنها تساعدنا على فهم مكاننا في دورة أكبر. هل نحن في موجة حافزة 3 قوية، أم موجة تصحيحية 4؟ معرفة هذا يمنعك من محاربة الاتجاه الأساسي. في منهجيتنا، نعطي الأولوية للإعدادات عالية الاحتمالية عند نهاية تصحيحات الموجة 2 والموجة 4.</p>
-
-                            <div className="bg-primary/5 p-6 rounded-2xl border border-primary/20 my-8">
-                                <h3 className="mt-0 flex items-center gap-2"><LayoutGrid className="h-5 w-5 text-primary" /> فهم كسيريات الموجة (Fractals)</h3>
-                                <p className="mb-0 text-sm">هيكلية السوق هي كسيرية. هذا يعني أن الاندفاع المكون من 5 موجات على الإطار الزمني اليومي يحتوي على عدة اندفاعات من 5 موجات على الإطار الزمني لساعة واحدة. تحديد هذه الكسيريات بشكل صحيح هو ما يسمح لـ AURA بتقديم إشارات بدقة عالية.</p>
+                            <div className="bg-primary/5 p-8 rounded-3xl border border-primary/20 my-12">
+                                <h3 className="mt-0 flex items-center gap-2"><LayoutGrid className="h-6 w-6 text-primary" /> مبدأ الكسيريات (Fractals)</h3>
+                                <p className="mb-4">السوق يكرر نفسه في كل الأطر الزمنية. ما تراه على الفريم اليومي هو نفسه ما يحدث على فريم الدقيقة، ولكن بمدى سعري مختلف. احتراف "تعدد الأطر الزمنية" هو السر في الحصول على نقاط دخول "قناصة" (Sniper Entries).</p>
+                                <ul className="list-none p-0 space-y-2 text-sm">
+                                    <li className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> <strong>الفريم اليومي:</strong> لتحديد الاتجاه العام (Higher Timeframe Bias).</li>
+                                    <li className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> <strong>فريم 4 ساعات:</strong> لتحديد هيكلية الموجات الحالية.</li>
+                                    <li className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> <strong>فريم 15 دقيقة:</strong> للتنفيذ واستخدام منطق ICT.</li>
+                                </ul>
                             </div>
-
-                            <h2>2. محفز الدقة: مفاهيم ICT</h2>
-                            <p>بمجرد أن تخبرنا الخريطة (موجات إليوت) بالاتجاه، نستخدم منطق ICT للعثور على نقطة الدخول الدقيقة. يتضمن ذلك تحديد بصمات مؤسساتية محددة تترك على الشارت.</p>
-
-                            <h3>الفجوات السعرية العادلة (FVG) والـ Order Blocks</h3>
-                            <p>الـ Order Block هي شمعة وضع فيها المؤسسات أوامر ضخمة. عندما يعود السعر إلى هذا المستوى، فإنه غالباً ما يتفاعل بقوة. وبالمثل، تمثل الفجوة السعرية العادلة اختلالاً في تسليم السعر. هذه هي "المغناطيسات" التي تجذب السعر.</p>
 
                             <EzoicAd id={111} />
 
-                            <h2>3. السيولة: محرك حركة السعر</h2>
-                            <p>يتحرك السعر لسببين فقط: للبحث عن السيولة (أوامر الوقف) أو لملء اختلال. من خلال فهم سيولة جانب الشراء (BSL) وسيولة جانب البيع (SSL)، ستتوقف عن كونك "الطعم" وتبدأ في التصرف "كالمفترس".</p>
+                            <h2>الفصل الثاني: الدقة الجراحية - منطق ICT و SMC</h2>
+                            <p>بعد تحديد الاتجاه باستخدام إليوت، ننتقل إلى تنفيذ الصفقة. هنا يأتي دور "منطق المال الذكي" (Smart Money Concepts). المؤسسات لا تشتري هكذا ببساطة؛ بل تقوم بعمليات "تجميع" و"توزيع" معقدة.</p>
 
-                            <div className="my-12 p-8 bg-muted/30 rounded-3xl border border-border">
-                                <h2 className="mt-0 flex items-center gap-2"><Wrench className="h-6 w-6 text-primary" /> دليل الأدوات والتقنيات المستخدمة</h2>
-                                <p>لتنفيذ استراتيجية المدارس المتقدمة بفعالية، نوصي باستخدام الأدوات الاحترافية التالية:</p>
-                                <ul className="grid md:grid-cols-2 gap-4 list-none p-0">
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">AURA Analytics Pro</span>
-                                        <span className="text-sm">للعد الموجي المؤسساتي والكشف التلقائي عن منطق ICT.</span>
+                            <h3>2.1 الفجوات السعرية العادلة (FVG)</h3>
+                            <p>عندما يتحرك السعر بقوة شديدة، يترك خلفه "فجوة" أو اختلالاً في التوازن (Imbalance). المؤسسات مجبرة على العودة لهذه المناطق لإغلاق عقودها أو موازنة السعر. هذه الفجوات هي أفضل مناطق الارتداد التي نبحث عنها في AURA.</p>
+
+                            <h3>2.2 مصفوفة الـ PD Array</h3>
+                            <p>نحن نقسم السوق إلى منطقتين: "البريميوم" (Premium) و"الديسكاونت" (Discount). القاعدة الذهبية هي: لا تشترِ أبداً في البريميوم، ولا تبع أبداً في الديسكاونت. استراتيجية المدارس المتقدمة تعلمك انتظار السعر حتى يصل إلى "منطقة الخصم" تحت مستوى 0.5 فيبوناتشي قبل التفكير في الشراء.</p>
+
+                            <h2>الفصل الثالث: السيولة - وقود المحرك</h2>
+                            <p>السعر لا يتحرك عشوائياً؛ بل يتحرك بحثاً عن "السيولة" (Liquidity). السيولة هي ببساطة أوامر وقف الخسارة (Stop Losses) الخاصة بالمتداولين. صانع السوق يحتاج لضرب هذه الوقفات ليحصل على السيولة الكافية لفتح صفقاته الكبيرة.</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-12">
+                                <div className="p-6 bg-muted/40 rounded-2xl border border-border">
+                                    <h4 className="text-emerald-500 mb-4 flex items-center gap-2"><Target className="h-5 w-5" /> سيولة جانب الشراء (BSL)</h4>
+                                    <p className="text-sm">توجد فوق القمم المتساوية. صانع السوق يدفع السعر فوق القمة لضرب وقف خسارة البائعين وتفعيل أوامر شراء "الاختراق" الوهمية.</p>
+                                </div>
+                                <div className="p-6 bg-muted/40 rounded-2xl border border-border">
+                                    <h4 className="text-rose-500 mb-4 flex items-center gap-2"><ShieldAlert className="h-5 w-5" /> سيولة جانب البيع (SSL)</h4>
+                                    <p className="text-sm">توجد تحت القيعان المتساوية. يتم كسر القاع لإيهام الناس بالهبوط، بينما الحقيقة هي تجميع عقود شراء ضخمة بأسعار رخيصة.</p>
+                                </div>
+                            </div>
+
+                            <h2>الفصل الرابع: إدارة المخاطر وسيكولوجية التداول</h2>
+                            <p>يمكنك امتلاك أفضل استراتيجية في العالم، ولكن بدون إدارة مخاطر، ستخسر محفظتك في صفقة واحدة. في المدارس المتقدمة، نحن نركز على نسبة "المخاطرة للعائد" (Risk to Reward) التي لا تقل عن 1:3.</p>
+                            <p>التداول هو 10% استراتيجية و90% انضباط نفسي. الخوف من فوات الفرصة (FOMO) هو العدو الأكبر. استراتيجيتنا تفرض عليك "الانتظار". إذا لم تكتمل كل شروط الدخول، فنحن لا نفتح الصفقة مهما كان المغريات.</p>
+
+                            <div className="my-16 p-10 bg-gradient-to-br from-blue-900/40 via-background to-primary/10 rounded-[3rem] border border-primary/20 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <BarChart4 className="h-32 w-32 text-primary" />
+                                </div>
+                                <h2 className="mt-0 flex items-center gap-3 text-white"><Wrench className="h-8 w-8 text-primary" /> الدليل التقني: الأدوات الموصى بها</h2>
+                                <p className="mb-8">لتحقيق أقصى استفادة من هذه المنهجية، نوصي باستخدام هذه الأدوات التي ندمجها في نظام AURA:</p>
+                                <ul className="grid md:grid-cols-2 gap-6 list-none p-0">
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">AURA Pro Dashboard</span>
+                                        <span className="text-sm">يقوم بالعد الموجي التلقائي وتحديد مناطق الـ Order Blocks والـ FVG لحظة بلحظة.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">TradingView</span>
-                                        <span className="text-sm">للرسم البياني عالي الدقة والاختبار العكسي (Backtesting).</span>
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">TradingView (Pro Plans)</span>
+                                        <span className="text-sm">نستخدمه للرسم البياني وتفعيل تنبيهات السيولة المتقدمة.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">التقويم الاقتصادي</span>
-                                        <span className="text-sm">لتتبع الأخبار عالية التأثير (NFP، FOMC) التي تثير التقلبات.</span>
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">MyFxBook / ForexFactory</span>
+                                        <span className="text-sm">لمتابعة الأخبار الاقتصادية الكبرى (High Impact News) التي تحرك السيولة.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">ForexFactory</span>
-                                        <span className="text-sm">تحليل معنويات السوق وتوقيت الجلسات العالمية.</span>
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">Magic Keys / Risk Calculators</span>
+                                        <span className="text-sm">أدوات ضرورية لحساب حجم اللوت (Lot Size) بدقة بناءً على نسبة المخاطرة المحددة.</span>
                                     </li>
                                 </ul>
                             </div>
 
-                            <h2>الخلاصة: الاستمرارية فوق الحظ</h2>
-                            <p>النجاح في التداول لا يتعلق بأن تكون على حق في 100% من الوقت. بل يتعلق بامتلاك منطق قابل للتكرار يمنحك ميزة رياضية عبر مئات الصفقات. يوفر تآزر موجات إليوت و ICT هذه الميزة تماماً.</p>
+                            <h2>الخلاصة: رحلتك لتبني عقلية الـ 1%</h2>
+                            <p>التداول ليس مقامرة، بل هو مهنة تتطلب صبراً وتعلماً مستمراً. استراتيجية المدارس المتقدمة ليست سحراً، بل هي علم قراءة نوايا كبار اللاعبين في السوق. انضم إلينا في AURA وابدأ في رؤية الشارت كما لم تره من قبل.</p>
                         </>
                     ) : (
                         <>
-                            <p className="text-xl font-medium text-foreground">Trading in the modern era requires more than just looking at a simple moving average or an RSI indicator. The algorithms that drive today's institutional wealth are far more sophisticated. At AURA, we've developed the "Advanced Schools" methodology—a holistic approach that combines the predictive power of Elliott Wave Theory with the logical execution of ICT concepts.</p>
+                            <p className="text-2xl font-medium text-foreground leading-relaxed">In today's financial landscape, trading is no longer just a numbers game; it's a battle between institutional algorithms and retail participants. If you're still relying on traditional indicators, you're fighting a laser battle with a wooden sword. This guide explains the "Advanced Schools" methodology we employ at AURA.</p>
 
                             <EzoicAd id={110} />
 
-                            <h2>The Evolution of Trading: From Retail to Institutional</h2>
-                            <p>Most retail traders rely on lagging indicators. However, institutions trade based on price delivery and liquidity. To master the markets, one must transition from asking "What is the RSI saying?" to "Where is the Smart Money entering?". The Advanced Schools strategy is the bridge between these two worlds.</p>
+                            <h2>Introduction: Why Do 95% of Traders Fail?</h2>
+                            <p>The bitter truth is that financial markets are designed to draw liquidity from unaware participants. Most educational courses rely on outdated "retail concepts." Classic support and resistance, traditional head-and-shoulders patterns—these have all become "liquidity traps." The Advanced Schools strategy flips the script, teaching you to think like a market maker, not a victim.</p>
 
-                            <h2>1. The Strategic Map: Elliott Wave Theory</h2>
-                            <p>Elliott Wave provides the "map." It helps us understand where we are in a larger cycle. Are we in a strong impulsive Wave 3, or a corrective Wave 4? Knowing this prevents you from fighting the primary trend.</p>
+                            <h2>Chapter 1: The Cosmic Map - Elliott Wave Theory</h2>
+                            <p>Elliott Wave is the backbone of any successful analysis. It's not just a counting method; it's a study of mass psychology translated onto the chart. Markets move in cycles of 5 impulse waves and 3 corrective waves.</p>
+                            
+                            <h3>1.1 The Predictive Power of Wave 3</h3>
+                            <p>In our methodology, we don't trade every movement. We look for the "heart of the trend." Wave 3 is the strongest and longest, where institutional money congregates. By integrating Fibonacci levels (1.618 and 2.618), we can anticipate the targets of this wave with staggering precision.</p>
 
-                            <div className="bg-primary/5 p-6 rounded-2xl border border-primary/20 my-8">
-                                <h3 className="mt-0 flex items-center gap-2"><LayoutGrid className="h-5 w-5 text-primary" /> Understanding Wave Fractals</h3>
-                                <p className="mb-0 text-sm">Market structure is fractal. A 5-wave impulse on a Daily timeframe contains multiple 5-wave impulses on lower timeframes. Correctly identifying these fractals is key to precision.</p>
+                            <div className="bg-primary/5 p-8 rounded-3xl border border-primary/20 my-12">
+                                <h3 className="mt-0 flex items-center gap-2"><LayoutGrid className="h-6 w-6 text-primary" /> The Fractal Principle</h3>
+                                <p className="mb-4">The market repeats itself across all timeframes. What you see on the daily chart is exactly what happens on the one-minute chart, just with a different price range. Mastering "multi-timeframe analysis" is the secret to obtaining "sniper entries."</p>
+                                <ul className="list-none p-0 space-y-2 text-sm">
+                                    <li className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> <strong>Daily Chart:</strong> For identifying the Higher Timeframe Bias.</li>
+                                    <li className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> <strong>4-Hour Chart:</strong> For determining the current wave structure.</li>
+                                    <li className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> <strong>15-Minute Chart:</strong> For execution and utilizing ICT logic.</li>
+                                </ul>
                             </div>
-
-                            <h2>2. The Precision Trigger: ICT Concepts</h2>
-                            <p>Once the map (Elliott Wave) tells us the direction, we use ICT logic to find the precise entry. This involves identifying specific institutional footprints left on the chart.</p>
-
-                            <h3>Fair Value Gaps (FVG) and Order Blocks</h3>
-                            <p>An Order Block is a candle where institutions have placed massive orders. When price returns to this level, it often reacts strongly. Similarly, a Fair Value Gap represents an imbalance in price delivery.</p>
 
                             <EzoicAd id={111} />
 
-                            <h2>3. Liquidity: The Engine of Price Action</h2>
-                            <p>Price moves to seek liquidity (stops) or to fill an imbalance. By understanding Buy-Side Liquidity (BSL) and Sell-Side Liquidity (SSL), you stop being the "bait" and start acting as the "predator."</p>
+                            <h2>Chapter 2: Surgical Precision - ICT and SMC Logic</h2>
+                            <p>After identifying the direction using Elliott Wave, we move to trade execution. This is where "Smart Money Concepts" (SMC) come into play. Institutions don't just buy; they engage in complex "accumulation" and "distribution" processes.</p>
 
-                            <div className="my-12 p-8 bg-muted/30 rounded-3xl border border-border">
-                                <h2 className="mt-0 flex items-center gap-2"><Wrench className="h-6 w-6 text-primary" /> Technical Toolkit & Resource Guide</h2>
-                                <p>To execute the Advanced Schools strategy effectively, we recommend the following professional tools:</p>
-                                <ul className="grid md:grid-cols-2 gap-4 list-none p-0">
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">AURA Analytics Pro</span>
-                                        <span className="text-sm">For institutional wave counting and automated ICT logic detection.</span>
+                            <h3>2.1 Fair Value Gaps (FVG)</h3>
+                            <p>When the price moves with intense force, it leaves behind a "gap" or an imbalance. Institutions are compelled to return to these areas to close their contracts or balance the price. These gaps are the primary reversal zones we look for at AURA.</p>
+
+                            <h3>2.2 The PD Array Matrix</h3>
+                            <p>We divide the market into two zones: "Premium" and "Discount." The golden rule is: never buy in premium, and never sell in discount. The Advanced Schools strategy teaches you to wait for the price to reach the "discount zone" below the 0.5 Fibonacci level before considering a long position.</p>
+
+                            <h2>Chapter 3: Liquidity - The Engine's Fuel</h2>
+                            <p>Price doesn't move randomly; it moves in search of "liquidity." Liquidity is simply the stop-loss orders of other traders. The market maker needs to hit these stops to gain enough liquidity to open their large positions.</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-12">
+                                <div className="p-6 bg-muted/40 rounded-2xl border border-border">
+                                    <h4 className="text-emerald-500 mb-4 flex items-center gap-2"><Target className="h-5 w-5" /> Buy-Side Liquidity (BSL)</h4>
+                                    <p className="text-sm">Found above equal highs. The market maker pushes price above the high to hit sellers' stops and trigger fake "breakout" buy orders.</p>
+                                </div>
+                                <div className="p-6 bg-muted/40 rounded-2xl border border-border">
+                                    <h4 className="text-rose-500 mb-4 flex items-center gap-2"><ShieldAlert className="h-5 w-5" /> Sell-Side Liquidity (SSL)</h4>
+                                    <p className="text-sm">Found below equal lows. A low is broken to trick people into thinking a crash is coming, while in reality, huge buy contracts are being accumulated at cheap prices.</p>
+                                </div>
+                            </div>
+
+                            <h2>Chapter 4: Risk Management and Psychology</h2>
+                            <p>You can have the best strategy in the world, but without risk management, you will lose your account in a single trade. In Advanced Schools, we focus on a "Risk to Reward" ratio of at least 1:3.</p>
+                            <p>Trading is 10% strategy and 90% discipline. Fear Of Missing Out (FOMO) is the greatest enemy. Our strategy forces you to "wait." If all entry conditions are not met, we do not open the trade, regardless of the temptation.</p>
+
+                            <div className="my-16 p-10 bg-gradient-to-br from-blue-900/40 via-background to-primary/10 rounded-[3rem] border border-primary/20 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <BarChart4 className="h-32 w-32 text-primary" />
+                                </div>
+                                <h2 className="mt-0 flex items-center gap-3 text-white"><Wrench className="h-8 w-8 text-primary" /> Technical Guide: Recommended Tools</h2>
+                                <p className="mb-8">To maximize this methodology, we recommend using these tools integrated into the AURA ecosystem:</p>
+                                <ul className="grid md:grid-cols-2 gap-6 list-none p-0">
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">AURA Pro Dashboard</span>
+                                        <span className="text-sm">Automatically performs wave counting and identifies Order Blocks and FVG zones in real-time.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">TradingView</span>
-                                        <span className="text-sm">For high-fidelity charting and backtesting environments.</span>
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">TradingView (Pro)</span>
+                                        <span className="text-sm">Used for high-fidelity charting and setting advanced liquidity alerts.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">Economic Calendar</span>
-                                        <span className="text-sm">To track high-impact news events that trigger institutional volatility.</span>
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">MyFxBook / ForexFactory</span>
+                                        <span className="text-sm">For tracking high-impact economic news that moves liquidity.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">ForexFactory</span>
-                                        <span className="text-sm">For sentiment analysis and global market session timing.</span>
+                                    <li className="bg-background/60 p-6 rounded-2xl border border-border/50 hover:border-primary transition-colors">
+                                        <span className="font-bold text-primary block mb-2 text-lg">Magic Keys</span>
+                                        <span className="text-sm">Essential tools for calculating precise Lot Size based on your defined risk percentage.</span>
                                     </li>
                                 </ul>
                             </div>
 
-                            <h2>Conclusion: Consistency Over Luck</h2>
-                            <p>Success in trading isn't about being right 100% of the time. It's about having a repeatable logic that gives you a mathematical edge over hundreds of trades. The synergy of Elliott Wave and ICT provides exactly that edge.</p>
+                            <h2>Conclusion: Your Journey to the 1% Mindset</h2>
+                            <p>Trading is not gambling; it's a profession that requires patience and continuous learning. The Advanced Schools strategy isn't magic; it's the science of reading the intentions of the market's major players. Join us at AURA and start seeing the chart as you've never seen it before.</p>
                         </>
                     )}
                 </div>
@@ -194,12 +253,16 @@ export default function AdvancedSchoolsArticle() {
                         <Accordion type="single" collapsible className="w-full">
                             {(lang === 'ar' ? [
                                 { q: "ما هو أفضل إطار زمني لاستراتيجية المدارس المتقدمة؟", a: "الاستراتيجية تعمل على جميع الأطر، لكننا ننصح بالتحليل من الأعلى للأسفل: والبدء باليومي للاتجاه و الـ 15 دقيقة أو 5 دقائق للدخول." },
-                                { q: "هل أحتاج لأن أكون خبيراً في موجات إليوت لاستخدام AURA؟", a: "لا، محركنا يقوم بعد الموجات المعقدة بدلاً عنك، ويقدم لك الإشارة النهائية القابلة للتنفيذ." },
-                                { q: "هل يمكن تطبيق هذه الاستراتيجية على العملات الرقمية؟", a: "بالتأكيد. مفاهيم السيولة وهيكلية السوق عالمية وتنطبق على الفوركس والأسهم والكرِبتو." }
+                                { q: "كم أحتاج من الوقت لتعلم هذه المنهجية؟", a: "يعتمد ذلك على التزامك، ولكن عادة ما يحتاج المتداول من 3 إلى 6 أشهر من الممارسة المستمرة لفهم ترابط الموجات مع السيولة بشكل عميق." },
+                                { q: "هل أحتاج لأن أكون خبيراً في الرياضيات؟", a: "لا، الأمر يتعلق بالهندسة البصرية وفهم السلوك البشري. الأدوات التي نوفرها في AURA تقوم بمعظم العمليات الحسابية المعقدة." },
+                                { q: "هل يمكنني البدء بحساب صغير؟", a: "نعم، ولكن الأهم هو الالتزام بإدارة مخاطر صارمة. يفضل البدء بحساب تجريبي (Demo) أولاً حتى تتقن التنفيذ." },
+                                { q: "ما هي نسبة النجاح (Win Rate) المتوقعة؟", a: "نحن نركز على الربحية الإجمالية وليس مجرد نسبة النجاح. مع معدل مخاطرة 1:3، تحتاج فقط للفوز بـ 30% من صفقاتك لتكون رابحاً." }
                             ] : [
                                 { q: "What is the best timeframe for Advanced Schools strategy?", a: "The strategy works on all timeframes, but we recommend top-down analysis: starting from Daily for direction and using 15m or 5m for entry." },
-                                { q: "Do I need to be an expert in Elliott Wave to use AURA?", a: "No, our engine does the complex wave counting for you, delivering the final actionable signal." },
-                                { q: "Can this strategy be applied to Crypto?", a: "Absolutely. The concepts of liquidity and market structure are universal across Forex, Stocks, and Crypto." }
+                                { q: "How long does it take to learn this methodology?", a: "It depends on your commitment, but typically a trader needs 3 to 6 months of consistent practice to deeply understand wave-liquidity correlation." },
+                                { q: "Do I need to be a math expert?", a: "No, it's about visual geometry and understanding human behavior. The tools provided by AURA handle the complex calculations." },
+                                { q: "Can I start with a small account?", a: "Yes, but strict risk management is crucial. We recommend starting with a Demo account first until you master execution." },
+                                { q: "What is the expected Win Rate?", a: "We focus on overall profitability rather than just win rate. With a 1:3 risk-reward ratio, you only need to win 30% of your trades to be profitable." }
                             ]).map((faq, idx) => (
                                 <AccordionItem key={idx} value={`item-${idx}`} className="border-border/10">
                                     <AccordionTrigger className="text-lg font-medium hover:text-primary text-start">
