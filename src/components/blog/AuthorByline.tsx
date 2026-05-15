@@ -22,6 +22,12 @@ const authors = {
     role: 'Global Market Analyst & Finance Specialist',
     avatar: '/youssef.jpeg',
     fallback: 'JM'
+  },
+  hajar: {
+    name: 'Ms. Hajar',
+    role: 'Senior Market Strategist & Financial Researcher',
+    avatar: '/hajar.png',
+    fallback: 'H'
   }
 };
 

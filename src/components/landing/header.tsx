@@ -5,10 +5,16 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AuraAcademyLogo } from '@/components/logo';
 import { useLanguage } from '@/context/LanguageContext';
-import { Languages, Sun, Moon, Menu, X } from 'lucide-react';
+import { Languages, Sun, Moon, Menu, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FinancialTicker from './financial-ticker';
 import { useTheme } from '@/context/ThemeContext';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function LandingHeader() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -17,9 +23,16 @@ export function LandingHeader() {
     const { theme, toggleTheme } = useTheme();
     const { lang, setLang, t } = useLanguage();
 
+    const blogLabel = lang === 'ar' ? 'تحليل السوق' : 'Market Analysis';
+    const categories = [
+        { href: "/blog?category=Stocks", label: lang === 'ar' ? 'الأسهم' : 'Stocks' },
+        { href: "/blog?category=Crypto", label: lang === 'ar' ? 'الكريبتو' : 'Crypto' },
+        { href: "/blog?category=Forex", label: lang === 'ar' ? 'الفوركس' : 'Forex' },
+        { href: "/blog?category=Strategy", label: lang === 'ar' ? 'استراتيجيات' : 'Strategies' },
+    ];
+
     const navLinks = [
         { href: "/#aura-pro", label: t.aura_pro },
-        { href: "/blog", label: t.blog },
         { href: "/pricing", label: t.pricing },
         { href: "/about", label: t.about },
         { href: "/reviews", label: t.reviews },
@@ -57,7 +70,27 @@ export function LandingHeader() {
                 </div>
 
                 <nav className="hidden md:flex items-center gap-6">
-                    {navLinks.map(link => (
+                    <Link href="/#aura-pro" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                        {t.aura_pro}
+                    </Link>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary outline-none">
+                            {blogLabel} <ChevronDown className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48 bg-background/95 backdrop-blur-md">
+                            <DropdownMenuItem asChild>
+                                <Link href="/blog" className="w-full font-bold">{lang === 'ar' ? 'عرض الكل' : 'View All'}</Link>
+                            </DropdownMenuItem>
+                            {categories.map((cat) => (
+                                <DropdownMenuItem key={cat.href} asChild>
+                                    <Link href={cat.href} className="w-full">{cat.label}</Link>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {navLinks.slice(1).map(link => (
                         <Link key={link.href} href={link.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                             {link.label}
                         </Link>
@@ -85,13 +118,29 @@ export function LandingHeader() {
 
             {isMobileMenuOpen && (
                 <div className="fixed inset-0 top-16 z-40 bg-background/95 backdrop-blur-sm md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
-                        {navLinks.map(link => (
+                    <div className="flex flex-col items-center justify-start h-full gap-4 p-8 pt-20 overflow-y-auto">
+                        <Link href="/#aura-pro" className="text-2xl font-bold text-foreground" onClick={() => setIsMobileMenuOpen(false)}>
+                            {t.aura_pro}
+                        </Link>
+                        
+                        <div className="flex flex-col gap-3 py-4 border-y border-border/10 w-full items-center">
+                            <span className="text-primary font-bold uppercase tracking-widest text-xs">{blogLabel}</span>
+                            <Link href="/blog" className="text-xl font-medium text-muted-foreground" onClick={() => setIsMobileMenuOpen(false)}>
+                                {lang === 'ar' ? 'عرض الكل' : 'View All'}
+                            </Link>
+                            {categories.map(cat => (
+                                <Link key={cat.href} href={cat.href} className="text-xl font-medium text-muted-foreground" onClick={() => setIsMobileMenuOpen(false)}>
+                                    {cat.label}
+                                </Link>
+                            ))}
+                        </div>
+
+                        {navLinks.slice(1).map(link => (
                             <Link key={link.href} href={link.href} className="text-2xl font-bold text-foreground transition-colors hover:text-primary" onClick={() => setIsMobileMenuOpen(false)}>
                                 {link.label}
                             </Link>
                         ))}
-                        <Button size="lg" className="futuristic-button mt-8" asChild>
+                        <Button size="lg" className="futuristic-button mt-8 w-full" asChild>
                             <Link href="/auth">
                                 <span>{t.sign_in}</span>
                             </Link>
@@ -102,3 +151,4 @@ export function LandingHeader() {
         </>
     );
 }
+

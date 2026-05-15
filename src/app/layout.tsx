@@ -163,12 +163,6 @@ export default function RootLayout({
             <WhatsAppButton />
           </ThemeProvider>
         </LanguageProvider>
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7139106139007097"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
         {/* Google Analytics */}
         <Script
           async
