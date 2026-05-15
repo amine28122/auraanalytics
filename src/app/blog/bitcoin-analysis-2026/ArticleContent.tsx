@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LandingHeader } from '@/components/landing/header';
 import Footer from '@/components/landing/footer';
 import { useLanguage } from '@/context/LanguageContext';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Zap, BarChart3, Rocket, HelpCircle, Wrench, LayoutGrid } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Share2, Facebook, Twitter, Linkedin, Zap, BarChart3, Rocket, HelpCircle, Wrench, Info, Globe, ShieldCheck, Wallet, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthorByline } from '@/components/blog/AuthorByline';
 import dynamic from 'next/dynamic';
@@ -17,7 +17,7 @@ const EzoicAd = dynamic(() => import('@/components/EzoicAd').then(mod => mod.Ezo
 
 
 export default function BitcoinAnalysisArticle() {
-    const { lang } = useLanguage();
+    const { lang, t } = useLanguage();
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
@@ -33,13 +33,13 @@ export default function BitcoinAnalysisArticle() {
                     <Button variant="ghost" className="mb-8 p-0 hover:bg-transparent text-primary" asChild>
                         <Link href="/blog" className="flex items-center gap-2">
                             {lang === 'ar' ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-                            {lang === 'ar' ? 'العودة للمدونة' : 'Back to Blog'}
+                            {lang === 'ar' ? 'العودة لمركز التحليل' : 'Back to Analysis Center'}
                         </Link>
                     </Button>
 
-                    <Badge className="mb-4 bg-orange-500/20 text-orange-500 border-orange-500/30 py-1 px-4">Crypto Analysis</Badge>
+                    <Badge className="mb-4 bg-orange-500/20 text-orange-500 border-orange-500/30 py-1 px-4">Crypto Deep Dive</Badge>
                     <h1 className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight text-orange-500">
-                        {lang === 'ar' ? 'توقعات البتكوين 2026: هل نصل إلى 250,000 دولار؟' : 'Bitcoin Forecast 2026: The Journey to $250,000'}
+                        {lang === 'ar' ? 'توقعات البتكوين 2026: الدليل الكامل للوصول إلى 250,000 دولار' : 'Bitcoin Forecast 2026: The Definitive Roadmap to $250,000'}
                     </h1>
 
                     <div className="flex flex-wrap items-center gap-6 text-muted-foreground border-y border-border/10 py-6">
@@ -49,7 +49,7 @@ export default function BitcoinAnalysisArticle() {
                         </div>
                         <div className="flex items-center gap-2">
                             <Clock className="h-5 w-5" />
-                            <span>22 min read</span>
+                            <span>40 min read</span>
                         </div>
                         <div className="flex items-center gap-4 ms-auto">
                             <Share2 className="h-4 w-4 cursor-pointer hover:text-primary transition-colors" />
@@ -66,159 +66,178 @@ export default function BitcoinAnalysisArticle() {
 
                 <AuthorByline authorId="nabil" />
 
-                <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-8 text-muted-foreground leading-relaxed">
+                <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-8 text-muted-foreground leading-relaxed
+                prose-h2:text-orange-400 prose-h3:text-orange-200/80">
                     {lang === 'ar' ? (
                         <>
-                            <p className="text-xl font-medium text-foreground text-orange-200/80">نبدأ عام 2026 والبتكوين يتداول عند قرابة 88,300 دولار. السؤال ليس "هل سيصعد الذهب الرقمي؟" بل "ما هي السرعة التي سيتجاوز بها حاجز الـ 100 ألف دولار؟"</p>
+                            <p className="text-2xl font-medium text-foreground text-orange-200/80 leading-relaxed">بينما نستهل عام 2026، لم يعد السؤال "هل البتكوين سينجو؟" بل "إلى أي مدى سيعيد تشكيل النظام المالي العالمي؟". مع تداول السعر حالياً عند مستويات 88,300 دولار، نحن نقف على أعتاب مرحلة تاريخية قد تأخذنا إلى ربع مليون دولار.</p>
 
                             <EzoicAd id={110} />
 
-                            <h2>1. نضج الصناديق الاستثمارية (ETFs)</h2>
-                            <p>أصبح امتلاك البتكوين من خلال صناديق الاستثمار المتداولة في البورصة هو القاعدة وليس الاستثناء. المؤسسات المالية الكبرى مثل BlackRock وFidelity أصبحت الآن أكبر حاملي البتكوين في العالم، مما يعني تدفقات سيولة مؤسسية ثابتة لا تتأثر بتقلبات صغار المتداولين.</p>
+                            <h2>مقدمة: البتكوين من الأطراف إلى المركز</h2>
+                            <p>لم يعد البتكوين مجرد تجربة تقنية للمبرمجين، بل أصبح أصلاً استراتيجياً تحتفظ به الدول والشركات الكبرى. في هذا التقرير المكون من 1000 كلمة، سنقوم بتشريح العوامل التي تجعل من عام 2026 العام الأكثر صخباً في تاريخ العملات الرقمية.</p>
 
-                            <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl my-8">
-                                <h3 className="text-blue-400 mt-0 flex items-center gap-2">
-                                    <BarChart3 className="h-5 w-5" /> تحليل مستويات السيولة
+                            <h2>1. نضج الصناديق الاستثمارية (The ETF Supercycle)</h2>
+                            <p>كان إطلاق صناديق ETFs في عام 2024 هو الشرارة، ولكن عام 2026 هو عام "النضج". المؤسسات المالية التي كانت تراقب من بعيد، مثل صناديق التقاعد والسيادة، بدأت الآن في تخصيص 1% إلى 5% من محافظها للبتكوين.</p>
+                            <p>هذا التدفق المؤسسي يخلق ما يسمى بـ "الأرضية السعرية" (Price Floor). عندما يشتري عملاق مثل BlackRock، فإنه لا يشتري للمضاربة اليومية، بل للاحتفاظ طويل الأمد، مما يقلل العرض المتاح في المنصات بشكل دراماتيكي.</p>
+
+                            <div className="p-8 bg-orange-500/5 border border-orange-500/20 rounded-3xl my-10">
+                                <h3 className="text-orange-400 mt-0 flex items-center gap-2">
+                                    <BarChart3 className="h-6 w-6" /> تحليل السيولة والمناطق الحرجة
                                 </h3>
-                                <p className="mb-0">تشير البيانات On-Chain إلى وجود "فراغ سعري" كبير فوق مستويات 92,000 دولار. وبمجرد كسر هذا المستوى، لا يوجد أي عائق فني يمنع الوصول إلى 120,000 دولار في وقت قياسي.</p>
-                            </div>
-
-                            <h2>2. دورة الـ 4 سنوات والعرض المحدود</h2>
-                            <p>نحن الآن في المرحلة الأكثر حدة من الدورة الصاعدة التي تلي التنصيف الأخير. مع تناقص العرض المتاح في المنصات، أي طلب جديد يترجم فوراً إلى صعود انفجاري في السعر.</p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
-                                <div className="p-4 bg-muted/30 rounded-xl border border-border">
-                                    <h4 className="text-emerald-500 mb-2">مناطق التجميع (Buys)</h4>
-                                    <ul className="list-disc list-inside text-sm">
-                                        <li>82,000 - 85,000 دولار (منطقة قوية)</li>
-                                        <li>72,000 دولار (دعم استراتيجي بعيد)</li>
-                                    </ul>
-                                </div>
-                                <div className="p-4 bg-muted/30 rounded-xl border border-border">
-                                    <h4 className="text-orange-500 mb-2">الأهداف التقنية لـ 2026</h4>
-                                    <ul className="list-disc list-inside text-sm">
-                                        <li>112,000 دولار (الهدف السيكولوجي)</li>
-                                        <li>158,000 دولار (هدف فيبوناتشي)</li>
-                                        <li>245,000 دولار (سقف الدورة)</li>
-                                    </ul>
+                                <p>بيانات AURA On-Chain تظهر أن كمية البتكوين "الخاملة" (التي لم تتحرك منذ أكثر من سنة) وصلت إلى أعلى مستوياتها التاريخية. هذا يعني وجود "صدمة عرض" (Supply Shock) قادمة.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                    <div className="bg-background/40 p-4 rounded-xl border border-orange-500/10">
+                                        <span className="text-orange-500 font-bold block">مستوى الدعم الاستراتيجي:</span>
+                                        <span className="text-2xl font-black text-white">72,000 $</span>
+                                    </div>
+                                    <div className="bg-background/40 p-4 rounded-xl border border-orange-500/10">
+                                        <span className="text-emerald-500 font-bold block">الهدف الأول 2026:</span>
+                                        <span className="text-2xl font-black text-white">124,000 $</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <EzoicAd id={111} />
 
-                            <h2>3. تأثير الذكاء الاصطناعي في التداول</h2>
-                            <p>منصات مثل AURA تستخدم الآن نماذج عصبية متطورة لتوقع تحركات الحيتان. التحليل يشير إلى أن الحيتان لا زالوا في مرحلة "التجميع الهادئ"، مما يعني أن الانفجار الحقيقي لم يبدأ بعد.</p>
+                            <h2>2. تأثير تنصيف 2024 المتأخر (Post-Halving Lag)</h2>
+                            <p>تاريخياً، يحتاج البتكوين من 12 إلى 18 شهراً بعد عملية التنصيف (Halving) ليصل إلى قمته التاريخية الجديدة. نحن الآن في عام 2026 نعيش "ذروة" هذا التأثير. إنتاج البتكوين اليومي أصبح أقل بكثير من الطلب المؤسسي اليومي.</p>
+                            <p>كل يوم، يتم تعدين حوالي 450 بتكوين فقط، بينما تشتري الصناديق والمؤسسات ما يعادل 3 إلى 5 أضعاف هذه الكمية. هذه المعادلة البسيطة هي المحرك الأساسي للوصول إلى هدفنا الاستراتيجي عند 250,000 دولار.</p>
 
-                            <div className="my-12 p-8 bg-muted/30 rounded-3xl border border-border">
-                                <h2 className="mt-0 flex items-center gap-2"><Wrench className="h-6 w-6 text-primary" /> الأدوات والتقنيات المستخدمة في التحليل</h2>
-                                <p>للوصول إلى هذه التوقعات الدقيقة للبتكوين، قمنا باستخدام الأدوات التالية:</p>
-                                <ul className="grid md:grid-cols-2 gap-4 list-none p-0">
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">Glassnode On-Chain</span>
-                                        <span className="text-sm">لمراقبة تدفقات العملات من وإلى المنصات.</span>
+                            <h2>3. البتكوين والذكاء الاصطناعي (The AI Nexus)</h2>
+                            <p>في 2026، بدأنا نرى اندماجاً حقيقياً بين تقنيات الذكاء الاصطناعي والبتكوين. وكلاء الذكاء الاصطناعي (AI Agents) يحتاجون إلى عملة "محايدة" و"رقمية بالكامل" لتسوية المعاملات بين الآلات. البتكوين عبر شبكة Lightning Network هو المرشح الوحيد لهذا الدور.</p>
+
+                            <div className="my-12 p-8 bg-zinc-900 rounded-[2rem] border border-orange-500/20 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <Wrench className="h-32 w-32 text-orange-500" />
+                                </div>
+                                <h2 className="mt-0 flex items-center gap-2 text-white"><Wrench className="h-6 w-6 text-orange-500" /> أدوات التحليل المتقدمة للبتكوين</h2>
+                                <p>للوصول لهذه الأرقام، استخدم فريق AURA الأدوات التالية:</p>
+                                <ul className="grid md:grid-cols-2 gap-6 list-none p-0 mt-8">
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">Glassnode Node Enterprise</span>
+                                        <span className="text-sm">لمراقبة تحركات الحيتان وتدفقات الصناديق الاستثمارية بدقة ثانية.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">AURA Pro AI</span>
-                                        <span className="text-sm">للتنبؤ بالقمة القادمة بناءً على خوارزميات التعلم العميق.</span>
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">AURA Neural Network</span>
+                                        <span className="text-sm">خوارزمية ذكاء اصطناعي تتوقع القمم السعرية بناءً على دورات فيبوناتشي الزمنية.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">TradingView</span>
-                                        <span className="text-sm">لتحليل فيبوناتشي وموجات إليوت على المدى الطويل.</span>
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">Order Flow Suite</span>
+                                        <span className="text-sm">تحليل ضغط الشراء والبيع في بورصات العقود الآجلة لتجنب التصفية.</span>
+                                    </li>
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">Lightning Node Insights</span>
+                                        <span className="text-sm">قياس معدل نمو شبكة البرق كدليل على التبني الحقيقي كوسيلة دفع.</span>
                                     </li>
                                 </ul>
                             </div>
 
-                            <div className="p-6 bg-orange-500/5 border border-orange-500/20 rounded-2xl my-10 font-bold italic text-foreground text-center">
-                                <Rocket className="inline-block me-2 h-6 w-6 text-orange-500 animate-bounce" />
-                                "البتكوين ليس فقاعة، بل هو الإبرة التي ستفجر فقاعة العملات الورقية الضعيفة."
+                            <h2>4. المخاطر والتحديات (The Reality Check)</h2>
+                            <p>لا يوجد صعود بدون عقبات. التحدي الأكبر لعام 2026 هو "التنظيم العالمي". بينما أصبحت الولايات المتحدة أكثر وضوحاً، لا تزال هناك دول تحاول فرض قيود على التعدين أو التداول الشخصي.</p>
+                            <p>أيضاً، تقلبات أسعار الفائدة من الفيدرالي الأمريكي قد تخلق "هزات" سعرية مؤقتة. في AURA، نحن ننظر لهذه الهزات كفرص شراء (Buy the Dip) وليست أسباباً للذعر.</p>
+
+                            <div className="p-6 bg-orange-500/5 border border-orange-500/20 rounded-2xl my-10 font-bold italic text-foreground text-center text-xl">
+                                <Rocket className="inline-block me-2 h-8 w-8 text-orange-500 animate-bounce" />
+                                "البتكوين ليس أصلاً تمتلكه، بل هو نظام تنجو من خلاله من انهيار القوة الشرائية للعملات التقليدية."
                             </div>
+
+                            <h2>الخلاصة: كيف تتعامل مع سوق 2026؟</h2>
+                            <p>استراتيجية "الاحتفاظ" (HODL) لا تزال هي الأفضل، ولكن مع ذكاء إضافي. استخدم تنبيهات AURA لتحديد مناطق التشبع البيعي والشرائي. نحن نتوقع أن نرى البتكوين يتجاوز 100 ألف دولار في الربع الأول من 2026، ليبدأ بعدها رحلته "البارابولية" نحو الأهداف العليا.</p>
                         </>
                     ) : (
                         <>
-                            <p className="text-xl font-medium text-foreground">We start 2026 with Bitcoin trading at approximately $88,300. The question isn't "Will digital gold rise?" but "How quickly will it shatter the $100,000 ceiling?"</p>
+                            <p className="text-2xl font-medium text-foreground text-orange-200/80 leading-relaxed">As we usher in 2026, the question is no longer "Will Bitcoin survive?" but "To what extent will it reshape the global financial system?" With the price currently trading around $88,300, we stand on the precipice of a historic phase that could take us to a quarter of a million dollars.</p>
 
                             <EzoicAd id={110} />
 
-                            <h2>1. The Maturity of Spot ETFs</h2>
-                            <p>Owning Bitcoin through Spot ETFs has become the norm. Major financial institutions like BlackRock and Fidelity are now the world's largest Bitcoin holders, ensuring steady institutional inflows that aren't swayed by retail panic.</p>
+                            <h2>Introduction: Bitcoin from the Fringes to the Center</h2>
+                            <p>Bitcoin is no longer just a technical experiment for programmers; it has become a strategic asset held by major corporations and nations. In this comprehensive report, we dissect the factors making 2026 the most pivotal year in cryptocurrency history.</p>
 
-                            <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl my-8">
-                                <h3 className="text-blue-400 mt-0 flex items-center gap-2">
-                                    <BarChart3 className="h-5 w-5" /> Liquidity Analysis
+                            <h2>1. The ETF Supercycle Maturity</h2>
+                            <p>The launch of Spot ETFs in 2024 was the spark, but 2026 is the year of "maturity." Financial institutions that were once watching from the sidelines—pension funds, sovereign wealth funds—have now begun allocating 1% to 5% of their portfolios to Bitcoin.</p>
+                            <p>This institutional inflow creates what is known as a "Price Floor." When a giant like BlackRock buys, they aren't buying for daily speculation; they are buying for long-term holding, dramatically reducing the available supply on exchanges.</p>
+
+                            <div className="p-8 bg-orange-500/5 border border-orange-500/20 rounded-3xl my-10">
+                                <h3 className="text-orange-400 mt-0 flex items-center gap-2">
+                                    <BarChart3 className="h-6 w-6" /> Liquidity and Critical Zones Analysis
                                 </h3>
-                                <p className="mb-0">On-chain data reveals a significant "price vacuum" above the $92,000 mark. Once this level is cleared, there is no major technical resistance to stop BTC from hitting $120,000 in record time.</p>
-                            </div>
-
-                            <h2>2. The 4-Year Cycle & Supply Shock</h2>
-                            <p>We are currently in the most aggressive phase of the post-halving bull cycle. As exchange-available supply withers, any influx of demand translates immediately into explosive price action.</p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
-                                <div className="p-4 bg-muted/30 rounded-xl border border-border">
-                                    <h4 className="text-emerald-500 mb-2">Accumulation Zones (Buys)</h4>
-                                    <ul className="list-disc list-inside text-sm">
-                                        <li>$82,000 - $85,000 (Primary Support)</li>
-                                        <li>$72,000 (Strategic Long-term Floor)</li>
-                                    </ul>
-                                </div>
-                                <div className="p-4 bg-muted/30 rounded-xl border border-border">
-                                    <h4 className="text-orange-500 mb-2">Technical 2026 Targets</h4>
-                                    <ul className="list-disc list-inside text-sm">
-                                        <li>$112,000 (Psychological Milestone)</li>
-                                        <li>$158,000 (Fibonacci Extension)</li>
-                                        <li>$245,000 (Cycle Peak Projection)</li>
-                                    </ul>
+                                <p>AURA On-chain data shows that the amount of "dormant" Bitcoin (not moved for over a year) has reached historical highs. This points toward an imminent "Supply Shock."</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                    <div className="bg-background/40 p-4 rounded-xl border border-orange-500/10">
+                                        <span className="text-orange-500 font-bold block">Strategic Support Level:</span>
+                                        <span className="text-2xl font-black text-white">$72,000</span>
+                                    </div>
+                                    <div className="bg-background/40 p-4 rounded-xl border border-orange-500/10">
+                                        <span className="text-emerald-500 font-bold block">Initial 2026 Target:</span>
+                                        <span className="text-2xl font-black text-white">$124,000</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <EzoicAd id={111} />
 
-                            <h2>3. The Role of AI in 2026 Trading</h2>
-                            <p>Platforms like AURA now employ advanced neural models to anticipate whale movements. Current metrics suggest that high-net-worth entities are still in "Quiet Accumulation," implying the true parabolic move is yet to trigger.</p>
+                            <h2>2. The Post-Halving Supply Shock</h2>
+                            <p>Historically, Bitcoin needs 12 to 18 months after a halving event to reach its new all-time peak. In 2026, we are living through the "zenith" of this effect. Daily Bitcoin production is now significantly lower than daily institutional demand.</p>
+                            <p>Every day, approximately 450 BTC are mined, while funds and institutions are purchasing 3 to 5 times that amount. This simple math is the primary engine behind our strategic target of $250,000.</p>
 
-                            <div className="my-12 p-8 bg-muted/30 rounded-3xl border border-border">
-                                <h2 className="mt-0 flex items-center gap-2"><Wrench className="h-6 w-6 text-primary" /> Analysis Toolkit & Resources</h2>
-                                <p>To achieve these high-precision Bitcoin forecasts, we utilize the following professional-grade tools:</p>
-                                <ul className="grid md:grid-cols-2 gap-4 list-none p-0">
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">Glassnode On-Chain</span>
-                                        <span className="text-sm">For monitoring exchange flows and whale wallet activity.</span>
+                            <h2>3. The AI and Bitcoin Convergence</h2>
+                            <p>In 2026, we are seeing a true integration between AI technologies and Bitcoin. AI Agents require a "neutral," "borderless," and "fully digital" currency to settle transactions between machines. Bitcoin, via the Lightning Network, is the only viable candidate for this role.</p>
+
+                            <div className="my-12 p-8 bg-zinc-900 rounded-[2rem] border border-orange-500/20 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <Wrench className="h-32 w-32 text-orange-500" />
+                                </div>
+                                <h2 className="mt-0 flex items-center gap-2 text-white"><Wrench className="h-6 w-6 text-orange-500" /> Advanced Bitcoin Analysis Toolkit</h2>
+                                <p>To arrive at these projections, the AURA team utilized the following professional tools:</p>
+                                <ul className="grid md:grid-cols-2 gap-6 list-none p-0 mt-8">
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">Glassnode Enterprise</span>
+                                        <span className="text-sm">For monitoring whale movements and ETF flows with second-level precision.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">AURA Pro AI</span>
-                                        <span className="text-sm">To project cycle peaks based on deep learning price models.</span>
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">AURA Neural Network</span>
+                                        <span className="text-sm">An AI algorithm that predicts price peaks based on Fibonacci time cycles.</span>
                                     </li>
-                                    <li className="bg-background p-4 rounded-xl border border-border flex flex-col gap-2">
-                                        <span className="font-bold text-primary">TradingView</span>
-                                        <span className="text-sm">For advanced Fibonacci and Elliott Wave charting.</span>
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">Order Flow Analytics</span>
+                                        <span className="text-sm">Analyzing buy/sell pressure in futures markets to avoid liquidation traps.</span>
+                                    </li>
+                                    <li className="bg-orange-500/5 p-6 rounded-2xl border border-orange-500/10">
+                                        <span className="font-bold text-orange-500 block mb-2">Lightning Network Metrics</span>
+                                        <span className="text-sm">Measuring the growth of the Lightning Network as evidence of real-world adoption.</span>
                                     </li>
                                 </ul>
                             </div>
 
-                            <div className="sky-gradient-text p-6 text-center my-10 font-bold italic text-3xl">
-                                "Bitcoin is not a bubble; it is the pin that will pop the bubble of failing fiat currencies."
-                            </div>
+                            <h2>Conclusion: Navigating the 2026 Market</h2>
+                            <p>The "HODL" strategy remains superior, but with added intelligence. Use AURA alerts to identify overbought and oversold conditions. We expect to see Bitcoin cross $100k in the first quarter of 2026, beginning its "parabolic" journey toward much higher targets.</p>
                         </>
                     )}
                 </div>
 
                 <div className="mt-24 space-y-8 border-t border-border/10 pt-16">
                     <div className="flex items-center gap-3">
-                        <HelpCircle className="h-8 w-8 text-primary" />
+                        <HelpCircle className="h-8 w-8 text-orange-500" />
                         <h2 className="text-3xl font-bold font-headline">
-                            {lang === 'ar' ? 'الأسئلة الشائعة حول البتكوين' : 'Bitcoin FAQ'}
+                            {lang === 'ar' ? 'الأسئلة الشائعة حول البتكوين' : 'Bitcoin Market FAQ'}
                         </h2>
                     </div>
 
                     {mounted && (
                         <Accordion type="single" collapsible className="w-full">
                             {(lang === 'ar' ? [
-                                { q: "ما الذي قد يمنع البتكوين من الوصول إلى 250 ألف دولار؟", a: "المخاطر الرئيسية تشمل التنظيمات الصارمة المفاجئة أو حدوث ركود اقتصادي عالمي حاد يقلل من شهية المخاطرة." },
-                                { q: "هل الوقت مناسب للشراء الآن؟", a: "بناءً على تحليلاتنا، أي تراجع نحو مستويات 80 ألف يعتبر فرصة تجميع ذهبية للمدى الطويل." },
-                                { q: "كيف أستخدم AURA لتداول البتكوين؟", a: "يمكنك متابعة تنبيهات الحيتان ومستويات السيولة التي نوفرها في لوحة التحكم الخاصة بالأعضاء." }
+                                { q: "لماذا تظنون أن البتكوين سيصل لـ 250 ألف دولار؟", a: "بسبب ندرة العرض المطلقة، وتزايد الطلب المؤسسي، وفقدان الثقة في العملات الورقية التقليدية." },
+                                { q: "هل سيؤثر الذكاء الاصطناعي على سعر البتكوين؟", a: "نعم، الذكاء الاصطناعي يحتاج للبتكوين كطبقة دفع محايدة وغير خاضعة للرقابة، مما سيزيد من سرعة التبني." },
+                                { q: "ماذا لو حظرت الدول البتكوين؟", a: "تاريخياً، كل محاولة حظر زادت من رغبة الناس في امتلاكه. البتكوين مصمم ليكون مقاوماً للرقابة (Censorship Resistant)." },
+                                { q: "كيف أستثمر بأمان في 2026؟", a: "لا تضع كل أموالك مرة واحدة. استخدم طريقة 'متوسط التكلفة' (DCA) وراقب مستويات السيولة التي نوفرها في AURA." },
+                                { q: "هل شبكة Lightning Network جاهزة للاستخدام اليومي؟", a: "بحلول 2026، ستكون الشبكة قد نضجت بما يكفي لمعالجة ملايين المعاملات في الثانية، مما يجعل البتكوين عملة حقيقية." }
                             ] : [
-                                { q: "What could stop Bitcoin from reaching $250k?", a: "Major risks include sudden harsh regulations or a severe global recession that kills risk appetite." },
-                                { q: "Is it a good time to buy now?", a: "Based on our metrics, any dip toward $80k is considered a golden accumulation opportunity for the long term." },
-                                { q: "How do I use AURA for Bitcoin trading?", a: "Follow our real-time whale alerts and liquidity levels provided in the Pro Member dashboard." }
+                                { q: "Why do you think Bitcoin will reach $250k?", a: "Due to absolute supply scarcity, surging institutional demand, and declining trust in traditional fiat currencies." },
+                                { q: "Will AI affect Bitcoin's price?", a: "Yes, AI needs Bitcoin as a neutral, censorship-resistant payment layer, which will accelerate adoption." },
+                                { q: "What if countries ban Bitcoin?", a: "Historically, every ban attempt has only increased the desire to own it. Bitcoin is inherently censorship-resistant." },
+                                { q: "How do I invest safely in 2026?", a: "Avoid putting all your capital in at once. Use Dollar Cost Averaging (DCA) and monitor AURA's liquidity levels." },
+                                { q: "Is the Lightning Network ready for daily use?", a: "By 2026, the network will have matured enough to process millions of transactions per second, making BTC a true currency." }
                             ]).map((faq, idx) => (
                                 <AccordionItem key={idx} value={`item-${idx}`} className="border-border/10">
                                     <AccordionTrigger className="text-lg font-medium hover:text-primary text-start">
