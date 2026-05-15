@@ -44,6 +44,17 @@ const teamMembers = [
     icon: TrendingUp,
     aiHint: 'person developer',
   },
+  {
+    name: 'Mr. Josef Mamulashvili',
+    role: 'Global Market Analyst | Finance Specialist',
+    bio: 'Josef is a senior financial analyst with a focus on macroeconomic trends and global equity markets. His deep understanding of international finance and geopolitical risk provides AURA with a unique perspective on market dynamics. He specializes in identifying long-term structural shifts in the economy that impact high-growth technology stocks.',
+    country: 'Georgia',
+    avatarUrl: `/youssef.jpeg`,
+    avatarFallback: 'JM',
+    skills: ['Macro Analysis', 'Equity Research', 'Global Finance', 'Risk Assessment'],
+    icon: ShieldCheck,
+    aiHint: 'person male finance',
+  },
 ];
 
 export default function PublicAboutUsPage() {
