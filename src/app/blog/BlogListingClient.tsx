@@ -285,7 +285,16 @@ const blogPosts = [
 ];
 
 export default function BlogListingClient() {
+    const [activeCategory, setActiveCategory] = React.useState('All');
     const { lang, t } = useLanguage();
+
+    const categories = ['All', 'Stocks', 'Crypto', 'Forex', 'Strategy', 'Technical', 'Analysis'];
+    
+    const filteredPosts = activeCategory === 'All' 
+        ? blogPosts 
+        : blogPosts.filter(post => post.category === activeCategory || (activeCategory === 'Technical' && post.category === 'Advanced'));
+
+    const marketAnalysisLabel = lang === 'ar' ? 'تحليل السوق والذكاء المالي' : 'Market Intelligence & Analysis';
 
     return (
         <div className={cn("min-h-screen bg-background text-foreground antialiased overflow-x-hidden", lang === 'ar' && "font-['Cairo']")} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -296,21 +305,46 @@ export default function BlogListingClient() {
                     <div className="flex justify-center mb-4">
                         <Badge variant="secondary" className="px-4 py-1 flex gap-2 items-center">
                             <Newspaper className="h-4 w-4 text-primary" />
-                            {t.blog}
+                            {marketAnalysisLabel}
                         </Badge>
                     </div>
                     <h1 className="font-headline text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-muted-foreground">
-                        {lang === 'ar' ? 'مركز التعليم والمدونة' : 'Learning Center & Blog'}
+                        {lang === 'ar' ? 'تحليل الأسواق ومركز التعليم' : 'Market Analysis & Learning Center'}
                     </h1>
-                    <p className="text-xl text-muted-foreground leading-relaxed">
+                    <p className="text-xl text-muted-foreground leading-relaxed mb-10">
                         {lang === 'ar'
                             ? 'تعمق في مهارات التداول مع رؤى الخبراء والدروس التعليمية حول استراتيجيات المؤسسات.'
                             : 'Deepen your trading skills with expert insights and comprehensive guides on institutional strategies.'}
                     </p>
+
+                    <div className="flex flex-wrap justify-center gap-2 mt-8">
+                        {categories.map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => setActiveCategory(cat)}
+                                className={cn(
+                                    "px-6 py-2 rounded-full text-sm font-medium transition-all border",
+                                    activeCategory === cat 
+                                        ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
+                                        : "bg-muted/50 text-muted-foreground border-border/10 hover:border-primary/50"
+                                )}
+                            >
+                                {lang === 'ar' ? (
+                                    cat === 'All' ? 'الكل' :
+                                    cat === 'Stocks' ? 'الأسهم' :
+                                    cat === 'Crypto' ? 'الكريبتو' :
+                                    cat === 'Forex' ? 'الفوركس' :
+                                    cat === 'Strategy' ? 'الاستراتيجيات' :
+                                    cat === 'Technical' ? 'التحليل الفني' :
+                                    cat === 'Analysis' ? 'التقارير' : cat
+                                ) : cat}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {blogPosts.map((post) => (
+                    {filteredPosts.map((post) => (
                         <Link key={post.slug} href={`/blog/${post.slug}`}>
                             <Card className="h-full overflow-hidden border border-border/10 hover:border-primary/50 transition-all duration-300 bg-card/5 backdrop-blur-sm group card-glow">
                                 <div className="aspect-video relative overflow-hidden">
