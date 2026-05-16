@@ -986,3 +986,61 @@ export async function deleteReview(reviewId: string): Promise<{ success: boolean
   }
 }
 
+export async function savePLStatement(fileName: string, fileSize: number, fileData: string, summary: any) {
+  const { firestore } = initializeServerFirebase();
+  try {
+    const docRef = await firestore.collection('financials').add({
+      fileName,
+      fileSize,
+      fileData,
+      summary,
+      uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { success: true, id: docRef.id };
+  } catch (error: any) {
+    console.error("Error saving P&L statement:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getPLStatements() {
+  const { firestore } = initializeServerFirebase();
+  try {
+    const snapshot = await firestore.collection('financials').get();
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        fileName: data.fileName,
+        fileSize: data.fileSize,
+        summary: data.summary,
+        uploadedAt: data.uploadedAt?.toDate ? data.uploadedAt.toDate().toISOString() : data.uploadedAt,
+      };
+    });
+    
+    // Sort in memory by uploadedAt descending
+    items.sort((a, b) => {
+      const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    return { success: true, items };
+  } catch (error: any) {
+    console.error("Error in getPLStatements:", error);
+    return { success: false, items: [], error: error.message };
+  }
+}
+
+export async function deletePLStatement(id: string) {
+  const { firestore } = initializeServerFirebase();
+  try {
+    await firestore.collection('financials').doc(id).delete();
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in deletePLStatement:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+
