@@ -3,13 +3,6 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, Part } from '@google/generative-ai';
 import { z } from 'zod';
 
-const API_KEY = process.env.GEMINI_API_KEY;
-if (!API_KEY) {
-  throw new Error("GEMINI_API_KEY is not found in environment variables.");
-}
-
-const genAI = new GoogleGenerativeAI(API_KEY);
-
 const GenerateTradeSignalsInputSchema = z.object({
   chartDataLarge: z.string(),
   chartDataSmall: z.string().optional(),
@@ -65,7 +58,10 @@ function dataUriToGoogleGenerativePart(dataUri: string): Part {
 export async function generateTradeSignals(input: GenerateTradeSignalsInput): Promise<GenerateTradeSignalsOutput> {
   const validatedInput = GenerateTradeSignalsInputSchema.parse(input);
 
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+  const API_KEY = process.env.GEMINI_API_KEY;
+  if (!API_KEY) throw new Error('GEMINI_API_KEY is not set.');
+  const genAI = new GoogleGenerativeAI(API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const promptParts: Part[] = [
     { text: `You are a professional trading analyst. Your task is to analyze the provided chart image(s) and generate actionable, structured trading signals.\n\n        **IMPORTANT FIRST STEP: Image Validation**\n        1.  First, analyze the image provided in 'chartDataLarge'.\n        2.  Determine if the image is a financial chart. If it is NOT a financial chart (e.g., it's a picture of a car, an animal, a person, etc.), you MUST set 'isChart' to false and provide an appropriate error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        3.  If it IS a chart, determine if it is clear enough to be analyzed. If the chart is too blurry, pixelated, or the numbers and candlesticks are unreadable, you MUST set 'isClear' to false and provide an error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        4.  If the image is a clear financial chart, set both 'isChart' and 'isClear' to true and proceed with the full analysis below.\n\n        The user's preferred language is ${validatedInput.language}. ALL text in your response, especially in the 'analysisSummary' and 'validationError' fields, MUST be in this language.\n\n` },
