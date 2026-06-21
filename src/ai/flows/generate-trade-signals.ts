@@ -2,6 +2,7 @@
 
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, Part } from '@google/generative-ai';
 import { z } from 'zod';
+import { runGeminiWithFailover } from '@/ai/failover';
 
 const GenerateTradeSignalsInputSchema = z.object({
   chartDataLarge: z.string(),
@@ -58,11 +59,6 @@ function dataUriToGoogleGenerativePart(dataUri: string): Part {
 export async function generateTradeSignals(input: GenerateTradeSignalsInput): Promise<GenerateTradeSignalsOutput> {
   const validatedInput = GenerateTradeSignalsInputSchema.parse(input);
 
-  const API_KEY = process.env.GEMINI_API_KEY;
-  if (!API_KEY) throw new Error('GEMINI_API_KEY is not set.');
-  const genAI = new GoogleGenerativeAI(API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
   const promptParts: Part[] = [
     { text: `You are a professional trading analyst. Your task is to analyze the provided chart image(s) and generate actionable, structured trading signals.\n\n        **IMPORTANT FIRST STEP: Image Validation**\n        1.  First, analyze the image provided in 'chartDataLarge'.\n        2.  Determine if the image is a financial chart. If it is NOT a financial chart (e.g., it's a picture of a car, an animal, a person, etc.), you MUST set 'isChart' to false and provide an appropriate error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        3.  If it IS a chart, determine if it is clear enough to be analyzed. If the chart is too blurry, pixelated, or the numbers and candlesticks are unreadable, you MUST set 'isClear' to false and provide an error message in the 'validationError' field, in the requested language. Do not proceed with any analysis.\n        4.  If the image is a clear financial chart, set both 'isChart' and 'isClear' to true and proceed with the full analysis below.\n\n        The user's preferred language is ${validatedInput.language}. ALL text in your response, especially in the 'analysisSummary' and 'validationError' fields, MUST be in this language.\n\n` },
     {
@@ -80,15 +76,12 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
       { text: '\n\nEntry Chart (Small Timeframe):\n' },
       dataUriToGoogleGenerativePart(validatedInput.chartDataSmall),
       {
-        text: `\n\n**Analysis Instructions (Multi-Timeframe):**\n            1.  Use the Main Chart (Large Timeframe) to determine the overall market context, trend direction, and key higher-timeframe support/resistance zones. This chart dictates the STRATEGY (i.e., are we looking for buys or sells?).\n            2.  Use the Entry Chart (Small Timeframe) to find a precise, low-risk entry point that aligns with the strategy from the large timeframe. Look for confirmation patterns (e.g., candlestick patterns, break of structure) on this smaller chart.
-            3.  The final signal(s) must be based on a confluence between BOTH timeframes. If they conflict, state that in the summary and lower the confidence.
-            4.  **STRICT RISK MANAGEMENT:** Your Stop Loss (SL) MUST be tight and professional. Avoid excessively wide SLs (e.g., no more than 30-50 pips for Forex or $5-$10 for Gold unless absolutely necessary). Always place the SL at the most recent 'Break of Structure' or 'Order Block' invalidation point on the Small Timeframe to maximize the Risk-to-Reward ratio. Aim for a minimum R:R of 1:2.` }
+        text: `\n\n**Analysis Instructions (Multi-Timeframe):**\n            1.  Use the Main Chart (Large Timeframe) to determine the overall market context, trend direction, and key higher-timeframe support/resistance zones. This chart dictates the STRATEGY (i.e., are we looking for buys or sells?).\n            2.  Use the Entry Chart (Small Timeframe) to find a precise, low-risk entry point that aligns with the strategy from the large timeframe. Look for confirmation patterns (e.g., candlestick patterns, break of structure) on this smaller chart.\n            3.  The final signal(s) must be based on a confluence between BOTH timeframes. If they conflict, state that in the summary and lower the confidence.\n            4.  **STRICT RISK MANAGEMENT:** Your Stop Loss (SL) MUST be tight and professional. Avoid excessively wide SLs (e.g., no more than 30-50 pips for Forex or $5-$10 for Gold unless absolutely necessary). Always place the SL at the most recent 'Break of Structure' or 'Order Block' invalidation point on the Small Timeframe to maximize the Risk-to-Reward ratio. Aim for a minimum R:R of 1:2.` }
     );
   } else {
     promptParts.push(
       {
-        text: `\n\n**Analysis Instructions (Single Timeframe):**\n            1.  Perform a full analysis based on the single chart provided. Identify the trend, key levels, and any potential patterns to form your conclusion.
-            2.  **RISK MANAGEMENT:** Do not provide massive Stop Losses. Find the nearest logical point where the trade idea is invalidated and place the SL there to ensure a professional Risk-to-Reward ratio.` }
+        text: `\n\n**Analysis Instructions (Single Timeframe):**\n            1.  Perform a full analysis based on the single chart provided. Identify the trend, key levels, and any potential patterns to form your conclusion.\n            2.  **RISK MANAGEMENT:** Do not provide massive Stop Losses. Find the nearest logical point where the trade idea is invalidated and place the SL there to ensure a professional Risk-to-Reward ratio.` }
     );
   }
 
@@ -125,10 +118,11 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
   ];
 
-  const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig, safetySettings });
-  const responseText = result.response.text();
-
-  const parsedOutput = JSON.parse(responseText);
-
-  return GenerateTradeSignalsOutputSchema.parse(parsedOutput);
+  return await runGeminiWithFailover(async (genAI) => {
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+    const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig, safetySettings });
+    const responseText = result.response.text();
+    const parsedOutput = JSON.parse(responseText);
+    return GenerateTradeSignalsOutputSchema.parse(parsedOutput);
+  });
 }
