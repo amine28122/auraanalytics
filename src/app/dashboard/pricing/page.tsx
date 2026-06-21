@@ -12,6 +12,7 @@ import { collection, query, where, onSnapshot, doc, Unsubscribe } from 'firebase
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { submitActivationRequest, type ActivationFormState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -197,6 +198,14 @@ export default function PricingPage() {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [hasPendingRequest, setHasPendingRequest] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [formState, formAction] = useActionState(submitActivationRequest, { error: null, message: null });
+    const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+    const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+    const [isCompressing, setIsCompressing] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
 
     const initialPlans = [
         {
@@ -269,11 +278,45 @@ export default function PricingPage() {
     const lang: keyof typeof translations = 'en';
     const t = translations[lang];
 
-    const handleUpgradeClick = () => {
-        const baseUrl = process.env.NEXT_PUBLIC_JVZOO_CHECKOUT_URL || "https://www.jvzoo.com/b/0/440581/3";
-        const checkoutUrl = `${baseUrl}?custom=${user?.uid || ''}`;
-        window.open(checkoutUrl, '_blank');
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(WALLET_ADDRESS);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsCompressing(true);
+        try {
+            const options = { maxSizeMB: 1, maxWidthOrHeight: 1024, useWebWorker: true };
+            const compressedFile = await imgCompression(file, options);
+            setScreenshotFile(compressedFile);
+
+            const reader = new FileReader();
+            reader.readAsDataURL(compressedFile);
+            reader.onloadend = () => {
+                setScreenshotPreview(reader.result as string);
+            };
+        } catch (error) {
+            console.error('Compression error:', error);
+            toast({ title: 'Error', description: 'Failed to process image.', variant: 'destructive' });
+        } finally {
+            setIsCompressing(false);
+        }
+    };
+
+    useEffect(() => {
+        if (formState?.message) {
+            toast({ title: 'Success', description: formState.message });
+            setScreenshotFile(null);
+            setScreenshotPreview(null);
+            setIsModalOpen(false);
+        } else if (formState?.error) {
+            toast({ title: 'Error', description: formState.error, variant: 'destructive' });
+        }
+    }, [formState, toast]);
 
     return (
         <div className="flex flex-col gap-8">
@@ -334,11 +377,85 @@ export default function PricingPage() {
                         }
 
                         if (plan.name === 'Premium') {
-                            const checkoutUrl = `https://www.jvzoo.com/b/0/440581/3${user?.uid ? `?custom=${user.uid}` : ''}`;
                             return (
-                                <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="w-full flex justify-center">
-                                    <img src="https://i.jvzoo.com/0/440581/3" alt="Aura Analytics Pro" border="0" className="object-contain" />
-                                </a>
+                                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button className="w-full" variant={plan.isPrimary ? 'default' : 'secondary'}>
+                                            {plan.cta}
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader>
+                                            <DialogTitle className="flex items-center gap-2">
+                                                <Bitcoin className="h-5 w-5 text-amber-500" />
+                                                {t.cryptoTitle}
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {t.cryptoDescription}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        
+                                        <form action={formAction} className="flex flex-col gap-4 mt-2">
+                                            {user?.uid && <input type="hidden" name="userId" value={user.uid} />}
+                                            {user?.email && <input type="hidden" name="email" value={user.email} />}
+                                            <input type="hidden" name="planName" value={plan.name} />
+                                            {screenshotPreview && <input type="hidden" name="screenshotDataUrl" value={screenshotPreview} />}
+
+                                            <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg border border-border/50 gap-3">
+                                                <div className="p-2 bg-background rounded-xl border shadow-inner">
+                                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${WALLET_ADDRESS}`} alt="USDT Wallet QR Code" className="w-24 h-24 rounded-lg" />
+                                                </div>
+                                                <div className="flex flex-col items-center gap-1 w-full">
+                                                    <span className="text-xs font-medium text-muted-foreground">{t.walletAddress}</span>
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        <Input readOnly value={WALLET_ADDRESS} className="font-mono text-xs text-center font-bold tracking-wider h-8" />
+                                                        <Button type="button" size="sm" variant="outline" onClick={copyToClipboard} className="h-8 px-2 shrink-0">
+                                                            {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="transactionId" className="text-xs font-semibold">{t.transactionId}</Label>
+                                                <Input id="transactionId" name="transactionId" placeholder="e.g. TX123456789" required className="h-9 text-sm" />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold">{t.paymentScreenshot}</Label>
+                                                <div 
+                                                    className="border-2 border-dashed border-border/50 rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/30 transition-colors"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                >
+                                                    {screenshotPreview ? (
+                                                        <div className="relative w-full flex justify-center">
+                                                            <img src={screenshotPreview} alt="Screenshot preview" className="max-h-32 object-contain rounded-md" />
+                                                            <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
+                                                                <span className="text-white text-xs font-medium">Change Image</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <Upload className="h-6 w-6 text-muted-foreground" />
+                                                            <span className="text-xs text-muted-foreground text-center">
+                                                                {isCompressing ? 'Processing...' : t.uploadScreenshot}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        className="hidden" 
+                                                        ref={fileInputRef}
+                                                        onChange={handleImageUpload}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <SubmitButton t={t} isEnabled={!!screenshotPreview} />
+                                        </form>
+                                    </DialogContent>
+                                </Dialog>
                             );
                         }
 
@@ -346,7 +463,6 @@ export default function PricingPage() {
                             <Button
                                 className="w-full"
                                 variant={plan.isPrimary ? 'default' : 'secondary'}
-                                onClick={handleUpgradeClick}
                             >
                                 {plan.cta}
                             </Button>

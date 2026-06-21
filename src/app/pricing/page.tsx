@@ -190,9 +190,47 @@ export default function PublicPricingPage() {
 
                                 if (plan.name === 'Premium') {
                                     return (
-                                        <a href="https://www.jvzoo.com/b/0/440581/3" target="_blank" rel="noopener noreferrer" className="w-full flex justify-center">
-                                            <img src="https://i.jvzoo.com/0/440581/3" alt="Aura Analytics Pro" border="0" className="object-contain" />
-                                        </a>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button className="w-full" variant={plan.isPrimary ? 'default' : 'secondary'}>
+                                                    {plan.cta}
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-md">
+                                                <DialogHeader>
+                                                    <DialogTitle className="flex items-center gap-2">
+                                                        <Bitcoin className="h-5 w-5 text-amber-500" />
+                                                        {t.cryptoTitle}
+                                                    </DialogTitle>
+                                                    <DialogDescription>
+                                                        {t.cryptoDescription}
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="flex flex-col items-center justify-center p-6 bg-muted/50 rounded-lg border border-border/50 gap-4">
+                                                    <div className="p-4 bg-background rounded-xl border shadow-inner">
+                                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${WALLET_ADDRESS}`} alt="USDT Wallet QR Code" className="w-32 h-32 rounded-lg" />
+                                                    </div>
+                                                    <div className="flex flex-col items-center gap-2 w-full">
+                                                        <span className="text-sm font-medium text-muted-foreground">{t.walletAddress}</span>
+                                                        <div className="flex items-center gap-2 w-full">
+                                                            <Input readOnly value={WALLET_ADDRESS} className="font-mono text-xs text-center font-bold tracking-wider" />
+                                                        </div>
+                                                    </div>
+                                                    <Alert className="mt-2 bg-primary/10 text-primary border-primary/20">
+                                                        <Info className="h-4 w-4" />
+                                                        <AlertTitle>{t.loginRequired}</AlertTitle>
+                                                        <AlertDescription className="text-xs">
+                                                            {t.loginRequiredDesc}
+                                                        </AlertDescription>
+                                                    </Alert>
+                                                </div>
+                                                <div className="flex flex-col gap-2 w-full mt-2">
+                                                    <Button asChild className="w-full">
+                                                        <Link href="/auth">{t.loginToSubmit}</Link>
+                                                    </Button>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
                                     );
                                 }
 
@@ -267,13 +305,7 @@ export default function PublicPricingPage() {
                             })}
                         </div>
 
-                        {/* JVZoo Disclaimer */}
-                        <div className="mt-16 mx-auto max-w-4xl text-xs text-muted-foreground/60 text-justify space-y-4 bg-muted/20 p-6 rounded-xl border border-border/50">
-                            <h3 className="font-semibold text-sm text-foreground/80 mb-2">Important Recurring Billing & Compliance Information</h3>
-                            <p><strong>Recurring Billing Terms:</strong> By purchasing the Premium plan, you are agreeing to an ongoing subscription. You will be automatically billed <strong>$100 every month</strong> until you cancel. You may cancel your subscription at any time by logging into your JVZoo customer portal or by contacting our support team. There are no hidden fees or cancellation penalties.</p>
-                            <p><strong>Disclaimer:</strong> Please note that this product does not provide any guarantee of income or success. The results achieved by the product owner or any other individuals mentioned are not indicative of future success or earnings. This website is not affiliated with Facebook or any of its associated entities. Once you navigate away from Facebook, the responsibility for the content and its usage lies solely with the user. All content on this website, including but not limited to text, images, and multimedia, is protected by copyright law and the Digital Millennium Copyright Act. Unauthorized copying, duplication, modification, or theft, whether intentional or unintentional, is strictly prohibited. Violators will be prosecuted to the fullest extent of the law.</p>
-                            <p>We want to clarify that JVZoo serves as the retailer for the products featured on this site. JVZoo® is a registered trademark of BBC Systems Inc., a Florida corporation located at 1809 E. Broadway Street, Suite 125, Oviedo, FL 32765, USA, and is used with permission. The role of JVZoo as a retailer does not constitute an endorsement, approval, or review of these products or any claims, statements, or opinions used in their promotion.</p>
-                        </div>
+                        {/* JVZoo Disclaimer removed */}
                     </div>
                 </main>
             </div>
