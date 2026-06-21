@@ -4,8 +4,6 @@ import { UnifiedAnalysis } from '@/components/dashboard/unified-analysis';
 import { MarketSessions } from '@/components/dashboard/market-sessions';
 import { AILiveStatus } from '@/components/dashboard/ai-live-status';
 import { MorningIntel } from '@/components/dashboard/morning-intel';
-import { TopSetups } from '@/components/dashboard/top-setups';
-import { MarketPulse } from '@/components/dashboard/market-pulse';
 
 import { useAuth, useFirebase } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -86,11 +84,6 @@ export default function DashboardPage() {
 
             {/* ── AURA Intelligence Section ── */}
             <MorningIntel lang={lang} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <TopSetups lang={lang} />
-                <MarketPulse lang={lang} />
-            </div>
 
             {/* ── Page title & AI Live Status ── */}
 
