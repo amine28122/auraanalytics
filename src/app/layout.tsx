@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     siteName: 'AURA Analytics',
     images: [
       {
-        url: '/og-image.png',
+        url: '/ico.png',
         width: 1200,
         height: 630,
         alt: 'AURA Analytics Platform Preview',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     title: 'AURA | Advanced Trade Signal Analysis',
     description: 'Empowering traders with institutional-grade technical analysis and actionable trade signals.',
     creator: '@aura_analytics',
-    images: ['/og-image.png'],
+    images: ['/ico.png'],
   },
   robots: {
     index: true,
