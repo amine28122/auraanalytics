@@ -9,13 +9,14 @@ import {
   Loader2, Edit, CalendarDays, RefreshCw, AlertCircle, Check, Paperclip,
   ExternalLink, Mail, KeySquare, Users, Crown, Gem, DollarSign,
   BarChart2, Search, Wallet, Activity, TrendingUp, Clock, Star, MessageSquare, Trash2, ThumbsUp, ThumbsDown, User,
-  FileSpreadsheet, UploadCloud, Download, CheckCircle2
+  FileSpreadsheet, UploadCloud, Download, CheckCircle2, Send
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -875,6 +876,10 @@ function AdminDashboard() {
                 <FileSpreadsheet className="h-4 w-4" />
                 P&L Statements
               </TabsTrigger>
+              <TabsTrigger value="broadcasts" className="gap-2">
+                <Send className="h-4 w-4" />
+                Broadcasts
+              </TabsTrigger>
             </TabsList>
 
             <div className="relative w-full max-w-sm">
@@ -1170,6 +1175,9 @@ function AdminDashboard() {
           <TabsContent value="financials" className="space-y-6">
             <FinancialsAdminPanel />
           </TabsContent>
+          <TabsContent value="broadcasts" className="space-y-6">
+            <BroadcastAdminPanel users={users} />
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1306,6 +1314,105 @@ function AdminDashboard() {
     </>
   );
 }
+
+function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
+  const { toast } = useToast();
+  const [subject, setSubject] = useState('');
+  const [htmlContent, setHtmlContent] = useState('');
+  const [targetAudience, setTargetAudience] = useState<'All' | 'Free' | 'Premium'>('All');
+  const [isSending, setIsSending] = useState(false);
+
+  const targetUsers = users.filter(u => {
+    if (targetAudience === 'All') return true;
+    if (targetAudience === 'Free') return u.plan === 'Free';
+    if (targetAudience === 'Premium') return u.plan === 'Premium' || u.plan === 'Aura Plan';
+    return true;
+  }).filter(u => u.email);
+
+  const handleSendBroadcast = async () => {
+    if (!subject || !htmlContent) {
+      toast({ variant: 'destructive', title: 'Missing fields', description: 'Subject and Body are required.' });
+      return;
+    }
+    
+    setIsSending(true);
+    try {
+      const { sendBroadcastEmail } = await import('@/lib/email');
+      const emails = targetUsers.map(u => u.email);
+      const res = await sendBroadcastEmail(emails, subject, htmlContent);
+      
+      if (res.success) {
+        toast({ title: 'Broadcast Sent!', description: `Successfully sent to ${emails.length} users.` });
+        setSubject('');
+        setHtmlContent('');
+      } else {
+        throw new Error(res.error);
+      }
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Broadcast Failed', description: e.message || 'An error occurred.' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <Card className="card-glow border-purple-500/10 shadow-xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Send className="h-5 w-5 text-purple-400" />
+          Email Broadcast
+        </CardTitle>
+        <CardDescription>
+          Send mass emails to your users. 
+          <br/><strong className="text-amber-500">Note:</strong> If you are using the Resend free tier without a verified custom domain, emails will ONLY be delivered to your verified admin email address.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="target" className="text-sm font-medium leading-none">Target Audience ({targetUsers.length} users)</label>
+          <Select value={targetAudience} onValueChange={(v: any) => setTargetAudience(v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Users</SelectItem>
+              <SelectItem value="Free">Free Users Only (Upsell)</SelectItem>
+              <SelectItem value="Premium">Premium Users Only (Updates)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="subject" className="text-sm font-medium leading-none">Subject</label>
+          <Input 
+            id="subject" 
+            placeholder="e.g., Upgrade to Premium for Unlimited Signals!" 
+            value={subject}
+            onChange={e => setSubject(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="content" className="text-sm font-medium leading-none">HTML Content</label>
+          <Textarea 
+            id="content" 
+            placeholder="Write your email in HTML format..." 
+            className="min-h-[200px] font-mono text-sm"
+            value={htmlContent}
+            onChange={e => setHtmlContent(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">You can use standard HTML tags like &lt;strong&gt;, &lt;br/&gt;, &lt;a href="..."&gt;.</p>
+        </div>
+
+        <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={handleSendBroadcast} disabled={isSending || targetUsers.length === 0}>
+          {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+          Send Broadcast to {targetUsers.length} Users
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function ReviewsAdminPanel() {
   const { firestore } = useFirebase();

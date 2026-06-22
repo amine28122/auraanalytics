@@ -8,6 +8,7 @@ import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import Parser from 'rss-parser';
+import { sendActivationEmail } from '@/lib/email';
 
 export type TradeSignal = AITradeSignal;
 
@@ -279,6 +280,18 @@ export async function approveActivationRequest(requestId: string, userId: string
 
       transaction.update(requestDocRef, { status: 'approved' });
     });
+    
+    // Send Activation Email
+    try {
+      const userDocSnapshot = await userDocRef.get();
+      const userData = userDocSnapshot.data();
+      if (userData && userData.email) {
+        await sendActivationEmail(userData.email, requestDocRef ? 'Premium' : 'Premium'); // Simplified plan name retrieval for email
+      }
+    } catch (emailErr) {
+      console.error("Failed to send activation email:", emailErr);
+    }
+
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
@@ -326,6 +339,20 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
         });
       }
     });
+
+    // Send Activation Email if plan upgraded
+    if (newPlan !== 'Free') {
+      try {
+        const userDocSnapshot = await userDocRef.get();
+        const userData = userDocSnapshot.data();
+        if (userData && userData.email) {
+          await sendActivationEmail(userData.email, newPlan);
+        }
+      } catch (emailErr) {
+        console.error("Failed to send activation email:", emailErr);
+      }
+    }
+
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };

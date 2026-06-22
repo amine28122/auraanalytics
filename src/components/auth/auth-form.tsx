@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { sendWelcomeEmail } from '@/lib/email';
 
 const translations = {
   en: {
@@ -143,6 +144,15 @@ export function SocialSignInButtons() {
           totalEarnings: 0,
           pendingEarnings: 0,
         });
+
+        // Send Welcome Email
+        // Note: this will fail if the user is not the verified Resend email since no domain is configured.
+        // But it's good to have it ready.
+        try {
+          await sendWelcomeEmail(user.email || '', user.displayName || 'Trader');
+        } catch (e) {
+          console.error("Failed to call welcome email action:", e);
+        }
 
         // Increment Referrer's total count
         if (referredBy) {
