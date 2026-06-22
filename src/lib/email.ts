@@ -12,16 +12,29 @@ export async function sendWelcomeEmail(toEmail: string, name: string) {
     const data = await resend.emails.send({
       from: `Aura Analytics <${SENDER_EMAIL}>`,
       to: toEmail,
-      subject: 'Welcome to Aura Analytics! 🎉',
+      subject: 'أهلاً بك في منصة Aura Analytics Pro 🚀',
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>Welcome to Aura Analytics, ${name}!</h2>
-          <p>We are thrilled to have you join our trading community.</p>
-          <p>You currently have the <strong>Free Plan</strong> which gives you access to our basic AI analysis tools. Upload your charts and get instant insights!</p>
-          <p>If you're ready to take your trading to the next level, consider upgrading to our Premium plan for unlimited analysis and advanced features.</p>
-          <br/>
-          <p>Happy Trading,</p>
-          <p><strong>The Aura Analytics Team</strong></p>
+        <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #09090b; color: #ffffff; border-radius: 12px; border: 1px solid #27272a;">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #27272a;">
+            <img src="https://www.auraanalyticspro.com/ico.png" alt="Aura Analytics" style="height: 70px; margin-bottom: 10px; object-fit: contain;" />
+            <h1 style="color: #10b981; margin: 0; font-size: 26px;">AURA ANALYTICS PRO</h1>
+          </div>
+          <div style="font-size: 16px; color: #e4e4e7; line-height: 1.8; margin-top: 30px;">
+            <p style="margin-bottom: 15px;"><strong>أهلاً بك يا ${name}،</strong></p>
+            <p style="margin-bottom: 15px;">نحن سعداء جداً بانضمامك إلى مجتمع التداول الخاص بنا.</p>
+            <p style="margin-bottom: 15px;">أنت الآن على <strong>الخطة المجانية</strong> والتي تتيح لك الوصول إلى أدوات التحليل الأساسية. جرب رفع شارتك الآن واحصل على تحليل فوري!</p>
+            <p style="margin-bottom: 15px;">إذا كنت مستعداً لنقل تداولك إلى المستوى التالي، فكر في الترقية للخطة المدفوعة للحصول على تحليلات غير محدودة وميزات احترافية.</p>
+          </div>
+          <div style="text-align: center; margin-top: 40px; margin-bottom: 40px;">
+            <a href="https://www.auraanalyticspro.com/dashboard/" style="background-color: #10b981; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block;">
+              الدخول للمنصة الآن
+            </a>
+          </div>
+          <hr style="border: none; border-top: 1px solid #27272a; margin-top: 30px;" />
+          <p style="font-size: 14px; color: #71717a; text-align: center; margin-top: 20px;">
+            مع تحيات،<br/>
+            <strong style="color: #10b981;">فريق Aura Analytics</strong>
+          </p>
         </div>
       `,
     });
@@ -37,15 +50,28 @@ export async function sendActivationEmail(toEmail: string, planName: string) {
     const data = await resend.emails.send({
       from: `Aura Analytics <${SENDER_EMAIL}>`,
       to: toEmail,
-      subject: 'Account Upgraded Successfully! 🚀',
+      subject: 'تم تفعيل اشتراكك بنجاح! 👑',
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>Your account has been upgraded!</h2>
-          <p>Great news! Your payment has been verified and your account is now active on the <strong>${planName}</strong>.</p>
-          <p>You now have access to all premium features, including unlimited AI chart analysis, advanced technical indicators, and priority support.</p>
-          <p><a href="https://auraanalytics.com/dashboard" style="background-color: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Go to Dashboard</a></p>
-          <br/>
-          <p>Thank you for choosing Aura Analytics!</p>
+        <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #09090b; color: #ffffff; border-radius: 12px; border: 1px solid #27272a;">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #27272a;">
+            <img src="https://www.auraanalyticspro.com/ico.png" alt="Aura Analytics" style="height: 70px; margin-bottom: 10px; object-fit: contain;" />
+            <h1 style="color: #10b981; margin: 0; font-size: 26px;">AURA ANALYTICS PRO</h1>
+          </div>
+          <div style="font-size: 16px; color: #e4e4e7; line-height: 1.8; margin-top: 30px;">
+            <p style="margin-bottom: 15px;"><strong>أخبار رائعة!</strong> 🎉</p>
+            <p style="margin-bottom: 15px;">لقد تم التأكد من الدفع وتفعيل حسابك بنجاح على خطة <strong>${planName}</strong>.</p>
+            <p style="margin-bottom: 15px;">أنت الآن تمتلك الصلاحية الكاملة للوصول إلى أدوات التحليل المتقدمة والميزات الاحترافية التي ستساعدك في اتخاذ قرارات تداول أدق.</p>
+          </div>
+          <div style="text-align: center; margin-top: 40px; margin-bottom: 40px;">
+            <a href="https://www.auraanalyticspro.com/dashboard/" style="background-color: #10b981; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block;">
+              ابدأ التداول الآن
+            </a>
+          </div>
+          <hr style="border: none; border-top: 1px solid #27272a; margin-top: 30px;" />
+          <p style="font-size: 14px; color: #71717a; text-align: center; margin-top: 20px;">
+            شكراً لثقتك بنا،<br/>
+            <strong style="color: #10b981;">فريق Aura Analytics</strong>
+          </p>
         </div>
       `,
     });
