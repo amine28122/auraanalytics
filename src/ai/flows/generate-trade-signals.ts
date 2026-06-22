@@ -9,6 +9,7 @@ const GenerateTradeSignalsInputSchema = z.object({
   chartDataSmall: z.string().optional(),
   language: z.enum(['en', 'ar', 'es']).default('en'),
   analysisSchools: z.array(z.string()).optional(),
+  tradingBalance: z.number().optional(),
 });
 export type GenerateTradeSignalsInput = z.infer<typeof GenerateTradeSignalsInputSchema>;
 
@@ -83,6 +84,12 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
       {
         text: `\n\n**Analysis Instructions (Single Timeframe):**\n            1.  Perform a full analysis based on the single chart provided. Identify the trend, key levels, and any potential patterns to form your conclusion.\n            2.  **RISK MANAGEMENT:** Do not provide massive Stop Losses. Find the nearest logical point where the trade idea is invalidated and place the SL there to ensure a professional Risk-to-Reward ratio.` }
     );
+  }
+
+  if (validatedInput.tradingBalance) {
+    promptParts.push({
+      text: `\n\n**CRITICAL RISK MANAGEMENT REQUIREMENT:** The user's trading account balance is ONLY $${validatedInput.tradingBalance}. You MUST calculate realistic risk parameters and a strict Stop Loss based specifically on this capital size. If the balance is under $50, the Stop Loss MUST be extremely tight (micro-pips/cents) to prevent an account blowup, and you should aim for small, compounding gains. State exactly how this balance influenced your Stop Loss placement in your 'analysisSummary'.`
+    });
   }
 
   promptParts.push(

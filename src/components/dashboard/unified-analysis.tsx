@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from '@/lib/utils';
 
 import {
-  Upload, Loader2, Info, Zap, Trash2, Camera, VideoOff, BrainCircuit, X, PlusCircle, Lock, CheckCircle2, TrendingUp
+  Upload, Loader2, Info, Zap, Trash2, Camera, VideoOff, BrainCircuit, X, PlusCircle, Lock, CheckCircle2, TrendingUp, Wallet
 } from 'lucide-react';
 
 import { motion } from 'framer-motion';
@@ -66,6 +66,8 @@ const translations = {
     tipPriceScale: 'Price Scale: Ensure the right-side price values are visible in your screenshot.',
     tipHighRes: 'High Resolution: Use clear, high-quality images for accurate candle detection.',
     tipDualTF: 'Trend & Entry: HTF (e.g. H4) for trend, LTF (e.g. M15) for entry confirmation.',
+    tradingBalance: 'Trading Account Balance ($)',
+    tradingBalanceDesc: 'Used by the AI to calculate strict risk management and the optimal stop loss specifically for your account size.',
   },
   ar: {
     uploadLarge: 'رفع الإطار الزمني الكبير',
@@ -103,6 +105,8 @@ const translations = {
     tipPriceScale: 'مقياس السعر: تأكد من وضوح قيم السعر على الجانب الأيمن في الصورة.',
     tipHighRes: 'دقة عالية: استخدم صوراً واضحة بجودة جيدة لتمييز الشموع بدقة.',
     tipDualTF: 'الاتجاه والدخول: الإطار الكبير (H4) للاتجاه، والصغير (M15) لتأكيد الدخول.',
+    tradingBalance: 'رصيد حساب التداول ($)',
+    tradingBalanceDesc: 'يستخدمه الذكاء الاصطناعي لحساب إدارة صارمة للمخاطر وتحديد أفضل وقف خسارة يناسب حجم حسابك الفعلي.',
   },
 };
 
@@ -131,6 +135,7 @@ type UserProfile = {
   analysisCount?: number;
   lastAnalysisDate?: Timestamp;
   preferredAnalysisSchools?: string[];
+  tradingBalance?: number;
 };
 
 const PLAN_LIMITS = {
@@ -556,6 +561,57 @@ function AnalysisTips({ t }: { t: any }) {
   );
 }
 
+function TradingBalanceInput({ t, initialBalance, userId, firestore }: { t: any, initialBalance?: number, userId: string | undefined, firestore: any }) {
+  const [balance, setBalance] = useState<string>(initialBalance ? String(initialBalance) : '');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setBalance(val);
+    
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    
+    timeoutRef.current = setTimeout(async () => {
+      if (userId && firestore) {
+        const numVal = parseFloat(val);
+        if (!isNaN(numVal)) {
+          await updateDoc(doc(firestore, 'users', userId), { tradingBalance: numVal });
+        }
+      }
+    }, 1000);
+  };
+
+  useEffect(() => {
+    if (initialBalance !== undefined && balance === '' && initialBalance > 0) {
+      setBalance(String(initialBalance));
+    }
+  }, [initialBalance]);
+
+  return (
+    <Card className="bg-muted/30">
+      <CardContent className="pt-6 space-y-2">
+        <div className="flex flex-col space-y-2">
+          <Label htmlFor="tradingBalance" className="flex items-center gap-2 text-sm font-medium">
+            <Wallet className="h-4 w-4 text-primary" />
+            {t.tradingBalance}
+          </Label>
+          <Input 
+            id="tradingBalance" 
+            name="tradingBalance" 
+            type="number" 
+            placeholder="e.g. 50" 
+            value={balance} 
+            onChange={handleChange}
+            min="0"
+            step="0.01"
+            className="w-full bg-background"
+          />
+          <p className="text-xs text-muted-foreground">{t.tradingBalanceDesc}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function UnifiedAnalysis() {
   const initialState: AnalysisFormState = { data: null, error: null, message: null };
@@ -768,6 +824,8 @@ export function UnifiedAnalysis() {
               </div>
 
               <AnalysisSchoolsSelector t={t} userPlan={userProfile?.plan} />
+              
+              <TradingBalanceInput t={t} initialBalance={userProfile?.tradingBalance} userId={user?.uid} firestore={firestore} />
 
               <input type="hidden" name="chartDataLarge" value={largeImageData || ''} />
               <input type="hidden" name="chartDataSmall" value={smallImageData || ''} />

@@ -39,6 +39,7 @@ const analysisSchema = z.object({
   userId: z.string().min(1, { message: 'User ID is required.' }),
   userLang: z.enum(['en', 'ar', 'es']).default('en'),
   analysisSchools: z.string().transform(val => val ? val.split(',') : []).optional(),
+  tradingBalance: z.string().optional().transform(val => val ? parseFloat(val) : undefined),
 });
 
 export async function getTradeSignals(
@@ -70,7 +71,7 @@ export async function getTradeSignals(
     return { data: null, error: errorMessage, message: null };
   }
 
-  const { chartDataLarge, chartDataSmall, userId: validUserId, userLang: validUserLang, analysisSchools: validAnalysisSchools } = validatedFields.data;
+  const { chartDataLarge, chartDataSmall, userId: validUserId, userLang: validUserLang, analysisSchools: validAnalysisSchools, tradingBalance: validTradingBalance } = validatedFields.data;
 
   const { firestore } = initializeServerFirebase();
   const userDocRef = firestore.collection('users').doc(validUserId);
@@ -111,7 +112,7 @@ export async function getTradeSignals(
   }
 
   try {
-    const input: any = { chartDataLarge, language: validUserLang, analysisSchools: validAnalysisSchools };
+    const input: any = { chartDataLarge, language: validUserLang, analysisSchools: validAnalysisSchools, tradingBalance: validTradingBalance };
     if (chartDataSmall) input.chartDataSmall = chartDataSmall;
 
     const result = await generateTradeSignals(input);

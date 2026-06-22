@@ -114,7 +114,7 @@ const translations = {
     },
 };
 
-const WALLET_ADDRESS = "TBEJ333HrfBnsdJqWn3x2tV5GZ3hY3g5R7";
+const WALLET_ADDRESS = "TVucHVCkqCvk2mB1KJi2uvyBd3dkhzCvPx";
 const OFFER_END_DATE = '2026-01-21T00:00:00Z';
 
 function SubmitButton({ t, isEnabled }: { t: any, isEnabled: boolean }) {
