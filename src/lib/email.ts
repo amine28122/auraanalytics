@@ -4,10 +4,8 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Important Note: Until you verify a custom domain in Resend,
-// you can only send emails TO your verified email address (jaafariimran378@gmail.com).
-// We are using 'onboarding@resend.dev' as the sender for testing.
-const SENDER_EMAIL = 'onboarding@resend.dev';
+// You have now verified your custom domain in Resend.
+const SENDER_EMAIL = 'support@auraanalyticspro.com';
 
 export async function sendWelcomeEmail(toEmail: string, name: string) {
   try {

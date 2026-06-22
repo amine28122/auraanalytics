@@ -1364,7 +1364,6 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
         </CardTitle>
         <CardDescription>
           Send mass emails to your users. 
-          <br/><strong className="text-amber-500">Note:</strong> If you are using the Resend free tier without a verified custom domain, emails will ONLY be delivered to your verified admin email address.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
