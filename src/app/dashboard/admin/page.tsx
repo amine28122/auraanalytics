@@ -366,6 +366,30 @@ function AdminDashboard() {
   const [isNetworkDialogOpen, setIsNetworkDialogOpen] = useState(false);
   const [referringUser, setReferringUser] = useState<UserProfile | null>(null);
 
+  // Notification Badges State
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [pendingWithdrawalsCount, setPendingWithdrawalsCount] = useState(0);
+  const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
+
+  useEffect(() => {
+    if (!firestore) return;
+
+    const reqQ = query(collection(firestore, 'activationRequests'), where('status', '==', 'pending'));
+    const unsubReq = onSnapshot(reqQ, snap => setPendingRequestsCount(snap.docs.length));
+
+    const withQ = query(collection(firestore, 'withdrawRequests'), where('status', '==', 'pending'));
+    const unsubWith = onSnapshot(withQ, snap => setPendingWithdrawalsCount(snap.docs.length));
+
+    const revQ = query(collection(firestore, 'reviews'), where('status', '==', 'pending'));
+    const unsubRev = onSnapshot(revQ, snap => setPendingReviewsCount(snap.docs.length));
+
+    return () => {
+      unsubReq();
+      unsubWith();
+      unsubRev();
+    };
+  }, [firestore]);
+
   useEffect(() => {
     if (!firestore) {
       setLoading(false);
@@ -819,18 +843,33 @@ function AdminDashboard() {
               <TabsTrigger value="requests" className="gap-2 relative">
                 <RefreshCw className="h-4 w-4" />
                 Plan Requests
+                {pendingRequestsCount > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md animate-in zoom-in">
+                    {pendingRequestsCount}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="withdrawals" className="gap-2 relative">
                 <Wallet className="h-4 w-4" />
                 Withdrawals
+                {pendingWithdrawalsCount > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white shadow-md animate-in zoom-in">
+                    {pendingWithdrawalsCount}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="simulator" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Simulator
               </TabsTrigger>
-              <TabsTrigger value="reviews" className="gap-2">
+              <TabsTrigger value="reviews" className="gap-2 relative">
                 <MessageSquare className="h-4 w-4" />
                 Reviews
+                {pendingReviewsCount > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-violet-500 text-[10px] font-bold text-white shadow-md animate-in zoom-in">
+                    {pendingReviewsCount}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="financials" className="gap-2">
                 <FileSpreadsheet className="h-4 w-4" />
