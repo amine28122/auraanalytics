@@ -1318,7 +1318,7 @@ function AdminDashboard() {
 function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
   const { toast } = useToast();
   const [subject, setSubject] = useState('');
-  const [htmlContent, setHtmlContent] = useState('');
+  const [messageBody, setMessageBody] = useState('');
   const [targetAudience, setTargetAudience] = useState<'All' | 'Free' | 'Premium'>('All');
   const [isSending, setIsSending] = useState(false);
 
@@ -1330,21 +1330,42 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
   }).filter(u => u.email);
 
   const handleSendBroadcast = async () => {
-    if (!subject || !htmlContent) {
+    if (!subject || !messageBody) {
       toast({ variant: 'destructive', title: 'Missing fields', description: 'Subject and Body are required.' });
       return;
     }
     
     setIsSending(true);
     try {
+      const finalHtml = `
+      <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #09090b; color: #ffffff; border-radius: 12px; border: 1px solid #27272a;">
+        <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #27272a;">
+          <h1 style="color: #10b981; margin: 0; font-size: 28px;">AURA ANALYTICS PRO</h1>
+        </div>
+        <div style="font-size: 16px; color: #e4e4e7; line-height: 1.8; margin-top: 30px;">
+          ${messageBody.replace(/\\n/g, '<br/>')}
+        </div>
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 40px;">
+          <a href="https://www.auraanalyticspro.com/dashboard" style="background-color: #10b981; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block;">
+            الدخول للمنصة الآن
+          </a>
+        </div>
+        <hr style="border: none; border-top: 1px solid #27272a; margin-top: 30px;" />
+        <p style="font-size: 14px; color: #71717a; text-align: center; margin-top: 20px;">
+          مع تحيات،<br/>
+          <strong style="color: #10b981;">فريق Aura Analytics</strong>
+        </p>
+      </div>
+      `;
+
       const { sendBroadcastEmail } = await import('@/lib/email');
       const emails = targetUsers.map(u => u.email);
-      const res = await sendBroadcastEmail(emails, subject, htmlContent);
+      const res = await sendBroadcastEmail(emails, subject, finalHtml);
       
       if (res.success) {
         toast({ title: 'Broadcast Sent!', description: `Successfully sent to ${emails.length} users.` });
         setSubject('');
-        setHtmlContent('');
+        setMessageBody('');
       } else {
         throw new Error(res.error);
       }
@@ -1392,15 +1413,16 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="content" className="text-sm font-medium leading-none">HTML Content</label>
+          <label htmlFor="content" className="text-sm font-medium leading-none">Message Body (النص العادي)</label>
           <Textarea 
             id="content" 
-            placeholder="Write your email in HTML format..." 
-            className="min-h-[200px] font-mono text-sm"
-            value={htmlContent}
-            onChange={e => setHtmlContent(e.target.value)}
+            placeholder="اكتب رسالتك هنا بكل سهولة..." 
+            className="min-h-[200px] text-sm"
+            dir="rtl"
+            value={messageBody}
+            onChange={e => setMessageBody(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">You can use standard HTML tags like &lt;strong&gt;, &lt;br/&gt;, &lt;a href="..."&gt;.</p>
+          <p className="text-xs text-muted-foreground">اكتب رسالتك كأنك تكتب في الواتساب. النظام سيقوم بتنسيقها بشكل جميل أوتوماتيكياً!</p>
         </div>
 
         <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={handleSendBroadcast} disabled={isSending || targetUsers.length === 0}>
