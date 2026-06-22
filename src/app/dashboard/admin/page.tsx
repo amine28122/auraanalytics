@@ -1321,6 +1321,7 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
   const [messageBody, setMessageBody] = useState('');
   const [targetAudience, setTargetAudience] = useState<'All' | 'Free' | 'Premium'>('All');
   const [isSending, setIsSending] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const targetUsers = users.filter(u => {
     if (targetAudience === 'All') return true;
@@ -1330,6 +1331,7 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
   }).filter(u => u.email);
 
   const handleSendBroadcast = async () => {
+    setIsConfirmOpen(false);
     if (!subject || !messageBody) {
       toast({ variant: 'destructive', title: 'Missing fields', description: 'Subject and Body are required.' });
       return;
@@ -1425,10 +1427,29 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
           <p className="text-xs text-muted-foreground">اكتب رسالتك العادية هنا. النظام سيضيف اللوجو والصندوق الأسود الجميل والأزرار أوتوماتيكياً!</p>
         </div>
 
-        <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={handleSendBroadcast} disabled={isSending || targetUsers.length === 0}>
+        <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={() => setIsConfirmOpen(true)} disabled={isSending || targetUsers.length === 0}>
           {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
           Send Broadcast to {targetUsers.length} Users
         </Button>
+
+        <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد إرسال الرسالة</AlertDialogTitle>
+              <AlertDialogDescription>
+                أنت على وشك إرسال هذه الرسالة إلى <strong>{targetUsers.length} عميل</strong> (الجمهور المستهدف: {targetAudience}).
+                هل أنت متأكد من رغبتك في الإرسال الآن؟
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSendBroadcast} className="bg-purple-600 hover:bg-purple-700">
+                نعم، أرسل الآن
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </CardContent>
     </Card>
   );
