@@ -1334,7 +1334,7 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
       toast({ variant: 'destructive', title: 'Missing fields', description: 'Subject and Body are required.' });
       return;
     }
-    
+
     setIsSending(true);
     try {
       const finalHtml = `
@@ -1361,7 +1361,7 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
       const { sendBroadcastEmail } = await import('@/lib/email');
       const emails = targetUsers.map(u => u.email);
       const res = await sendBroadcastEmail(emails, subject, finalHtml);
-      
+
       if (res.success) {
         toast({ title: 'Broadcast Sent!', description: `Successfully sent to ${emails.length} users.` });
         setSubject('');
@@ -1384,7 +1384,7 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
           Email Broadcast
         </CardTitle>
         <CardDescription>
-          Send mass emails to your users. 
+          Send mass emails to your users.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1401,12 +1401,12 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="space-y-2">
           <label htmlFor="subject" className="text-sm font-medium leading-none">Subject</label>
-          <Input 
-            id="subject" 
-            placeholder="e.g., Upgrade to Premium for Unlimited Signals!" 
+          <Input
+            id="subject"
+            placeholder="e.g., Upgrade to Premium for Unlimited Signals!"
             value={subject}
             onChange={e => setSubject(e.target.value)}
           />
@@ -1414,15 +1414,15 @@ function BroadcastAdminPanel({ users }: { users: UserProfile[] }) {
 
         <div className="space-y-2">
           <label htmlFor="content" className="text-sm font-medium leading-none">Message Body (النص العادي)</label>
-          <Textarea 
-            id="content" 
-            placeholder="اكتب رسالتك هنا بكل سهولة..." 
+          <Textarea
+            id="content"
+            placeholder="اكتب رسالتك هنا بكل سهولة كأنك تكتب في الواتساب..."
             className="min-h-[200px] text-sm"
             dir="rtl"
             value={messageBody}
             onChange={e => setMessageBody(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">اكتب رسالتك كأنك تكتب في الواتساب. النظام سيقوم بتنسيقها بشكل جميل أوتوماتيكياً!</p>
+          <p className="text-xs text-muted-foreground">اكتب رسالتك العادية هنا. النظام سيضيف اللوجو والصندوق الأسود الجميل والأزرار أوتوماتيكياً!</p>
         </div>
 
         <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={handleSendBroadcast} disabled={isSending || targetUsers.length === 0}>
@@ -1678,7 +1678,7 @@ function FinancialsAdminPanel() {
 
         const base64Data = btoa(unescape(encodeURIComponent(fileContent.slice(0, 100000))));
         const res = await savePLStatement(file.name, file.size, base64Data, summary);
-        
+
         if (res.success) {
           toast({
             title: 'P&L Uploaded Successfully',
@@ -1853,7 +1853,7 @@ function FinancialsAdminPanel() {
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card 
+        <Card
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -1863,10 +1863,10 @@ function FinancialsAdminPanel() {
           )}
           onClick={() => document.getElementById('file-upload-input')?.click()}
         >
-          <input 
-            type="file" 
-            id="file-upload-input" 
-            className="hidden" 
+          <input
+            type="file"
+            id="file-upload-input"
+            className="hidden"
             accept=".csv, .xlsx, .xls"
             onChange={handleFileChange}
           />
@@ -1900,8 +1900,8 @@ function FinancialsAdminPanel() {
             {statements.length > 0 ? (
               <div className="divide-y">
                 {statements.map((s) => (
-                  <div 
-                    key={s.id} 
+                  <div
+                    key={s.id}
                     onClick={() => setActiveStatement(s)}
                     className={cn(
                       "p-3.5 flex items-center justify-between cursor-pointer transition-colors text-xs",
@@ -1923,9 +1923,9 @@ function FinancialsAdminPanel() {
                       </Badge>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             disabled={deletingId === s.id}
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
                             onClick={(e) => e.stopPropagation()}
@@ -1995,10 +1995,10 @@ function FinancialsAdminPanel() {
                     <span className="text-[10px] text-muted-foreground font-semibold">ARR Multiple</span>
                   </div>
                   <div className="mt-2.5">
-                    <input 
-                      type="range" 
-                      min="4" 
-                      max="12" 
+                    <input
+                      type="range"
+                      min="4"
+                      max="12"
                       step="0.5"
                       value={valuationMultiple}
                       onChange={(e) => setValuationMultiple(parseFloat(e.target.value))}
@@ -2096,16 +2096,16 @@ function FinancialsAdminPanel() {
                 <div className="relative flex items-center justify-center">
                   <svg className="w-24 h-24 transform -rotate-90">
                     <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="6" className="text-muted/20" fill="transparent" />
-                    <circle 
-                      cx="48" 
-                      cy="48" 
-                      r="40" 
-                      stroke="currentColor" 
-                      strokeWidth="6" 
+                    <circle
+                      cx="48"
+                      cy="48"
+                      r="40"
+                      stroke="currentColor"
+                      strokeWidth="6"
                       strokeDasharray={251.2}
                       strokeDashoffset={251.2 - (251.2 * (activeStatement.summary?.healthScore || 94)) / 100}
-                      className="text-emerald-400" 
-                      fill="transparent" 
+                      className="text-emerald-400"
+                      fill="transparent"
                       strokeLinecap="round"
                     />
                   </svg>
