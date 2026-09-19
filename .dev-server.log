@@ -24,3 +24,50 @@ Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
  ✓ Compiled in 2s (351 modules)
  GET /about?lang=en 200 in 210ms
  ○ Compiling /dashboard/marche ...
+ ✓ Compiled /dashboard/marche in 17.1s (2458 modules)
+ GET /dashboard/marche?lang=en 200 in 21666ms
+✅ [Firebase Admin] SUCCESS: Loaded from service-account.json file.
+ POST /dashboard/marche?lang=en 200 in 622ms
+ POST /dashboard/marche?lang=en 200 in 70ms
+ POST /dashboard/marche?lang=en 200 in 65ms
+ POST /dashboard/marche?lang=en 200 in 63ms
+ POST /dashboard/marche?lang=en 200 in 63ms
+ POST /dashboard/marche?lang=en 200 in 92ms
+ POST /dashboard/marche?lang=en 200 in 64ms
+ POST /dashboard/marche?lang=en 200 in 2655ms
+ POST /dashboard/marche?lang=en 200 in 58ms
+ POST /dashboard/marche?lang=en 200 in 64ms
+ POST /dashboard/marche?lang=en 200 in 99ms
+ POST /dashboard/marche?lang=en 200 in 74ms
+ POST /dashboard/marche?lang=en 200 in 44ms
+ POST /dashboard/marche?lang=en 200 in 60ms
+ POST /dashboard/marche?lang=en 200 in 69ms
+ POST /dashboard/marche?lang=en 200 in 744ms
+ POST /dashboard/marche?lang=en 200 in 61ms
+ POST /dashboard/marche?lang=en 200 in 83ms
+ POST /dashboard/marche?lang=en 200 in 109ms
+ POST /dashboard/marche?lang=en 200 in 61ms
+ POST /dashboard/marche?lang=en 200 in 61ms
+ POST /dashboard/marche?lang=en 200 in 50ms
+ POST /dashboard/marche?lang=en 200 in 742ms
+ POST /dashboard/marche?lang=en 200 in 50ms
+ POST /dashboard/marche?lang=en 200 in 50ms
+ POST /dashboard/marche?lang=en 200 in 208ms
+ POST /dashboard/marche?lang=en 200 in 86ms
+ POST /dashboard/marche?lang=en 200 in 165ms
+ POST /dashboard/marche?lang=en 200 in 74ms
+ POST /dashboard/marche?lang=en 200 in 62ms
+ POST /dashboard/marche?lang=en 200 in 579ms
+ POST /dashboard/marche?lang=en 200 in 58ms
+ POST /dashboard/marche?lang=en 200 in 69ms
+ POST /dashboard/marche?lang=en 200 in 911ms
+ POST /dashboard/marche?lang=en 200 in 104ms
+ POST /dashboard/marche?lang=en 200 in 96ms
+ ○ Compiling /dashboard/about ...
+ ✓ Compiled /dashboard/about in 4s (2473 modules)
+ GET /dashboard/about?lang=en 200 in 5015ms
+ POST /dashboard/about?lang=en 200 in 331ms
+ ✓ Compiled in 1522ms (993 modules)
+ POST /dashboard/about?lang=en 200 in 70ms
+ POST /dashboard/about?lang=en 200 in 638ms
+ POST /dashboard/about?lang=en 200 in 23404ms
