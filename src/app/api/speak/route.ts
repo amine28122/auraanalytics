@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         const modelInstance = genAI.getGenerativeModel({ model });
         const res = await modelInstance.generateContent({
           contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 400, responseMimeType: 'application/json' },
+          generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
         });
         return res.response.text();
       });
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
               ],
             },
           ],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 400, responseMimeType: 'application/json' },
+          generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
         });
         return res.response.text();
       });
@@ -142,12 +142,15 @@ export async function POST(req: Request) {
 
     let parsed: { text?: string; transcript?: string } = {};
     try {
-      const cleaned = result.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+      // Try to extract JSON object from response (handles markdown fences and extra text)
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      const cleaned = jsonMatch ? jsonMatch[0] : result.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
       parsed = JSON.parse(cleaned);
     } catch {
-      parsed = { text: result };
+      // If JSON parse fails, use the raw text as the reply
+      parsed = { text: result.replace(/```[\s\S]*```/g, '').trim() };
     }
-    const replyText = (parsed.text || result || '').trim();
+    const replyText = (parsed.text || '').trim() || result.replace(/[\{\}":\[\]]/g, '').trim().slice(0, 200);
     const transcript = isTextMode ? textInput : (parsed.transcript || '').trim().slice(0, 300);
 
     // -- Save history + detect communication style --
