@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BrainCircuit, Mic, Square, Loader2, Play, Pause, Volume2, UploadCloud, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/firebase';
 
 type Lang = 'en' | 'ar' | 'es';
 
@@ -13,6 +14,7 @@ type Message = {
   role: 'user' | 'ai';
   text?: string;
   audioDataUri?: string;
+  transcript?: string;
 };
 
 const labels: Record<Lang, {
@@ -76,6 +78,7 @@ const labels: Record<Lang, {
 export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
   const t = labels[lang] ?? labels.en;
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const { user } = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -160,7 +163,7 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
         const res = await fetch('/api/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audio: dataUri, lang }),
+          body: JSON.stringify({ audio: dataUri, lang, userId: user?.uid || '', userName: user?.displayName || '' }),
         });
         const data = await res.json();
         if (!data.ok) {
@@ -169,7 +172,18 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
         }
         const aiIndex = messages.length;
         const replyVoice = pickReplyLang(data.text);
-        setMessages((prev) => [...prev, { role: 'ai', text: data.text } as Message]);
+        const transcript = typeof data.transcript === 'string' ? data.transcript : '';
+        setMessages((prev) => {
+          const next = [...prev];
+          if (transcript) {
+            const last = next[next.length - 1];
+            if (last && last.role === 'user') {
+              next[next.length - 1] = { ...last, transcript };
+            }
+          }
+          next.push({ role: 'ai', text: data.text } as Message);
+          return next;
+        });
         requestAnimationFrame(() => speak(data.text, aiIndex, replyVoice));
       } catch {
         setError(t.errorSend);
@@ -177,7 +191,7 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
         setIsSending(false);
       }
     },
-    [lang, messages.length, speak, t, pickReplyLang]
+    [lang, messages.length, speak, t, pickReplyLang, user]
   );
 
   const stopRecording = useCallback(() => {
@@ -297,6 +311,11 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
                     </span>
                   )}
                   <audio src={msg.audioDataUri} controls className="mt-2 h-8 w-full" preload="none" />
+                  {msg.transcript && (
+                    <p className="mt-1.5 text-[11px] italic text-muted-foreground/80">
+                      {lang === 'ar' ? '🗣 فهمتُ:' : lang === 'es' ? '🗣 Lo que escuché:' : '🗣 What I heard:'} {msg.transcript}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
