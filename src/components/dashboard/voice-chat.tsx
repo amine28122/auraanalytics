@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import RecordRTC from 'recordrtc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +15,31 @@ type Message = {
   audioDataUri?: string;
   transcript?: string;
 };
+
+function pcmToWav(pcm: Int16Array, sampleRate: number): Uint8Array {
+  const n = pcm.length;
+  const dataSize = n * 2;
+  const buf = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buf);
+  const writeStr = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+  };
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, dataSize, true);
+  for (let i = 0; i < n; i++) view.setInt16(44 + i * 2, pcm[i], true);
+  return new Uint8Array(buf);
+}
 
 const labels: Record<Lang, {
   title: string;
@@ -87,8 +111,10 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   const [seconds, setSeconds] = useState(0);
 
-  const recorderRef = useRef<RecordRTC | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<any>(null);
+  const sourceRef = useRef<any>(null);
+  const sinkRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -145,14 +171,22 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    try {
+      if (sinkRef.current) sinkRef.current.disconnect();
+    } catch {}
+    try {
+      if (sourceRef.current) sourceRef.current.stop();
+    } catch {}
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((tr) => tr.stop());
       streamRef.current = null;
     }
-    if (recorderRef.current) {
-      recorderRef.current.destroy();
-      recorderRef.current = null;
-    }
+    try {
+      if (audioCtxRef.current?.close) audioCtxRef.current.close();
+    } catch {}
+    audioCtxRef.current = null;
+    sourceRef.current = null;
+    sinkRef.current = null;
   }, []);
 
   const sendData = useCallback(
@@ -202,54 +236,84 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     }
     setSeconds(0);
 
-    const recorder = recorderRef.current;
-    if (!recorder) {
+    const sink = sinkRef.current;
+    if (!sink) {
       cleanupRecorder();
       return;
     }
 
-    recorder.stopRecording(() => {
-      try {
-        const blob = recorder.getBlob();
-        if (!blob || blob.size < 2000) {
-          setError(t.errorEmpty);
-          return;
-        }
-        const fileReader = new FileReader();
-        fileReader.onloadend = () => {
-          const dataUri = fileReader.result as string;
-          setMessages((prev) => [...prev, { role: 'user', audioDataUri: dataUri } as Message]);
-          sendData(dataUri);
-        };
-        fileReader.readAsDataURL(blob);
-      } catch {
-        setError(t.errorSend);
-      } finally {
+    try {
+      const samples = sink.getSamples(0) as any;
+      const sampleRate = sink.sampleRate || 48000;
+      const n = samples?.length || 0;
+      if (n < sampleRate / 2) {
+        setError(t.errorEmpty);
         cleanupRecorder();
+        return;
       }
-    });
+      const pcm = new Int16Array(n);
+      for (let i = 0; i < n; i++) {
+        const v = samples.getFloat(i) as number;
+        const c = v !== v ? 0 : Math.max(-1, Math.min(1, v));
+        pcm[i] = Math.round(c * 32767);
+      }
+      const wav = pcmToWav(pcm, sampleRate);
+      const blob = new Blob([wav.buffer as ArrayBuffer], { type: 'audio/wav' });
+      if (blob.size < 2000) {
+        setError(t.errorEmpty);
+        cleanupRecorder();
+        return;
+      }
+      const previewUrl = URL.createObjectURL(blob);
+      setMessages((prev) => [...prev, { role: 'user', audioDataUri: previewUrl } as Message]);
+      const fileReader = new FileReader();
+      fileReader.onloadend = () => {
+        sendData(fileReader.result as string);
+      };
+      fileReader.readAsDataURL(blob);
+    } catch {
+      setError(t.errorSend);
+    } finally {
+      cleanupRecorder();
+    }
   }, [cleanupRecorder, t, sendData]);
 
   const startRecording = useCallback(async () => {
     setError('');
     stopSpeaking();
-    if (!navigator.mediaDevices?.getUserMedia) {
+    const AudioCtx = (window as any).AudioContext;
+    if (!navigator.mediaDevices?.getUserMedia || typeof AudioCtx === 'undefined') {
       setError(t.errorMic);
       return;
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const recorder = new RecordRTC(stream, {
-        type: 'audio',
-        recorderType: RecordRTC.StereoAudioRecorder,
-        sampleRate: 16000,
-        desiredSampRate: 16000,
-        numberOfAudioChannels: 1,
-        disableLogs: true,
-      });
-      recorderRef.current = recorder;
-      recorder.startRecording();
+
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+      if (typeof ctx.resume === 'function') ctx.resume();
+
+      const source = ctx.createMediaStreamSource(stream);
+      sourceRef.current = source;
+      const gain = ctx.createGainer();
+      try {
+        gain.gainDb = 0;
+      } catch {}
+
+      const sink = ctx.createAudioStreamSink(2);
+      sinkRef.current = sink;
+      sink.addConsumer(() => {});
+
+      try {
+        source.connect(gain).connect(sink);
+      } catch {
+        const dest = ctx.createAudioStreamProcessor();
+        sinkRef.current = ctx.createAudioStreamSink(2);
+        sinkRef.current.addConsumer(() => {});
+        source.connect(gain).connect(dest).connect(sinkRef.current);
+      }
+
       setIsRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
