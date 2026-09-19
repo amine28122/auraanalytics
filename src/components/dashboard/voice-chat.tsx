@@ -188,7 +188,7 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
           }),
         });
         const data = await res.json();
-        if (!data.ok) { setError(t.errorSend); return; }
+        if (!data.ok) { setError(typeof data.error === 'string' && data.error ? data.error : t.errorSend); return; }
         const transcript = typeof data.transcript === 'string' ? data.transcript : '';
         const ttsAudioUri: string | undefined = data.ttsAudioUri;
         let aiMsgIndex = -1;

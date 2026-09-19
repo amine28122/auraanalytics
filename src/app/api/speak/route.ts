@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { runGeminiWithFailover } from '@/ai/failover';
 import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
@@ -6,16 +6,24 @@ import * as admin from 'firebase-admin';
 const DATA_URI_RE = /^data:audio\/([^;]+);base64,(.+)$/;
 const MAX_HISTORY = 10;
 
-/** Extract the first JSON object found anywhere in a string */
+/** Extract text/transcript from Gemini output even when JSON is fenced or slightly truncated */
 function extractJSON(raw: string): { text?: string; transcript?: string } {
   try {
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
+    const cleaned0 = (raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const match = cleaned0.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (parsed && typeof parsed.text === 'string' && parsed.text.trim()) return parsed;
+    }
   } catch {}
-  try {
-    const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-    return JSON.parse(cleaned);
-  } catch {}
+  // Fallback: pull the fields directly even if the JSON is cut off
+  const unesc = (s: string) =>
+    s.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
+  const t = (raw || '').match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const tr = (raw || '').match(/"transcript"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (t && t[1].trim()) {
+    return { text: unesc(t[1]), transcript: tr ? unesc(tr[1]) : undefined };
+  }
   return {};
 }
 
@@ -106,37 +114,69 @@ export async function POST(req: Request) {
       ? `\n\nClient text message: "${textInput}"`
       : '\n\nClient sent a voice message (audio attached).';
 
-    let result: string;
+    const callAI = async (parts: any[]) => {
+      let out = '';
+      let lastErr: any = null;
+      for (let attempt = 1; attempt <= 3 && !out.trim(); attempt++) {
+        try {
+          out = await runGeminiWithFailover(async (genAI) => {
+            const m = genAI.getGenerativeModel({ model, systemInstruction: systemPrompt });
+            const res = await m.generateContent({
+              contents: [{ role: 'user', parts }],
+              generationConfig: { temperature: 0.65, maxOutputTokens: 800 },
+            });
+            return res.response.text() || '';
+          });
+        } catch (e: any) {
+          lastErr = e;
+        }
+        if (!out.trim() && attempt < 3) {
+          await new Promise((r) => setTimeout(r, 900 * attempt));
+        }
+      }
+      if (!out.trim() && lastErr) throw lastErr;
+      return out;
+    };
 
-    if (isTextMode) {
-      result = await runGeminiWithFailover(async (genAI) => {
-        const m = genAI.getGenerativeModel({ model, systemInstruction: systemPrompt });
-        const res = await m.generateContent({
-          contents: [{ role: 'user', parts: [{ text: rules + inputDescription }] }],
-          generationConfig: { temperature: 0.65, maxOutputTokens: 300 },
-        });
-        return res.response.text();
-      });
-    } else {
-      result = await runGeminiWithFailover(async (genAI) => {
-        const m = genAI.getGenerativeModel({ model, systemInstruction: systemPrompt });
-        const res = await m.generateContent({
-          contents: [{
-            role: 'user',
-            parts: [
-              { text: rules + inputDescription },
-              { inlineData: { mimeType, data: base64 } },
-            ],
-          }],
-          generationConfig: { temperature: 0.65, maxOutputTokens: 300 },
-        });
-        return res.response.text();
-      });
+    const baseParts: any[] = [{ text: rules + inputDescription }];
+    if (!isTextMode) baseParts.push({ inlineData: { mimeType, data: base64 } });
+
+    let result = '';
+    try {
+      result = await callAI(baseParts);
+    } catch (e: any) {
+      console.error('AI call failed after retries:', e?.message);
+      return NextResponse.json(
+        { ok: false, error: e?.message || 'AI is temporarily unavailable. Please try again.' },
+        { status: 502 }
+      );
     }
 
-    const parsed = extractJSON(result);
-    const replyText = (parsed.text || '').trim();
-    const transcript = isTextMode ? textInput : (parsed.transcript || '').trim().slice(0, 300);
+    let parsed = extractJSON(result);
+    let replyText = (parsed.text || '').trim();
+    let transcript = isTextMode ? textInput : (parsed.transcript || '').trim().slice(0, 300);
+
+    // The model occasionally returns a broken/empty snippet — retry briefly with a shorter prompt
+    if (!replyText) {
+      for (let i = 0; i < 2 && !replyText; i++) {
+        await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+        const shortRules =
+          rules +
+          '\nCRITICAL: reply with ONE single line of valid JSON only. No code fences, no markdown. Keep the reply under 20 words so the JSON is never cut off.';
+        const shortParts: any[] = [{ text: shortRules + inputDescription }];
+        if (!isTextMode) shortParts.push({ inlineData: { mimeType, data: base64 } });
+        try {
+          result = await callAI(shortParts);
+        } catch {
+          // ignore; outer guard reports it
+        }
+        const p2 = extractJSON(result);
+        if (p2.text && p2.text.trim()) {
+          replyText = p2.text.trim();
+          transcript = isTextMode ? textInput : (p2.transcript || '').trim().slice(0, 300);
+        }
+      }
+    }
 
     if (!replyText) {
       console.error('Empty reply text. Raw result:', result.slice(0, 200));
