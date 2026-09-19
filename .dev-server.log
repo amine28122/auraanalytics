@@ -78,3 +78,6 @@ Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
  ○ Compiling /dashboard/radar ...
  ✓ Compiled /dashboard/radar in 1075ms (2455 modules)
  GET /dashboard/radar?lang=en 200 in 2210ms
+ ○ Compiling /dashboard/about ...
+ ✓ Compiled /dashboard/about in 754ms (1480 modules)
+ POST /dashboard/about?lang=en 200 in 2441ms
