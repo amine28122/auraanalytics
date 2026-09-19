@@ -4,7 +4,7 @@ import { type AnalysisFormState, type TradeSignal as AITradeSignal } from '@/lib
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Activity, ArrowDown, ArrowUp, CheckCircle, Crosshair, DollarSign, Info, Lightbulb, Target, TrendingDown, TrendingUp, Share2, Loader2 } from 'lucide-react';
+import { Activity, ArrowDown, ArrowUp, CheckCircle, Crosshair, DollarSign, Info, Lightbulb, Target, TrendingDown, TrendingUp, Share2, Loader2, BrainCircuit } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Separator } from '../ui/separator';
 import { AuraAcademyLogo } from '../logo';
@@ -38,6 +38,8 @@ const translations = {
     disclaimer: "Signals are for informational purposes only and do not constitute financial advice. Always manage your risk. You are solely responsible for your own trading decisions. Your capital is your responsibility; respect your position size.",
     share: "Share",
     sharing: "Generating Image...",
+    chartWithLevels: "Chart with Levels",
+    schoolsSay: "What the Selected Schools Say",
   },
   ar: {
     analysisResults: "نتائج التحليل",
@@ -61,6 +63,8 @@ const translations = {
     disclaimer: "الإشارات هي لأغراض إعلامية فقط ولا تشكل نصيحة مالية. قم دائمًا بإدارة المخاطر الخاصة بك. أنت وحدك المسؤول عن قرارات التداول الخاصة بك. رأس مالك هو مسؤوليتك؛ احترم حجم مركزك.",
     share: "مشاركة",
     sharing: "جاري إنشاء الصورة...",
+    chartWithLevels: "الشارت مع المستويات",
+    schoolsSay: "ماذا تقول المدارس المختارة",
   }
 }
 
@@ -229,6 +233,22 @@ export function TradeSignals({ result, chartImage: localChartImage }: { result: 
 
   const confidencePercentage = data.confidenceLevel != null ? Math.round(data.confidenceLevel * 100) : null;
 
+  const levelStyle: Record<string, { line: string; chip: string; dot: string }> = {
+    entry: { line: 'border-sky-400', chip: 'bg-sky-500 text-white', dot: 'bg-sky-500' },
+    tp: { line: 'border-emerald-500', chip: 'bg-emerald-500 text-white', dot: 'bg-emerald-500' },
+    sl: { line: 'border-red-500', chip: 'bg-red-500 text-white', dot: 'bg-red-500' },
+    support: { line: 'border-emerald-400/70', chip: 'bg-emerald-400/90 text-white', dot: 'bg-emerald-400/90' },
+    resistance: { line: 'border-red-400/70', chip: 'bg-red-400/90 text-white', dot: 'bg-red-400/90' },
+  };
+
+  const levelLabel: Record<string, string> = {
+    entry: t.entry,
+    tp: t.takeProfit,
+    sl: t.stopLoss,
+    support: t.supportLevels,
+    resistance: t.resistanceLevels,
+  };
+
   return (
     <>
       <Card dir={lang === 'ar' ? 'rtl' : 'ltr'} className="card-glow">
@@ -243,6 +263,40 @@ export function TradeSignals({ result, chartImage: localChartImage }: { result: 
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
+          {chartImage && data.drawLevels && data.drawLevels.length > 0 && (
+            <div>
+              <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold">
+                <Target className="h-5 w-5 text-primary" />
+                {t.chartWithLevels}
+              </h3>
+              <div className="relative overflow-hidden rounded-lg border border-border/60 bg-card">
+                <img src={chartImage} alt="Chart analysis" className="w-full h-auto" />
+                {data.drawLevels.map((lvl, i) => {
+                  const style = levelStyle[lvl.type] || levelStyle.entry;
+                  const top = `${Math.min(100, Math.max(0, lvl.position))}%`;
+                  return (
+                    <div key={i} className="pointer-events-none absolute inset-x-0" style={{ top }}>
+                      <div className="relative flex w-full items-center">
+                        <span className={`ml-2 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-bold ${style.chip}`}>
+                          {levelLabel[lvl.type] || lvl.type} {lvl.price}
+                        </span>
+                        <span className={`flex-1 border-t-2 border-dashed ${style.line}`} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
+                {(['entry', 'tp', 'sl', 'support', 'resistance'] as const).map((k) => (
+                  <span key={k} className="flex items-center gap-1">
+                    <span className={`h-2 w-2 rounded-full ${levelStyle[k].dot}`} />
+                    {levelLabel[k]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {data.analysisSummary && <div>
             <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold">
               <Lightbulb className="h-5 w-5 text-primary" />
@@ -250,6 +304,23 @@ export function TradeSignals({ result, chartImage: localChartImage }: { result: 
             </h3>
             <p className="text-sm text-muted-foreground">{data.analysisSummary}</p>
           </div>}
+
+          {data.schoolInsights && data.schoolInsights.length > 0 && (
+            <div>
+              <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold">
+                <BrainCircuit className="h-5 w-5 text-primary" />
+                {t.schoolsSay}
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {data.schoolInsights.map((s, i) => (
+                  <div key={i} className="rounded-lg border bg-muted/40 p-3">
+                    <Badge variant="secondary" className="mb-1.5">{s.school}</Badge>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{s.insight}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {confidencePercentage != null && <div>
             <h3 className="mb-2 text-lg font-semibold">{t.confidenceLevel}</h3>
