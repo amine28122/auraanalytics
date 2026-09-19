@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { runGeminiWithFailover } from '@/ai/failover';
 import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
+import { getEconomicCalendar, getNews } from '@/lib/actions';
 
 const DATA_URI_RE = /^data:audio\/([^;]+);base64,(.+)$/;
 const MAX_HISTORY = 10;
@@ -27,35 +28,45 @@ function extractJSON(raw: string): { text?: string; transcript?: string } {
   return {};
 }
 
+/** Race a promise with a timeout so external calls can never hang the route */
+async function withTimeout(p: Promise<unknown> | PromiseLike<unknown>, ms: number): Promise<any> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve(p),
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve(undefined), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 /** Fetch real current market prices from public feeds (no keys needed) */
 async function fetchLivePrices(): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
-  try {
-    const [fx, gold, coins] = await Promise.allSettled([
-      fetch('https://open.er-api.com/v6/latest/USD').then((r) => r.json()),
-      fetch('https://api.gold-api.com/price/XAU').then((r) => r.json()),
-      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd').then((r) => r.json()),
-    ]);
-    if (fx.status === 'fulfilled') {
-      const rates = (fx.value as any)?.rates;
-      if (rates) {
-        if (rates.EUR) out['EUR/USD'] = (1 / rates.EUR).toFixed(4);
-        if (rates.GBP) out['GBP/USD'] = (1 / rates.GBP).toFixed(4);
-        if (rates.JPY) out['USD/JPY'] = rates.JPY.toFixed(2);
-        if (rates.AUD) out['AUD/USD'] = (1 / rates.AUD).toFixed(4);
-        if (rates.CAD) out['USD/CAD'] = rates.CAD.toFixed(4);
-      }
-    }
-    if (gold.status === 'fulfilled' && (gold.value as any)?.price) {
-      out['XAU/USD'] = (gold.value as any).price.toFixed(2);
-    }
-    if (coins.status === 'fulfilled' && (coins.value as any)) {
-      const c = coins.value as any;
-      if (c.bitcoin?.usd) out['BTC/USD'] = c.bitcoin.usd.toFixed(0);
-      if (c.ethereum?.usd) out['ETH/USD'] = c.ethereum.usd.toFixed(0);
-      if (c.solana?.usd) out['SOL/USD'] = c.solana.usd.toFixed(2);
-    }
-  } catch {}
+  const fetchJson = (url: string) =>
+    withTimeout(fetch(url).then((r) => r.json()), 4500).then((v) => v ?? null).catch(() => null);
+  const [fx, gold, coins] = await Promise.all([
+    fetchJson('https://open.er-api.com/v6/latest/USD'),
+    fetchJson('https://api.gold-api.com/price/XAU'),
+    fetchJson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd'),
+  ]);
+  const rates = fx?.rates;
+  if (rates) {
+    if (rates.EUR) out['EUR/USD'] = (1 / rates.EUR).toFixed(4);
+    if (rates.GBP) out['GBP/USD'] = (1 / rates.GBP).toFixed(4);
+    if (rates.JPY) out['USD/JPY'] = rates.JPY.toFixed(2);
+    if (rates.AUD) out['AUD/USD'] = (1 / rates.AUD).toFixed(4);
+    if (rates.CAD) out['USD/CAD'] = rates.CAD.toFixed(4);
+  }
+  if (gold?.price) out['XAU/USD'] = gold.price.toFixed(2);
+  if (coins) {
+    if (coins.bitcoin?.usd) out['BTC/USD'] = coins.bitcoin.usd.toFixed(0);
+    if (coins.ethereum?.usd) out['ETH/USD'] = coins.ethereum.usd.toFixed(0);
+    if (coins.solana?.usd) out['SOL/USD'] = coins.solana.usd.toFixed(2);
+  }
   return out;
 }
 
@@ -130,6 +141,23 @@ export async function POST(req: Request) {
         ? `\n\nLIVE MARKET PRICES (real values from a live feed — THIS IS YOUR ONLY PRICE SOURCE): ${JSON.stringify(livePrices)}`
         : '\n\nLIVE MARKET PRICES: unavailable right now. In such a case, DO NOT invent prices — say you cannot fetch the live price at the moment.';
 
+    const [ecoEvents, newsFeed] = await Promise.all([
+      withTimeout(getEconomicCalendar(), 6000).catch(() => [] as any[]),
+      withTimeout(getNews('en'), 6000).catch(() => ({ success: false, items: [] } as any)),
+    ]);
+    const upcoming = (Array.isArray(ecoEvents) ? ecoEvents : [])
+      .slice(0, 8)
+      .map((e: any) => `${e.title || e.event || 'Event'} ${e.date || ''}${e.time ? ` ${e.time}` : ''} (${e.impact || '?'})`)
+      .join(' || ');
+    const newsItems = (((newsFeed as any)?.items) || [])
+      .slice(0, 3)
+      .map((n: any) => `${n.title}${n.pubDate ? ` (${n.pubDate})` : ''}`)
+      .join(' || ');
+    const dataLine =
+      pricesLine +
+      (upcoming ? `\\n\\nUPCOMING ECONOMIC EVENTS (from the economic calendar, same source as the client's calendar page): ${upcoming}` : '') +
+      (newsItems ? `\\n\\nLATEST MARKET NEWS (from the client's news feed): ${newsItems}` : '');
+
     const systemPrompt =
       'You are AURA, an elite intraday trader and financial analyst with 15+ years across Forex, crypto, indices, and commodities. ' +
       'You are the personal AI trading advisor of this client. Speak like a trusted mentor who trades for a living. ' +
@@ -139,7 +167,7 @@ export async function POST(req: Request) {
       (profile.pair ? `, Favorite pair=${profile.pair}` : '') +
       `\nStyle: ${chat.style || 'unknown yet'}` +
       `\n\nRECENT HISTORY:\n${recent || '(none)'}` +
-      pricesLine;
+      dataLine;
 
     const rules =
       '\n\nRULES (follow exactly):' +
@@ -179,7 +207,8 @@ export async function POST(req: Request) {
 
     const priceRules =
       '\\n5. PRICES: only quote prices from the LIVE MARKET PRICES list provided. NEVER invent a number. If the requested asset is not in that list, say you do not have the live price right now. Round numbers naturally.' +
-      '\\n6. TRUTHFULNESS: never invent news, figures, or events. If you do not know, admit it honestly instead of guessing.';
+      '\\n6. TRUTHFULNESS: never invent news, figures, or events. If you do not know, admit it honestly instead of guessing.' +
+      '\\n7. ECONOMIC EVENTS: use the UPCOMING ECONOMIC EVENTS and NEWS provided above whenever relevant — warn the client when a high-impact event is approaching instead of pretending it does not exist (e.g., CPI/NFP/FED). If the lists are empty, simply give the important technical view and never invent events.';
     const baseParts: any[] = [{ text: rules + priceRules + inputDescription }];
     if (!isTextMode) baseParts.push({ inlineData: { mimeType, data: base64 } });
 
