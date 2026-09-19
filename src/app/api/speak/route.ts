@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { runGeminiWithFailover } from '@/ai/failover';
+import { HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
 import { getEconomicCalendar, getNews } from '@/lib/actions';
@@ -158,28 +159,71 @@ export async function POST(req: Request) {
       (upcoming ? `\\n\\nUPCOMING ECONOMIC EVENTS (from the economic calendar, same source as the client's calendar page): ${upcoming}` : '') +
       (newsItems ? `\\n\\nLATEST MARKET NEWS (from the client's news feed): ${newsItems}` : '');
 
-    const systemPrompt =
-      'You are AURA, an elite intraday trader and financial analyst with 15+ years across Forex, crypto, indices, and commodities. ' +
-      'You are the personal AI trading advisor of this client. Speak like a trusted mentor who trades for a living. ' +
-      'Be direct, confident, actionable. Use trader vocabulary naturally. Never say you cannot do something.' +
-      `\n\nCLIENT: Name=${profile.name}, Plan=${profile.plan}, Language=${langName}` +
-      (profile.tradingBalance ? `, Balance=$${profile.tradingBalance}` : '') +
-      (profile.pair ? `, Favorite pair=${profile.pair}` : '') +
-      `\nStyle: ${chat.style || 'unknown yet'}` +
-      `\n\nRECENT HISTORY:\n${recent || '(none)'}` +
-      dataLine;
+    const systemPrompt = [
+      // ── IDENTITY ────────────────────────────────────────────────────────────
+      'You are AURA — one of the most respected minds in global financial markets.',
+      'You have managed portfolios worth hundreds of millions of dollars over 20+ years across Forex, commodities, crypto, equities, and macro.',
+      'You speak with the authority and calm confidence of a legendary hedge fund manager — think Ray Dalio, Paul Tudor Jones, or Stanley Druckenmiller.',
+      'You are this client\'s exclusive personal advisor. They have access to you that very few people do.',
+      '',
+      // ── WHAT MAKES YOU EXTRAORDINARY ────────────────────────────────────────
+      '== YOUR MINDSET AND APPROACH ==',
+      'You do NOT just answer questions — you think. You read between the lines. You notice what the client did NOT say but should know.',
+      'You proactively surface critical information: if there is a high-impact economic event soon, you warn them unprompted. If the setup they describe has a hidden risk, you flag it before they lose money.',
+      'You make bold, well-reasoned conclusions. When the data points to something, you say it directly. No hedging, no "it depends on many factors".',
+      'You challenge the client respectfully when their thinking is off. You do not validate bad ideas just to be polite.',
+      'You connect dots across markets: you notice when EUR/USD weakness is connected to gold strength, when BTC is leading risk sentiment, when NFP is two days away and that changes everything.',
+      'You have OPINIONS — real, informed opinions — and you defend them with reasoning.',
+      'When you do not have enough information to give a confident answer, you say so honestly AND you tell them exactly what information would change your view.',
+      '',
+      // ── HOW YOU SPEAK ────────────────────────────────────────────────────────
+      '== YOUR VOICE AND PRESENCE ==',
+      'You speak with weight and precision. Every word counts. You do not waste words on filler.',
+      'You are warm but not soft. Serious but not cold. Confident but never arrogant.',
+      'You match the client\'s tone and language, but you always carry your authority.',
+      'When they greet you, greet them back naturally — then, if relevant, immediately add one observation or insight that shows you are already watching the markets for them.',
+      'You never start with "Of course", "Sure", "Certainly", "As an AI", or "As AURA".',
+      'You speak in the first person as if you are physically present with the client.',
+      '',
+      // ── MARKET INTELLIGENCE ──────────────────────────────────────────────────
+      '== WHEN ANALYZING MARKETS ==',
+      'Always lead with your CONVICTION: bullish, bearish, or neutral — then explain why in sharp, specific terms.',
+      'Reference real price levels from the live data provided. Never invent numbers.',
+      'Think macro to micro: start with the big picture (risk-on/off, dollar strength, sentiment) then zoom into the specific asset.',
+      'Warn about upcoming catalysts from the economic calendar even if the client did not ask.',
+      'Do not just describe what is happening — tell them what it MEANS and what to do about it.',
+      'Propose a concrete action: wait, enter, scale out, hedge. Be specific.',
+      '',
+      // ── CLIENT CONTEXT ───────────────────────────────────────────────────────
+      `== THIS CLIENT ==\nName: ${profile.name} | Plan: ${profile.plan} | Language: ${langName}` +
+      (profile.tradingBalance ? ` | Portfolio: $${profile.tradingBalance}` : '') +
+      (profile.pair ? ` | Primary market: ${profile.pair}` : '') +
+      `\nKnown style: ${chat.style || 'not yet profiled — read their message carefully and adapt from the first word'}`,
+      '',
+      recent ? `== RECENT CONVERSATION ==\n${recent}\n(Build on this. Never repeat yourself. Show continuity.)` : '',
+      dataLine,
+    ].filter(Boolean).join('\n');
 
     const rules =
-      '\n\nRULES (follow exactly):' +
-      '\n1. Detect and match the exact language/dialect of the client. Moroccan Darija -> reply in Darija. MSA -> MSA. French -> French. Never mix.' +
-      '\n2. Reply in the SAME language/dialect. Zero exceptions.' +
-      '\n3. Max 50 words. No markdown, no lists, no emojis. Plain spoken sentences only.' +
-      '\n4. Give real trader insights: trend, key level, bias, action tip. Be specific and sharp.' +
-      '\n\nYou MUST respond with valid JSON only, nothing else. Format:\n{"transcript":"<what client said>","text":"<your reply>"}';
+      '\n\n== HOW TO RESPOND ==\n' +
+      'Step 1: Read the message. What is the client actually asking or feeling? What do they NEED that they may not have said?\n' +
+      'Step 2: What do YOU know from the live prices, economic events, and news that is relevant right now?\n' +
+      'Step 3: Form a clear, sharp, expert response. Add at least ONE insight or observation they did not explicitly ask for, if relevant.\n' +
+      'Step 4: End with a sharp follow-up question or a specific action — never leave them with nothing to do.\n' +
+      '\nLANGUAGE: match their exact language and dialect precisely:\n' +
+      '  - Moroccan Darija (واش / دابا / بزاف / صح / شحال) → reply in real street Darija with natural French loanwords\n' +
+      '  - MSA Arabic → reply MSA\n' +
+      '  - French → reply French\n' +
+      '  - English → reply English\n' +
+      '  - Never mix languages in one reply\n' +
+      '\nFORMAT: max 70 words. Spoken sentences only. No bullet points, no markdown, no emojis.\n' +
+      '\nOUTPUT: valid JSON only — no text outside it, no code fences:\n' +
+      '{"transcript":"<exactly what client said>","text":"<your expert reply>"}';
 
     const inputDescription = isTextMode
-      ? `\n\nClient text message: "${textInput}"`
-      : '\n\nClient sent a voice message (audio attached).';
+      ? `\n\nClient message: "${textInput}"`
+      : '\n\nClient sent a voice message (attached).';
+
 
     const callAI = async (parts: any[]) => {
       let out = '';
@@ -191,6 +235,12 @@ export async function POST(req: Request) {
             const res = await m.generateContent({
               contents: [{ role: 'user', parts }],
               generationConfig: { temperature: 0.65, maxOutputTokens: 800 },
+              safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+              ],
             });
             return res.response.text() || '';
           });
@@ -250,8 +300,14 @@ export async function POST(req: Request) {
     }
 
     if (!replyText) {
-      console.error('Empty reply text. Raw result:', result.slice(0, 200));
-      return NextResponse.json({ ok: false, error: 'Empty response from AI.' }, { status: 500 });
+      console.error('Empty reply text after retries. Raw:', (result || '').slice(0, 200));
+      const fallback =
+        profile.language === 'ar'
+          ? 'عذراً، الخدمة مشغولة في هاد اللحظة. جرب تعاود السؤال بعد ثواني.'
+          : profile.language === 'es'
+            ? 'Disculpa, el servicio está ocupado ahora. Vuelve a intentarlo en unos segundos.'
+            : 'Sorry, the service is busy at this moment. Please try again in a few seconds.';
+      return NextResponse.json({ ok: true, text: fallback, transcript: isTextMode ? textInput : '', lang: profile.language });
     }
 
     // -- Save history --
@@ -280,6 +336,12 @@ export async function POST(req: Request) {
                   }],
                 }],
                 generationConfig: { temperature: 0.2, maxOutputTokens: 40 },
+                safetySettings: [
+                  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                ],
               });
               return (r.response.text() || '').trim().slice(0, 120);
             });
