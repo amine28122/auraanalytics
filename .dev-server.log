@@ -521,3 +521,6 @@ Feed error: https://www.dailyfx.com/feeds/market-news
  POST /dashboard/marche?lang=en 200 in 84ms
  POST /dashboard/marche?lang=en 200 in 74ms
  POST /dashboard/marche?lang=en 200 in 633ms
+ POST /dashboard/marche?lang=en 200 in 68ms
+ POST /dashboard/marche?lang=en 200 in 206ms
+ POST /dashboard/marche?lang=en 200 in 77ms
