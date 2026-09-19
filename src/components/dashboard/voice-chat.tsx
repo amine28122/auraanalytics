@@ -256,7 +256,7 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
 
     try {
       const samples = sink.getSamples(0) as any;
-      const sampleRate = sink.sampleRate || 48000;
+      const sampleRate = sink.sampleRate || sourceRef.current?.sampleRate || 48000;
       const n = samples?.length || 0;
       if (n < sampleRate / 2) {
         setError(t.errorEmpty);
@@ -323,22 +323,18 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
       audioCtxRef.current = ctx;
       if (typeof ctx.resume === 'function') ctx.resume();
 
-      const source = ctx.createMediaStreamSource(micStream!);
+      const source: any = await ctx.createMediaStreamSource(micStream!);
       sourceRef.current = source;
-      const gain = ctx.createGainer();
-      try {
-        gain.gainDb = 0;
-      } catch {}
-
-      const sink = ctx.createAudioStreamSink(2);
+      const gain: any = ctx.createGainer();
+      const sink: any = await ctx.createAudioStreamSink(2);
       sinkRef.current = sink;
       sink.addConsumer(() => {});
 
       try {
         source.connect(gain).connect(sink);
       } catch {
-        const dest = ctx.createAudioStreamProcessor();
-        sinkRef.current = ctx.createAudioStreamSink(2);
+        const dest: any = await ctx.createAudioStreamProcessor();
+        sinkRef.current = await ctx.createAudioStreamSink(2);
         sinkRef.current.addConsumer(() => {});
         source.connect(gain).connect(dest).connect(sinkRef.current);
       }
@@ -346,10 +342,12 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
       setIsRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-    } catch {
+    } catch (e: any) {
+      console.error('Mic graph error:', e?.message || e);
       setError(t.errorMic);
+      cleanupRecorder();
     }
-  }, [stopSpeaking, t]);
+  }, [stopSpeaking, t, cleanupRecorder, t.errorMic]);
 
   const onFileSelected = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
