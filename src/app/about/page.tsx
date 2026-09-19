@@ -12,22 +12,11 @@ import Script from 'next/script';
 
 const teamMembers = [
   {
-    name: 'Ms. Hajar',
-    role: 'Founder & CEO | Lead Market Strategist',
-    bio: 'With over 8 years of experience in financial markets and data science, Hajar founded AURA to bridge the gap between complex institutional data and retail trading. Her expertise in predictive modeling and algorithmic strategy has helped thousands of traders navigate volatile markets. She believes that every trader deserves access to the same high-fidelity analysis used by major banks.',
-    country: 'Morocco',
-    avatarUrl: `/hajar.png`,
-    avatarFallback: 'H',
-    skills: ['Market Analysis', 'Strategic Planning', 'Data Science', 'Financial Research'],
-    icon: Users,
-    aiHint: 'person female analyst',
-  },
-  {
     name: 'Mr. Nabil Hamdoun',
     role: 'Chief Data Scientist | Quant Trader',
     bio: 'Nabil is a veteran trader and deep learning specialist with a focus on quantitative finance. He leads the development of AURA\'s proprietary algorithms, integrating Elliott Wave Theory with machine learning to identify high-probability market turns. His background in engineering allows him to build robust, scalable trading systems that adapt to changing market dynamics.',
     country: 'Morocco',
-    avatarUrl: `/NABIL.jpg`,
+    avatarUrl: `/NABIL-sq.jpg`,
     avatarFallback: 'NH',
     skills: ['Quant Trading', 'Deep Learning', 'Market Dynamics', 'Predictive Modeling'],
     icon: BrainCircuit,
@@ -38,24 +27,13 @@ const teamMembers = [
     role: 'CTO | Lead Fintech Infrastructure',
     bio: 'Amine is a full-stack developer and blockchain enthusiast with a passion for building seamless user experiences. He oversees AURA\'s technological infrastructure, ensuring real-time data delivery and a secure environment for our users. His mission is to make advanced financial tools intuitive and accessible to everyone, regardless of their technical background.',
     country: 'France',
-    avatarUrl: `/amine.jpeg`,
+    avatarUrl: `/amine-sq.jpeg`,
     avatarFallback: 'EA',
     skills: ['Blockchain', 'Cloud Architecture', 'Real-time Systems', 'UX/UI Design'],
     icon: TrendingUp,
     aiHint: 'person developer',
   },
-  {
-    name: 'Mr. Josef Mamulashvili',
-    role: 'Global Market Analyst | Finance Specialist',
-    bio: 'Josef is a senior financial analyst with a focus on macroeconomic trends and global equity markets. His deep understanding of international finance and geopolitical risk provides AURA with a unique perspective on market dynamics. He specializes in identifying long-term structural shifts in the economy that impact high-growth technology stocks.',
-    country: 'Georgia',
-    avatarUrl: `/youssef.jpeg`,
-    avatarFallback: 'JM',
-    skills: ['Macro Analysis', 'Equity Research', 'Global Finance', 'Risk Assessment'],
-    icon: ShieldCheck,
-    aiHint: 'person male finance',
-  },
-];
+  ];
 
 export default function PublicAboutUsPage() {
   const [selectedMember, setSelectedMember] = useState<(typeof teamMembers)[0] | null>(null);
@@ -144,25 +122,29 @@ export default function PublicAboutUsPage() {
             <div className="mb-20 text-center space-y-4">
                 <h2 className="font-headline text-4xl font-bold">The Minds Behind AURA</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Meet the team of veteran market analysts, data scientists, and developers dedicated to your success.
+                    Two founders, one mission: delivering transparent, institutional-grade market intelligence to every trader.
                 </p>
             </div>
 
             <Dialog>
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-3 mb-32">
+                <div className="grid grid-cols-1 gap-10 md:grid-cols-2 max-w-5xl mx-auto mb-32">
                 {teamMembers.map((member) => (
                     <DialogTrigger asChild key={member.name} onClick={() => setSelectedMember(member)}>
-                    <Card className="flex cursor-pointer flex-col transition-all hover:scale-105 hover:shadow-primary/20 card-glow border-border/50 bg-card/50">
+                    <Card className="group flex cursor-pointer flex-col overflow-hidden transition-all hover:scale-[1.02] hover:shadow-primary/20 card-glow border-border/50 bg-card/50">
+                        <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                            <img src={member.avatarUrl} alt={member.name} data-ai-hint={member.aiHint} className="h-full w-full object-cover object-center" />
+                        </div>
                         <CardHeader className="items-center text-center">
-                        <Avatar className="h-32 w-32 border-4 border-primary/20 ring-4 ring-primary/5">
-                            <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint={member.aiHint} />
-                            <AvatarFallback>{member.avatarFallback}</AvatarFallback>
-                        </Avatar>
-                        <CardTitle className="pt-6 text-2xl font-bold">{member.name}</CardTitle>
+                        <CardTitle className="text-2xl font-bold">{member.name}</CardTitle>
                         <p className="text-primary font-medium text-sm mt-1">{member.role}</p>
                         </CardHeader>
-                        <CardContent className="text-center">
-                            <p className="text-muted-foreground text-sm line-clamp-3 mb-6">{member.bio}</p>
+                        <CardContent className="flex flex-1 flex-col text-center">
+                            <p className="text-muted-foreground text-sm leading-relaxed mb-5">{member.bio}</p>
+                            <div className="flex flex-wrap justify-center gap-2 mb-5">
+                                {member.skills.slice(0, 3).map((skill) => (
+                                    <Badge key={skill} variant="secondary" className="px-3 py-1 text-xs">{skill}</Badge>
+                                ))}
+                            </div>
                             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3" />
                                 <span>Based in {member.country}</span>
@@ -176,7 +158,7 @@ export default function PublicAboutUsPage() {
                 {selectedMember && (
                 <DialogContent className="max-w-2xl">
                     <DialogHeader className="items-center text-center">
-                    <Avatar className="h-32 w-32 border-4 border-primary/20 ring-4 ring-primary/5">
+                    <Avatar className="h-44 w-44 border-4 border-primary/25 ring-4 ring-primary/10">
                         <AvatarImage src={selectedMember.avatarUrl} alt={selectedMember.name} data-ai-hint={selectedMember.aiHint} />
                         <AvatarFallback>{selectedMember.avatarFallback}</AvatarFallback>
                     </Avatar>

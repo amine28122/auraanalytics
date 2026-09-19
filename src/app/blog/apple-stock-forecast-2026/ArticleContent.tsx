@@ -75,7 +75,7 @@ export default function AppleAnalysisArticle() {
                     </div>
                 </div>
 
-                <AuthorByline authorId="josef" />
+                <AuthorByline authorId="nabil" />
 
                 <div className="article-body prose prose-lg dark:prose-invert max-w-none pt-8 space-y-12 text-muted-foreground leading-relaxed
                 prose-h2:text-primary prose-h3:text-primary/70">

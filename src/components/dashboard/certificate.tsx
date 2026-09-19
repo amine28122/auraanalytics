@@ -48,17 +48,13 @@ export function Certificate({ name, score, date, awardedByText, completionText, 
                         
                         <p className="mt-4 text-3xl font-bold text-primary tracking-wider">{gradeText}</p>
                         
-                        <div className="mt-16 flex justify-between items-end w-full max-w-5xl mx-auto">
-                           <div className="text-center w-1/3 px-4">
+                        <div className="mt-16 flex items-end justify-center gap-32 w-full max-w-5xl mx-auto">
+                           <div className="text-center w-1/4 px-4">
                                 <p className="font-serif text-lg text-foreground mb-2">Nabil Hamdoun</p>
                                 <hr className="border-muted-foreground/50" />
                             </div>
-                            <div className="text-center w-1/3 px-4">
+                            <div className="text-center w-1/4 px-4">
                                 <p className="font-serif text-lg text-foreground mb-2">El Amine</p>
-                                <hr className="border-muted-foreground/50" />
-                            </div>
-                             <div className="text-center w-1/3 px-4">
-                                <p className="font-serif text-lg text-foreground mb-2">Josef Mamulashvili</p>
                                 <hr className="border-muted-foreground/50" />
                             </div>
                         </div>

@@ -1,0 +1,523 @@
+
+> nextn@0.1.0 dev
+> next dev -p 9002
+
+   ▲ Next.js 15.5.9
+   - Local:        http://localhost:9002
+   - Network:      http://192.168.1.28:9002
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+> [PWA] PWA support is disabled
+> [PWA] PWA support is disabled
+ ✓ Ready in 16.1s
+ ○ Compiling / ...
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled / in 24.1s (3012 modules)
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `AppShowcase`. See https://react.dev/link/warning-keys for more information.
+Image with src "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" has legacy prop "layout". Did you forget to run the codemod?
+Read more: https://nextjs.org/docs/messages/next-image-upgrade-to-13
+Image with src "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" has legacy prop "objectFit". Did you forget to run the codemod?
+Read more: https://nextjs.org/docs/messages/next-image-upgrade-to-13
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `StrategyGlimpse`. See https://react.dev/link/warning-keys for more information.
+ ✓ Compiled in 2.5s (1408 modules)
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `AppShowcase`. See https://react.dev/link/warning-keys for more information.
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `StrategyGlimpse`. See https://react.dev/link/warning-keys for more information.
+ GET / 200 in 735ms
+ ○ Compiling /auth ...
+ ✓ Compiled /auth in 7.6s (3307 modules)
+ GET /auth 200 in 8172ms
+ GET /auth 200 in 108ms
+ GET /auth 200 in 207ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.3s (3656 modules)
+ GET /dashboard?lang=en 200 in 3259ms
+ GET /dashboard 200 in 3769ms
+ ○ Compiling /api/morning-intel ...
+ ✓ Compiled /api/morning-intel in 2.7s (3728 modules)
+✅ [Firebase Admin] SUCCESS: Loaded from service-account.json file.
+ ○ Compiling /dashboard/about ...
+ ✓ Compiled /dashboard/about in 2s (3741 modules)
+ GET /dashboard/about?lang=en 200 in 2568ms
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+Feed error: https://www.dailyfx.com/feeds/market-news
+ POST /dashboard/about?lang=en 200 in 11403ms
+ POST /api/morning-intel 200 in 41713ms
+ POST /api/morning-intel 200 in 41721ms
+ POST /dashboard/about?lang=en 200 in 601ms
+ POST /dashboard/about?lang=en 200 in 601ms
+ POST /dashboard/about?lang=en 200 in 591ms
+ POST /dashboard/about?lang=en 200 in 639ms
+ POST /dashboard/about?lang=en 200 in 965ms
+ ✓ Compiled in 6.2s (1593 modules)
+ GET /dashboard/about?lang=en 200 in 517ms
+ ✓ Compiled in 1717ms (1593 modules)
+ GET /dashboard/about?lang=en 200 in 437ms
+ ✓ Compiled in 4.2s (1593 modules)
+ GET /dashboard/about?lang=en 200 in 401ms
+ POST /dashboard/about?lang=en 200 in 650ms
+ POST /dashboard/about?lang=en 200 in 572ms
+ GET /dashboard/about?lang=en 200 in 1538ms
+ POST /dashboard/about?lang=en 200 in 649ms
+ POST /dashboard/about?lang=en 200 in 638ms
+ GET /dashboard/about?lang=en 200 in 296ms
+ POST /dashboard/about?lang=en 200 in 645ms
+ POST /dashboard/about?lang=en 200 in 558ms
+ POST /dashboard/about?lang=en 200 in 1316ms
+ POST /dashboard/about?lang=en 200 in 2004ms
+ POST /dashboard/about?lang=en 200 in 574ms
+ POST /dashboard/about?lang=en 200 in 619ms
+ POST /dashboard/about?lang=en 200 in 533ms
+ POST /dashboard/about?lang=en 200 in 585ms
+ POST /dashboard/about?lang=en 200 in 589ms
+ ○ Compiling /about ...
+ ✓ Compiled /about in 3.5s (3059 modules)
+ GET /about?lang=en 200 in 4329ms
+ GET /dashboard/about?lang=en 200 in 189ms
+ POST /dashboard/about?lang=en 200 in 1926ms
+ GET /dashboard/about?lang=en 200 in 1070ms
+ POST /dashboard/about?lang=en 200 in 693ms
+ ○ Compiling / ...
+ ✓ Compiled / in 4.7s (2097 modules)
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `AppShowcase`. See https://react.dev/link/warning-keys for more information.
+Image with src "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" has legacy prop "layout". Did you forget to run the codemod?
+Read more: https://nextjs.org/docs/messages/next-image-upgrade-to-13
+Image with src "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" has legacy prop "objectFit". Did you forget to run the codemod?
+Read more: https://nextjs.org/docs/messages/next-image-upgrade-to-13
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `StrategyGlimpse`. See https://react.dev/link/warning-keys for more information.
+ GET / 200 in 7047ms
+ GET /about 200 in 758ms
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `AppShowcase`. See https://react.dev/link/warning-keys for more information.
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `StrategyGlimpse`. See https://react.dev/link/warning-keys for more information.
+ GET / 200 in 802ms
+ GET /dashboard/about?lang=en 200 in 839ms
+ POST /dashboard/about?lang=en 200 in 778ms
+ ✓ Compiled in 11.2s (3691 modules)
+ GET /dashboard/about?lang=en 200 in 940ms
+ ✓ Compiled in 1591ms (1595 modules)
+ GET /dashboard/about?lang=en 200 in 157ms
+ ✓ Compiled in 836ms (1595 modules)
+ GET /dashboard/about?lang=en 200 in 156ms
+ ✓ Compiled in 1070ms (1595 modules)
+ GET /dashboard/about?lang=en 200 in 188ms
+ ✓ Compiled in 1045ms (1595 modules)
+ GET /dashboard/about?lang=en 200 in 150ms
+ POST /dashboard/about?lang=en 200 in 1689ms
+ ✓ Compiled in 1336ms (1595 modules)
+ GET /dashboard/about?lang=en 200 in 110ms
+ GET /dashboard/about?lang=en 200 in 749ms
+ POST /dashboard/about?lang=en 200 in 604ms
+ ✓ Compiled in 16.3s (3057 modules)
+ POST /dashboard/about?lang=en 200 in 4950ms
+ GET /dashboard/about?lang=en 200 in 196ms
+ POST /dashboard/about?lang=en 200 in 592ms
+ POST /dashboard/about?lang=en 200 in 593ms
+ POST /dashboard/about?lang=en 200 in 684ms
+ POST /dashboard/about?lang=en 200 in 758ms
+ GET /dashboard/about?lang=en 200 in 889ms
+ POST /dashboard/about?lang=en 200 in 649ms
+ POST /dashboard/about?lang=en 200 in 645ms
+ ✓ Compiled in 12.9s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 1121ms
+ POST /dashboard/about?lang=en 200 in 818ms
+ ⨯ Error: `AvatarImage` must be used within `Avatar`
+    at AvatarImage (..\src\avatar.tsx:65:21)
+  63 |   (props: ScopedProps<AvatarImageProps>, forwardedRef) => {
+  64 |     const { __scopeAvatar, src, onLoadingStatusChange = () => {}, ...imageProps } = props;
+> 65 |     const context = useAvatarContext(IMAGE_NAME, __scopeAvatar);
+     |                     ^
+  66 |     const imageLoadingStatus = useImageLoadingStatus(src, imageProps);
+  67 |     const handleLoadingStatusChange = useCallbackRef((status: ImageLoadingStatus) => {
+  68 |       onLoadingStatusChange(status); {
+  digest: '3875058474'
+}
+ GET /about?lang=en 500 in 427ms
+ GET /dashboard/about?lang=en 200 in 411ms
+ POST /dashboard/about?lang=en 200 in 821ms
+ GET /dashboard/about?lang=en 200 in 3575ms
+ ⨯ [Error: aborted] { code: 'ECONNRESET', digest: '1074079976' }
+ ✓ Compiled in 7.2s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 467ms
+ GET /dashboard/about?lang=en 200 in 605ms
+ GET /about?lang=en 200 in 187ms
+ GET /dashboard/about?lang=en 200 in 132ms
+ POST /dashboard/about?lang=en 200 in 744ms
+ POST /dashboard/about?lang=en 200 in 641ms
+ POST /dashboard/about?lang=en 200 in 593ms
+ POST /dashboard/about?lang=en 200 in 584ms
+ ✓ Compiled in 13.3s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 578ms
+ GET /about?lang=en 200 in 414ms
+ GET /dashboard/about?lang=en 200 in 438ms
+ POST /dashboard/about?lang=en 200 in 751ms
+ POST /dashboard/about?lang=en 200 in 752ms
+ POST /dashboard/about?lang=en 200 in 613ms
+ POST /dashboard/about?lang=en 200 in 643ms
+ POST /dashboard/about?lang=en 200 in 1031ms
+ POST /dashboard/about?lang=en 200 in 617ms
+ ✓ Compiled in 10.8s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 412ms
+ POST /dashboard/about?lang=en 200 in 731ms
+ POST /dashboard/about?lang=en 200 in 606ms
+ GET /about?lang=en 200 in 524ms
+ GET /dashboard/about?lang=en 200 in 390ms
+ POST /dashboard/about?lang=en 200 in 598ms
+ POST /dashboard/about?lang=en 200 in 705ms
+ POST /dashboard/about?lang=en 200 in 693ms
+ ✓ Compiled in 8s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 706ms
+ POST /dashboard/about?lang=en 200 in 749ms
+ POST /dashboard/about?lang=en 200 in 658ms
+ POST /dashboard/about?lang=en 200 in 610ms
+ POST /dashboard/about?lang=en 200 in 568ms
+ POST /dashboard/about?lang=en 200 in 614ms
+ POST /dashboard/about?lang=en 200 in 752ms
+ POST /dashboard/about?lang=en 200 in 622ms
+ ✓ Compiled in 8.3s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 425ms
+ POST /dashboard/about?lang=en 200 in 716ms
+ GET /about?lang=en 200 in 398ms
+ GET /dashboard/about?lang=en 200 in 520ms
+ POST /dashboard/about?lang=en 200 in 632ms
+ POST /dashboard/about?lang=en 200 in 617ms
+ POST /dashboard/about?lang=en 200 in 666ms
+ POST /dashboard/about?lang=en 200 in 662ms
+ POST /dashboard/about?lang=en 200 in 599ms
+ POST /dashboard/about?lang=en 200 in 659ms
+ POST /dashboard/about?lang=en 200 in 625ms
+ POST /dashboard/about?lang=en 200 in 732ms
+ ✓ Compiled in 13.7s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 1183ms
+ ✓ Compiled in 8s (3057 modules)
+ GET /dashboard/about?lang=en 200 in 522ms
+ ✓ Compiled in 1745ms (1595 modules)
+ POST /dashboard/about?lang=en 200 in 1230ms
+ GET /dashboard/about?lang=en 200 in 252ms
+ GET /about?lang=en 200 in 790ms
+ GET /dashboard/about?lang=en 200 in 352ms
+ POST /dashboard/about?lang=en 200 in 599ms
+ GET /dashboard?lang=en 200 in 116ms
+ ○ Compiling /api/morning-intel ...
+ ✓ Compiled /api/morning-intel in 5s (1533 modules)
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+ POST /dashboard?lang=en 200 in 9209ms
+ POST /api/morning-intel 200 in 44904ms
+ POST /api/morning-intel 200 in 44904ms
+ POST /dashboard?lang=en 200 in 573ms
+ POST /dashboard?lang=en 200 in 618ms
+ POST /dashboard?lang=en 200 in 605ms
+ POST /dashboard?lang=en 200 in 624ms
+ POST /dashboard?lang=en 200 in 590ms
+ POST /dashboard?lang=en 200 in 635ms
+ POST /dashboard?lang=en 200 in 625ms
+ POST /dashboard?lang=en 200 in 786ms
+ POST /dashboard?lang=en 200 in 621ms
+ POST /dashboard?lang=en 200 in 603ms
+ POST /dashboard?lang=en 200 in 600ms
+ POST /dashboard?lang=en 200 in 604ms
+ POST /dashboard?lang=en 200 in 601ms
+ POST /dashboard?lang=en 200 in 656ms
+ POST /dashboard?lang=en 200 in 704ms
+ POST /dashboard?lang=en 200 in 628ms
+ POST /dashboard?lang=en 200 in 618ms
+ POST /dashboard?lang=en 200 in 623ms
+ POST /dashboard?lang=en 200 in 646ms
+ POST /dashboard?lang=en 200 in 617ms
+ POST /dashboard?lang=en 200 in 635ms
+ POST /dashboard?lang=en 200 in 1065ms
+ POST /dashboard?lang=en 200 in 4243ms
+ POST /dashboard?lang=en 200 in 632ms
+ POST /dashboard?lang=en 200 in 645ms
+ POST /dashboard?lang=en 200 in 595ms
+ POST /dashboard?lang=en 200 in 709ms
+ POST /dashboard?lang=en 200 in 709ms
+ POST /dashboard?lang=en 200 in 1654ms
+ POST /dashboard?lang=en 200 in 550ms
+ POST /dashboard?lang=en 200 in 3717ms
+ POST /dashboard?lang=en 200 in 582ms
+ POST /dashboard?lang=en 200 in 3691ms
+ POST /dashboard?lang=en 200 in 590ms
+ POST /dashboard?lang=en 200 in 1674ms
+ POST /dashboard?lang=en 200 in 615ms
+ POST /dashboard?lang=en 200 in 3602ms
+ POST /dashboard?lang=en 200 in 557ms
+ POST /dashboard?lang=en 200 in 567ms
+ POST /dashboard?lang=en 200 in 542ms
+ POST /dashboard?lang=en 200 in 638ms
+ POST /dashboard?lang=en 200 in 543ms
+ POST /dashboard?lang=en 200 in 564ms
+ POST /dashboard?lang=en 200 in 628ms
+ POST /dashboard?lang=en 200 in 654ms
+ POST /dashboard?lang=en 200 in 554ms
+ POST /dashboard?lang=en 200 in 844ms
+ POST /dashboard?lang=en 200 in 542ms
+ POST /dashboard?lang=en 200 in 527ms
+ POST /dashboard?lang=en 200 in 545ms
+ POST /dashboard?lang=en 200 in 563ms
+ POST /dashboard?lang=en 200 in 549ms
+ POST /dashboard?lang=en 200 in 540ms
+ POST /dashboard?lang=en 200 in 556ms
+ POST /dashboard?lang=en 200 in 612ms
+ POST /dashboard?lang=en 200 in 561ms
+ POST /dashboard?lang=en 200 in 548ms
+ POST /dashboard?lang=en 200 in 532ms
+ POST /dashboard?lang=en 200 in 557ms
+ POST /dashboard?lang=en 200 in 564ms
+ POST /dashboard?lang=en 200 in 686ms
+ POST /dashboard?lang=en 200 in 598ms
+ POST /dashboard?lang=en 200 in 754ms
+ POST /dashboard?lang=en 200 in 853ms
+ POST /dashboard?lang=en 200 in 616ms
+ POST /dashboard?lang=en 200 in 548ms
+ ✓ Compiled in 12.1s (3057 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 1759ms (1595 modules)
+ POST /dashboard?lang=en 200 in 3202ms
+ GET /dashboard?lang=en 200 in 1877ms
+ ○ Compiling /api/morning-intel ...
+ ✓ Compiled /api/morning-intel in 899ms (1533 modules)
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+ POST /api/morning-intel 200 in 28091ms
+ POST /api/morning-intel 200 in 28124ms
+ POST /dashboard?lang=en 200 in 699ms
+ POST /dashboard?lang=en 200 in 1203ms
+ POST /dashboard?lang=en 200 in 540ms
+ POST /dashboard?lang=en 200 in 534ms
+ POST /dashboard?lang=en 200 in 555ms
+ POST /dashboard?lang=en 200 in 526ms
+ POST /dashboard?lang=en 200 in 604ms
+ POST /dashboard?lang=en 200 in 993ms
+ POST /dashboard?lang=en 200 in 617ms
+ POST /dashboard?lang=en 200 in 628ms
+ POST /dashboard?lang=en 200 in 571ms
+ POST /dashboard?lang=en 200 in 560ms
+ ○ Compiling / ...
+ ✓ Compiled / in 6.8s (2096 modules)
+Image with src "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" has legacy prop "layout". Did you forget to run the codemod?
+Read more: https://nextjs.org/docs/messages/next-image-upgrade-to-13
+Image with src "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" has legacy prop "objectFit". Did you forget to run the codemod?
+Read more: https://nextjs.org/docs/messages/next-image-upgrade-to-13
+ GET /?lang=en 200 in 9059ms
+ ○ Compiling /blog ...
+ ✓ Compiled /blog in 6.7s (3701 modules)
+ GET /blog?lang=en 200 in 8482ms
+ GET /dashboard?lang=en 200 in 341ms
+ GET /about?lang=en 200 in 323ms
+ GET /dashboard?lang=en 200 in 703ms
+ POST /dashboard?lang=en 200 in 1771ms
+ POST /dashboard?lang=en 200 in 612ms
+ POST /dashboard?lang=en 200 in 546ms
+ POST /dashboard?lang=en 200 in 560ms
+ POST /dashboard?lang=en 200 in 650ms
+ POST /dashboard?lang=en 200 in 587ms
+ ○ Compiling /dashboard/news ...
+ ✓ Compiled /dashboard/news in 7.5s (3175 modules)
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+ GET /dashboard/news?lang=en 200 in 1708ms
+ GET /dashboard/news?lang=en 200 in 9756ms
+ POST /dashboard/news?lang=en 200 in 789ms
+ ○ Compiling /dashboard/marche ...
+ ✓ Compiled /dashboard/marche in 4.7s (3696 modules)
+ GET /dashboard/marche?lang=en 200 in 4981ms
+ POST /dashboard/marche?lang=en 200 in 228ms
+ POST /dashboard/marche?lang=en 200 in 38ms
+ POST /dashboard/marche?lang=en 200 in 80ms
+ ○ Compiling /dashboard/economic-calendar ...
+ ✓ Compiled /dashboard/economic-calendar in 2.9s (3688 modules)
+ GET /dashboard/economic-calendar?lang=en 200 in 3197ms
+ POST /dashboard/economic-calendar?lang=en 200 in 219ms
+ POST /dashboard/economic-calendar?lang=en 200 in 604ms
+Feed error: https://feeds.content.reuters.com/reuters/UKBusinessNews
+Feed error: https://www.dailyfx.com/feeds/market-news
+ GET /dashboard/news?lang=en 200 in 524ms
+ ○ Compiling /dashboard/history ...
+ ✓ Compiled /dashboard/history in 2.5s (3707 modules)
+ GET /dashboard/history?lang=en 200 in 2674ms
+ POST /dashboard/history?lang=en 200 in 419ms
+ POST /dashboard/history?lang=en 200 in 470ms
+ POST /dashboard/history?lang=en 200 in 2015ms
+ GET /dashboard/history?lang=en 200 in 200ms
+ POST /dashboard/history?lang=en 200 in 346ms
+ POST /dashboard/history?lang=en 200 in 2302ms
+ ○ Compiling /dashboard/simulator ...
+ ✓ Compiled /dashboard/simulator in 4.7s (3728 modules)
+ GET /dashboard/simulator?lang=en 200 in 5079ms
+ POST /dashboard/history?lang=en 200 in 6874ms
+ POST /dashboard/simulator?lang=en 200 in 354ms
+ GET /dashboard/simulator?lang=en 200 in 102ms
+ POST /dashboard/simulator?lang=en 200 in 2336ms
+ POST /dashboard/simulator?lang=en 200 in 586ms
+ POST /dashboard/simulator?lang=en 200 in 629ms
+ POST /dashboard/simulator?lang=en 200 in 669ms
+ POST /dashboard/simulator?lang=en 200 in 612ms
+ POST /dashboard/simulator?lang=en 200 in 704ms
+ POST /dashboard/simulator?lang=en 200 in 686ms
+ ✓ Compiled in 17.2s (3259 modules)
+ POST /dashboard/simulator?lang=en 200 in 1607ms
+ GET /dashboard/simulator?lang=en 200 in 355ms
+ POST /dashboard/simulator?lang=en 200 in 590ms
+ GET /dashboard/news?lang=en 200 in 7151ms
+ POST /dashboard/simulator?lang=en 200 in 5999ms
+ POST /dashboard/simulator?lang=en 200 in 677ms
+ POST /dashboard/simulator?lang=en 200 in 4426ms
+ GET /dashboard/news?lang=en 200 in 855ms
+ POST /dashboard/simulator?lang=en 200 in 615ms
+ POST /dashboard/simulator?lang=en 200 in 1617ms
+ POST /dashboard/simulator?lang=en 200 in 703ms
+ GET /dashboard/news?lang=en 200 in 335ms
+ POST /dashboard/news?lang=en 200 in 643ms
+ POST /dashboard/news?lang=en 200 in 625ms
+ POST /dashboard/news?lang=en 200 in 637ms
+ POST /dashboard/news?lang=en 200 in 608ms
+ POST /dashboard/news?lang=en 200 in 1923ms
+ POST /dashboard/news?lang=en 200 in 606ms
+ POST /dashboard/news?lang=en 200 in 573ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.7s (2104 modules)
+ GET /dashboard?lang=en 200 in 4148ms
+ ○ Compiling /dashboard/radar ...
+ ✓ Compiled /dashboard/radar in 8.2s (3738 modules)
+ GET /dashboard/radar?lang=en 200 in 8790ms
+ POST /dashboard/radar?lang=en 200 in 1557ms
+ POST /dashboard/radar?lang=en 200 in 72ms
+ POST /dashboard/radar?lang=en 200 in 577ms
+ GET /dashboard/marche?lang=en 200 in 128ms
+ POST /dashboard/marche?lang=en 200 in 49ms
+ POST /dashboard/marche?lang=en 200 in 64ms
+ POST /dashboard/marche?lang=en 200 in 80ms
+ POST /dashboard/marche?lang=en 200 in 78ms
+ POST /dashboard/marche?lang=en 200 in 72ms
+ POST /dashboard/marche?lang=en 200 in 83ms
+ POST /dashboard/marche?lang=en 200 in 87ms
+ POST /dashboard/marche?lang=en 200 in 629ms
+ POST /dashboard/marche?lang=en 200 in 79ms
+ POST /dashboard/marche?lang=en 200 in 141ms
+ POST /dashboard/marche?lang=en 200 in 3434ms
+ POST /dashboard/marche?lang=en 200 in 79ms
+ POST /dashboard/marche?lang=en 200 in 55ms
+ POST /dashboard/marche?lang=en 200 in 86ms
+ POST /dashboard/marche?lang=en 200 in 655ms
+ POST /dashboard/marche?lang=en 200 in 103ms
+ POST /dashboard/marche?lang=en 200 in 123ms
+ POST /dashboard/marche?lang=en 200 in 55ms
+ POST /dashboard/marche?lang=en 200 in 79ms
+ POST /dashboard/marche?lang=en 200 in 69ms
+ POST /dashboard/marche?lang=en 200 in 78ms
+ POST /dashboard/marche?lang=en 200 in 637ms
+ POST /dashboard/marche?lang=en 200 in 56ms
+ POST /dashboard/marche?lang=en 200 in 88ms
+ POST /dashboard/marche?lang=en 200 in 73ms
+ POST /dashboard/marche?lang=en 200 in 69ms
+ POST /dashboard/marche?lang=en 200 in 79ms
+ POST /dashboard/marche?lang=en 200 in 93ms
+ POST /dashboard/marche?lang=en 200 in 642ms
+ POST /dashboard/marche?lang=en 200 in 66ms
+ POST /dashboard/marche?lang=en 200 in 129ms
+ POST /dashboard/marche?lang=en 200 in 61ms
+ POST /dashboard/marche?lang=en 200 in 65ms
+ POST /dashboard/marche?lang=en 200 in 78ms
+ POST /dashboard/marche?lang=en 200 in 90ms
+ POST /dashboard/marche?lang=en 200 in 596ms
+ POST /dashboard/marche?lang=en 200 in 88ms
+ POST /dashboard/marche?lang=en 200 in 70ms
+ POST /dashboard/marche?lang=en 200 in 83ms
+ POST /dashboard/marche?lang=en 200 in 66ms
+ POST /dashboard/marche?lang=en 200 in 85ms
+ POST /dashboard/marche?lang=en 200 in 71ms
+ POST /dashboard/marche?lang=en 200 in 601ms
+ POST /dashboard/marche?lang=en 200 in 57ms
+ POST /dashboard/marche?lang=en 200 in 81ms
+ POST /dashboard/marche?lang=en 200 in 65ms
+ POST /dashboard/marche?lang=en 200 in 68ms
+ POST /dashboard/marche?lang=en 200 in 77ms
+ POST /dashboard/marche?lang=en 200 in 77ms
+ POST /dashboard/marche?lang=en 200 in 96ms
+ POST /dashboard/marche?lang=en 200 in 602ms
+ POST /dashboard/marche?lang=en 200 in 75ms
+ POST /dashboard/marche?lang=en 200 in 95ms
+ POST /dashboard/marche?lang=en 200 in 70ms
+ POST /dashboard/marche?lang=en 200 in 62ms
+ POST /dashboard/marche?lang=en 200 in 57ms
+ POST /dashboard/marche?lang=en 200 in 79ms
+ POST /dashboard/marche?lang=en 200 in 593ms
+ POST /dashboard/marche?lang=en 200 in 75ms
+ POST /dashboard/marche?lang=en 200 in 59ms
+ POST /dashboard/marche?lang=en 200 in 70ms
+ POST /dashboard/marche?lang=en 200 in 58ms
+ POST /dashboard/marche?lang=en 200 in 59ms
+ POST /dashboard/marche?lang=en 200 in 55ms
+ POST /dashboard/marche?lang=en 200 in 633ms
+ POST /dashboard/marche?lang=en 200 in 63ms
+ POST /dashboard/marche?lang=en 200 in 71ms
+ POST /dashboard/marche?lang=en 200 in 86ms
+ POST /dashboard/marche?lang=en 200 in 101ms
+ POST /dashboard/marche?lang=en 200 in 72ms
+ POST /dashboard/marche?lang=en 200 in 79ms
+ POST /dashboard/marche?lang=en 200 in 582ms
+ POST /dashboard/marche?lang=en 200 in 106ms
+ POST /dashboard/marche?lang=en 200 in 73ms
+ POST /dashboard/marche?lang=en 200 in 55ms
+ POST /dashboard/marche?lang=en 200 in 83ms
+ POST /dashboard/marche?lang=en 200 in 110ms
+ POST /dashboard/marche?lang=en 200 in 95ms
+ POST /dashboard/marche?lang=en 200 in 602ms
+ POST /dashboard/marche?lang=en 200 in 64ms
+ POST /dashboard/marche?lang=en 200 in 68ms
+ POST /dashboard/marche?lang=en 200 in 76ms
+ POST /dashboard/marche?lang=en 200 in 85ms
+ POST /dashboard/marche?lang=en 200 in 68ms
+ POST /dashboard/marche?lang=en 200 in 100ms
+ POST /dashboard/marche?lang=en 200 in 614ms
+ POST /dashboard/marche?lang=en 200 in 71ms
+ POST /dashboard/marche?lang=en 200 in 62ms
+ POST /dashboard/marche?lang=en 200 in 66ms
+ POST /dashboard/marche?lang=en 200 in 110ms
+ POST /dashboard/marche?lang=en 200 in 58ms
+ POST /dashboard/marche?lang=en 200 in 56ms
+ POST /dashboard/marche?lang=en 200 in 771ms
+ POST /dashboard/marche?lang=en 200 in 514ms
+ POST /dashboard/marche?lang=en 200 in 75ms
+ POST /dashboard/marche?lang=en 200 in 96ms
+ POST /dashboard/marche?lang=en 200 in 62ms
+ POST /dashboard/marche?lang=en 200 in 90ms
+ POST /dashboard/marche?lang=en 200 in 86ms
+ POST /dashboard/marche?lang=en 200 in 64ms
+ POST /dashboard/marche?lang=en 200 in 1126ms
+ POST /dashboard/marche?lang=en 200 in 84ms
+ POST /dashboard/marche?lang=en 200 in 96ms
+ POST /dashboard/marche?lang=en 200 in 84ms
+ POST /dashboard/marche?lang=en 200 in 93ms
+ POST /dashboard/marche?lang=en 200 in 84ms
+ POST /dashboard/marche?lang=en 200 in 74ms
+ POST /dashboard/marche?lang=en 200 in 633ms

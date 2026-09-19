@@ -7,7 +7,7 @@ import { Facebook, Instagram, Youtube } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function Footer() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   return (
     <footer className="relative border-t border-border/10 bg-background/5 text-sm text-muted-foreground overflow-hidden">
       <WorldMap className="absolute inset-0 z-0" />
@@ -46,7 +46,7 @@ export default function Footer() {
               <h4 className="font-semibold text-foreground mb-4">{t.company}</h4>
               <ul className="space-y-3">
                 <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">{t.about}</Link></li>
-                <li><Link href="/blog" className="text-muted-foreground hover:text-primary transition-colors">{t.lang === 'ar' ? 'تحليل السوق' : 'Market Analysis'}</Link></li>
+                <li><Link href="/blog" className="text-muted-foreground hover:text-primary transition-colors">{lang === 'ar' ? 'تحليل السوق' : 'Market Analysis'}</Link></li>
                 <li><Link href="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors">{t.methodology}</Link></li>
               </ul>
             </div>

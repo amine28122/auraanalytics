@@ -70,7 +70,7 @@ export default function GoogleAnalysisArticle() {
                         </div>
                     </div>
 
-                <AuthorByline authorId="josef" />
+                <AuthorByline authorId="nabil" />
 
                 </div>
 

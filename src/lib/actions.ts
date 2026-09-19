@@ -757,8 +757,8 @@ export async function getNews(lang: 'en' | 'ar' | 'es' = 'en') {
   const feeds = {
     en: [
       'https://search.cnbc.com/rs/search/view.rss?partnerId=2000&keywords=forex',
-      'https://feeds.content.reuters.com/reuters/UKBusinessNews',
-      'https://www.dailyfx.com/feeds/market-news',
+      'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
+      'https://www.forexlive.com/feed/',
       'https://www.fxstreet.com/rss/news'
     ],
     ar: [

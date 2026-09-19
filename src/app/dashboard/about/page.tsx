@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BrainCircuit, Users, MapPin, TrendingUp, LineChart } from 'lucide-react';
+import { BrainCircuit, Users, MapPin, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const teamMembers = [
@@ -11,7 +11,7 @@ const teamMembers = [
     name: 'Mr. Nabil Hamdoun',
     role: 'Global Financial Markets Analyst & Trader | Data Analytics Scientist',
     country: 'Morocco',
-    avatarUrl: `/NABIL.jpg`,
+    avatarUrl: `/NABIL-sq.jpg`,
     avatarFallback: 'NH',
     skills: ['Data Analytics', 'Data Science', 'Trading', 'Market Analysis'],
     icon: BrainCircuit,
@@ -21,23 +21,13 @@ const teamMembers = [
     name: 'Mr. El Amine',
     role: 'Expert Market Analyst | Developer | Data Specialist',
     country: 'France',
-    avatarUrl: `/amine.jpeg`,
+    avatarUrl: `/amine-sq.jpeg`,
     avatarFallback: 'EA',
     skills: ['Market Analysis', 'Development', 'Data Engineering', 'Trading Strategy'],
     icon: TrendingUp,
     aiHint: 'person developer',
   },
-  {
-    name: 'Mr. Josef Mamulashvili',
-    role: 'Global Market Analyst | Marketing & Finance Specialist | Strategic Investor',
-    country: 'Germany',
-    avatarUrl: `/youssef.jpeg`,
-    avatarFallback: 'JM',
-    skills: ['Global Markets', 'Marketing', 'Finance', 'Investing'],
-    icon: LineChart,
-    aiHint: 'person trader',
-  },
-];
+  ];
 
 export default function AboutUsPage() {
   const [selectedMember, setSelectedMember] = useState<(typeof teamMembers)[0] | null>(null);
@@ -57,15 +47,14 @@ export default function AboutUsPage() {
       </div>
 
       <Dialog>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {teamMembers.map((member) => (
             <DialogTrigger asChild key={member.name} onClick={() => setSelectedMember(member)}>
-              <Card className="flex cursor-pointer flex-col text-center transition-all hover:scale-105 hover:shadow-primary/20 card-glow">
+              <Card className="group flex cursor-pointer flex-col overflow-hidden text-center transition-all hover:scale-[1.02] hover:shadow-primary/20 card-glow">
+                <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                  <img src={member.avatarUrl} alt={member.name} data-ai-hint={member.aiHint} className="h-full w-full object-cover object-center" />
+                </div>
                 <CardHeader className="items-center">
-                  <Avatar className="h-24 w-24 border-2 border-primary/50">
-                    <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint={member.aiHint} />
-                    <AvatarFallback>{member.avatarFallback}</AvatarFallback>
-                  </Avatar>
                   <CardTitle className="pt-4">{member.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-grow flex-col space-y-4">
@@ -83,7 +72,7 @@ export default function AboutUsPage() {
         {selectedMember && (
           <DialogContent>
             <DialogHeader className="items-center text-center">
-               <Avatar className="h-28 w-28 border-4 border-primary/50">
+               <Avatar className="h-36 w-36 border-4 border-primary/50">
                 <AvatarImage src={selectedMember.avatarUrl} alt={selectedMember.name} data-ai-hint={selectedMember.aiHint} />
                 <AvatarFallback>{selectedMember.avatarFallback}</AvatarFallback>
               </Avatar>

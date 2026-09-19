@@ -8,20 +8,14 @@ const authors = {
   nabil: {
     name: 'Mr. Nabil Hamdoun',
     role: 'Global Financial Markets Analyst',
-    avatar: '/NABIL.jpg',
+    avatar: '/NABIL-sq.jpg',
     fallback: 'NH'
   },
   amine: {
     name: 'Mr. El Amine',
     role: 'Expert Market Analyst & Developer',
-    avatar: '/amine.jpeg',
+    avatar: '/amine-sq.jpeg',
     fallback: 'EA'
-  },
-  josef: {
-    name: 'Mr. Josef Mamulashvili',
-    role: 'Global Market Analyst & Finance Specialist',
-    avatar: '/youssef.jpeg',
-    fallback: 'JM'
   },
   hajar: {
     name: 'Ms. Hajar',
