@@ -44,15 +44,24 @@ async function withTimeout(p: Promise<unknown> | PromiseLike<unknown>, ms: numbe
   }
 }
 
-/** Fetch real current market prices from public feeds (no keys needed) */
+/** In-memory cache for live market data (30 min TTL) */
+const dataCache: {
+  prices: Record<string, string>;
+  upcoming: string;
+  news: string;
+  ts: number;
+} = { prices: {}, upcoming: '', news: '', ts: 0 };
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+/** Fetch real current market prices from public feeds */
 async function fetchLivePrices(): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   const fetchJson = (url: string) =>
-    withTimeout(fetch(url).then((r) => r.json()), 4500).then((v) => v ?? null).catch(() => null);
+    withTimeout(fetch(url).then((r) => r.json()), 4000).then((v) => v ?? null).catch(() => null);
   const [fx, gold, coins] = await Promise.all([
     fetchJson('https://open.er-api.com/v6/latest/USD'),
     fetchJson('https://api.gold-api.com/price/XAU'),
-    fetchJson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd'),
+    fetchJson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd'),
   ]);
   const rates = fx?.rates;
   if (rates) {
@@ -60,16 +69,64 @@ async function fetchLivePrices(): Promise<Record<string, string>> {
     if (rates.GBP) out['GBP/USD'] = (1 / rates.GBP).toFixed(4);
     if (rates.JPY) out['USD/JPY'] = rates.JPY.toFixed(2);
     if (rates.AUD) out['AUD/USD'] = (1 / rates.AUD).toFixed(4);
-    if (rates.CAD) out['USD/CAD'] = rates.CAD.toFixed(4);
   }
   if (gold?.price) out['XAU/USD'] = gold.price.toFixed(2);
   if (coins) {
     if (coins.bitcoin?.usd) out['BTC/USD'] = coins.bitcoin.usd.toFixed(0);
     if (coins.ethereum?.usd) out['ETH/USD'] = coins.ethereum.usd.toFixed(0);
-    if (coins.solana?.usd) out['SOL/USD'] = coins.solana.usd.toFixed(2);
   }
   return out;
 }
+
+/** Refresh cache if stale, otherwise return cached data */
+async function getLiveContext(): Promise<{ pricesLine: string; contextLine: string }> {
+  const now = Date.now();
+  if (now - dataCache.ts < CACHE_TTL && Object.keys(dataCache.prices).length > 0) {
+    // Return cached
+    return buildContextLines(dataCache.prices, dataCache.upcoming, dataCache.news);
+  }
+
+  const [prices, ecoEvents, newsFeed] = await Promise.all([
+    fetchLivePrices().catch(() => ({} as Record<string, string>)),
+    withTimeout(getEconomicCalendar(), 5000).catch(() => [] as any[]),
+    withTimeout(getNews('en'), 5000).catch(() => ({ items: [] } as any)),
+  ]);
+
+  const upcoming = (Array.isArray(ecoEvents) ? ecoEvents : [])
+    .slice(0, 5)
+    .map((e: any) => `${e.title || e.event || ''} (${e.impact || '?'})`)
+    .join(', ');
+  const news = (((newsFeed as any)?.items) || [])
+    .slice(0, 2)
+    .map((n: any) => n.title || '')
+    .join(' | ');
+
+  // Update cache
+  dataCache.prices = prices;
+  dataCache.upcoming = upcoming;
+  dataCache.news = news;
+  dataCache.ts = now;
+
+  return buildContextLines(prices, upcoming, news);
+}
+
+function buildContextLines(
+  prices: Record<string, string>,
+  upcoming: string,
+  news: string
+): { pricesLine: string; contextLine: string } {
+  const pricesLine =
+    Object.keys(prices).length > 0
+      ? `PRICES: ${JSON.stringify(prices)}`
+      : 'PRICES: unavailable — do not invent numbers.';
+  const contextLine = [
+    pricesLine,
+    upcoming ? `UPCOMING EVENTS: ${upcoming}` : '',
+    news ? `NEWS: ${news}` : '',
+  ].filter(Boolean).join(' | ');
+  return { pricesLine, contextLine };
+}
+
 
 export async function POST(req: Request) {
   try {
@@ -136,93 +193,36 @@ export async function POST(req: Request) {
 
     const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-3.6-flash';
 
-    const livePrices = await fetchLivePrices().catch(() => ({}));
-    const pricesLine =
-      Object.keys(livePrices).length > 0
-        ? `\n\nLIVE MARKET PRICES (real values from a live feed — THIS IS YOUR ONLY PRICE SOURCE): ${JSON.stringify(livePrices)}`
-        : '\n\nLIVE MARKET PRICES: unavailable right now. In such a case, DO NOT invent prices — say you cannot fetch the live price at the moment.';
+    const { contextLine } = await getLiveContext().catch(() => ({ pricesLine: '', contextLine: 'PRICES: unavailable.' }));
 
-    const [ecoEvents, newsFeed] = await Promise.all([
-      withTimeout(getEconomicCalendar(), 6000).catch(() => [] as any[]),
-      withTimeout(getNews('en'), 6000).catch(() => ({ success: false, items: [] } as any)),
-    ]);
-    const upcoming = (Array.isArray(ecoEvents) ? ecoEvents : [])
-      .slice(0, 8)
-      .map((e: any) => `${e.title || e.event || 'Event'} ${e.date || ''}${e.time ? ` ${e.time}` : ''} (${e.impact || '?'})`)
-      .join(' || ');
-    const newsItems = (((newsFeed as any)?.items) || [])
-      .slice(0, 3)
-      .map((n: any) => `${n.title}${n.pubDate ? ` (${n.pubDate})` : ''}`)
-      .join(' || ');
-    const dataLine =
-      pricesLine +
-      (upcoming ? `\\n\\nUPCOMING ECONOMIC EVENTS (from the economic calendar, same source as the client's calendar page): ${upcoming}` : '') +
-      (newsItems ? `\\n\\nLATEST MARKET NEWS (from the client's news feed): ${newsItems}` : '');
 
-    const systemPrompt = [
-      // ── IDENTITY ────────────────────────────────────────────────────────────
-      'You are AURA — one of the most respected minds in global financial markets.',
-      'You have managed portfolios worth hundreds of millions of dollars over 20+ years across Forex, commodities, crypto, equities, and macro.',
-      'You speak with the authority and calm confidence of a legendary hedge fund manager — think Ray Dalio, Paul Tudor Jones, or Stanley Druckenmiller.',
-      'You are this client\'s exclusive personal advisor. They have access to you that very few people do.',
-      '',
-      // ── WHAT MAKES YOU EXTRAORDINARY ────────────────────────────────────────
-      '== YOUR MINDSET AND APPROACH ==',
-      'You do NOT just answer questions — you think. You read between the lines. You notice what the client did NOT say but should know.',
-      'You proactively surface critical information: if there is a high-impact economic event soon, you warn them unprompted. If the setup they describe has a hidden risk, you flag it before they lose money.',
-      'You make bold, well-reasoned conclusions. When the data points to something, you say it directly. No hedging, no "it depends on many factors".',
-      'You challenge the client respectfully when their thinking is off. You do not validate bad ideas just to be polite.',
-      'You connect dots across markets: you notice when EUR/USD weakness is connected to gold strength, when BTC is leading risk sentiment, when NFP is two days away and that changes everything.',
-      'You have OPINIONS — real, informed opinions — and you defend them with reasoning.',
-      'When you do not have enough information to give a confident answer, you say so honestly AND you tell them exactly what information would change your view.',
-      '',
-      // ── HOW YOU SPEAK ────────────────────────────────────────────────────────
-      '== YOUR VOICE AND PRESENCE ==',
-      'You speak with weight and precision. Every word counts. You do not waste words on filler.',
-      'You are warm but not soft. Serious but not cold. Confident but never arrogant.',
-      'You match the client\'s tone and language, but you always carry your authority.',
-      'When they greet you, greet them back naturally — then, if relevant, immediately add one observation or insight that shows you are already watching the markets for them.',
-      'You never start with "Of course", "Sure", "Certainly", "As an AI", or "As AURA".',
-      'You speak in the first person as if you are physically present with the client.',
-      '',
-      // ── MARKET INTELLIGENCE ──────────────────────────────────────────────────
-      '== WHEN ANALYZING MARKETS ==',
-      'Always lead with your CONVICTION: bullish, bearish, or neutral — then explain why in sharp, specific terms.',
-      'Reference real price levels from the live data provided. Never invent numbers.',
-      'Think macro to micro: start with the big picture (risk-on/off, dollar strength, sentiment) then zoom into the specific asset.',
-      'Warn about upcoming catalysts from the economic calendar even if the client did not ask.',
-      'Do not just describe what is happening — tell them what it MEANS and what to do about it.',
-      'Propose a concrete action: wait, enter, scale out, hedge. Be specific.',
-      '',
-      // ── CLIENT CONTEXT ───────────────────────────────────────────────────────
-      `== THIS CLIENT ==\nName: ${profile.name} | Plan: ${profile.plan} | Language: ${langName}` +
-      (profile.tradingBalance ? ` | Portfolio: $${profile.tradingBalance}` : '') +
+    const systemPrompt =
+      'You are AURA, an elite hedge fund manager and macro trader with 20+ years across Forex, crypto, commodities, and equities. ' +
+      'You are this client\'s exclusive personal advisor — like Ray Dalio or Paul Tudor Jones speaking directly to them. ' +
+      'You READ between the lines: you notice what they need even if they did not ask. You surface risks proactively. You give bold, well-reasoned opinions. You challenge bad ideas respectfully. You connect dots across markets. ' +
+      'You NEVER give generic answers. Every reply shows mastery. ' +
+      `Client: ${profile.name} | ${langName} | ${chat.style || 'adapt style from their message'}` +
       (profile.pair ? ` | Primary market: ${profile.pair}` : '') +
-      `\nKnown style: ${chat.style || 'not yet profiled — read their message carefully and adapt from the first word'}`,
-      '',
-      recent ? `== RECENT CONVERSATION ==\n${recent}\n(Build on this. Never repeat yourself. Show continuity.)` : '',
-      dataLine,
-    ].filter(Boolean).join('\n');
+      (recent ? `\nRecent chat:\n${recent}` : '') +
+      `\n\nLIVE DATA: ${contextLine}` +
+      '\n\nBEHAVIOR: ' +
+      'On greetings: reply warmly then add one sharp unprompted market observation. ' +
+      'On vague messages: read the intent, ask ONE precise question. ' +
+      'On market questions: lead with your conviction (bullish/bearish/neutral), cite real prices, warn about upcoming events. ' +
+      'On bad ideas: challenge directly but constructively. ' +
+      'Always end with either a specific action or a sharp follow-up question. ' +
+      'Never start with "Of course", "Sure", "Certainly", or "As AURA". ' +
+      'Speak in first person, as if physically present.';
 
     const rules =
-      '\n\n== HOW TO RESPOND ==\n' +
-      'Step 1: Read the message. What is the client actually asking or feeling? What do they NEED that they may not have said?\n' +
-      'Step 2: What do YOU know from the live prices, economic events, and news that is relevant right now?\n' +
-      'Step 3: Form a clear, sharp, expert response. Add at least ONE insight or observation they did not explicitly ask for, if relevant.\n' +
-      'Step 4: End with a sharp follow-up question or a specific action — never leave them with nothing to do.\n' +
-      '\nLANGUAGE: match their exact language and dialect precisely:\n' +
-      '  - Moroccan Darija (واش / دابا / بزاف / صح / شحال) → reply in real street Darija with natural French loanwords\n' +
-      '  - MSA Arabic → reply MSA\n' +
-      '  - French → reply French\n' +
-      '  - English → reply English\n' +
-      '  - Never mix languages in one reply\n' +
-      '\nFORMAT: max 70 words. Spoken sentences only. No bullet points, no markdown, no emojis.\n' +
-      '\nOUTPUT: valid JSON only — no text outside it, no code fences:\n' +
-      '{"transcript":"<exactly what client said>","text":"<your expert reply>"}';
+      '\nLANGUAGE: match exactly — Moroccan Darija (واش/دابا/بزاف) → Darija, MSA → MSA, French → French, English → English. Never mix.' +
+      '\nFORMAT: max 65 words, spoken sentences only, no bullets/markdown/emojis.' +
+      '\nOUTPUT: valid JSON only, no text outside it: {"transcript":"<what client said>","text":"<your reply>"}';
 
     const inputDescription = isTextMode
-      ? `\n\nClient message: "${textInput}"`
-      : '\n\nClient sent a voice message (attached).';
+      ? `\n\nClient: "${textInput}"`
+      : '\nClient sent a voice message (attached).';
+
 
 
     const callAI = async (parts: any[]) => {
