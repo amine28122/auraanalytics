@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       .map((m) => `${m.role === 'user' ? 'CLIENT' : 'AURA'}: ${m.text || m.transcript || ''}`)
       .join('\n');
 
-    const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-2.5-flash';
+    const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-3.6-flash';
 
     const systemPrompt =
       'You are AURA — a razor-sharp, elite intraday trader and financial analyst with 15+ years of experience across Forex, crypto, indices, and commodities. ' +
