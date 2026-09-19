@@ -71,3 +71,5 @@ Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
  POST /dashboard/about?lang=en 200 in 70ms
  POST /dashboard/about?lang=en 200 in 638ms
  POST /dashboard/about?lang=en 200 in 23404ms
+ POST /dashboard/about?lang=en 200 in 766ms
+ POST /dashboard/about?lang=en 200 in 799ms
