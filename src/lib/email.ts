@@ -2,13 +2,16 @@
 
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // You have now verified your custom domain in Resend.
 const SENDER_EMAIL = 'support@auraanalyticspro.com';
 
 export async function sendWelcomeEmail(toEmail: string, name: string) {
   try {
+    if (!resend) {
+      return { success: false, error: 'RESEND_API_KEY not configured.' };
+    }
     const data = await resend.emails.send({
       from: `Aura Analytics <${SENDER_EMAIL}>`,
       to: toEmail,
@@ -47,6 +50,9 @@ export async function sendWelcomeEmail(toEmail: string, name: string) {
 
 export async function sendActivationEmail(toEmail: string, planName: string) {
   try {
+    if (!resend) {
+      return { success: false, error: 'RESEND_API_KEY not configured.' };
+    }
     const data = await resend.emails.send({
       from: `Aura Analytics <${SENDER_EMAIL}>`,
       to: toEmail,
@@ -84,6 +90,9 @@ export async function sendActivationEmail(toEmail: string, planName: string) {
 
 export async function sendBroadcastEmail(toEmails: string[], subject: string, htmlContent: string) {
   try {
+    if (!resend) {
+      return { success: false, error: 'RESEND_API_KEY not configured.' };
+    }
     // Resend free tier might restrict batch sending without a domain.
     // For now, we will loop and send individually.
     const results = [];
