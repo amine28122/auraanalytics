@@ -80,6 +80,31 @@ const labels: Record<Lang, {
   },
 };
 
+function pcmToWav(pcm: Int16Array, sampleRate: number): Uint8Array {
+  const n = pcm.length;
+  const dataSize = n * 2;
+  const buf = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buf);
+  const writeStr = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+  };
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, dataSize, true);
+  for (let i = 0; i < n; i++) view.setInt16(44 + i * 2, pcm[i], true);
+  return new Uint8Array(buf);
+}
+
 export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
   const t = labels[lang] ?? labels.en;
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -95,6 +120,9 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const audioCtxRef = useRef<any>(null);
+  const sourceRef = useRef<any>(null);
+  const sinkRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -165,10 +193,16 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     }
     mediaRecorderRef.current = null;
     chunksRef.current = [];
+    try { if (sinkRef.current) sinkRef.current.disconnect(); } catch {}
+    try { if (sourceRef.current) sourceRef.current.stop(); } catch {}
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((tr) => tr.stop());
       streamRef.current = null;
     }
+    try { if (audioCtxRef.current && typeof audioCtxRef.current.close === 'function') audioCtxRef.current.close(); } catch {}
+    audioCtxRef.current = null;
+    sourceRef.current = null;
+    sinkRef.current = null;
   }, []);
 
   // Core send function — handles both text and audio
@@ -239,26 +273,39 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     setIsRecording(false);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     setSeconds(0);
-    const recorder = mediaRecorderRef.current;
-    if (!recorder) { cleanupRecorder(); return; }
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-      chunksRef.current = [];
-      if (blob.size < 1000) { setError(t.errorEmpty); cleanupRecorder(); return; }
+    const sink = sinkRef.current;
+    if (!sink) { cleanupRecorder(); return; }
+    try {
+      const samples = (sink.getSamples as any)(0) as any;
+      const sampleRate = sink.sampleRate || sourceRef.current?.sampleRate || 48000;
+      const n = samples?.length || 0;
+      if (n < sampleRate / 2) { setError(t.errorEmpty); cleanupRecorder(); return; }
+      const pcm = new Int16Array(n);
+      for (let i = 0; i < n; i++) {
+        const v = samples.getFloat(i) as number;
+        const c = v !== v ? 0 : Math.max(-1, Math.min(1, v));
+        pcm[i] = Math.round(c * 32767);
+      }
+      const wav = pcmToWav(pcm, sampleRate);
+      const blob = new Blob([wav.buffer as ArrayBuffer], { type: 'audio/wav' });
+      if (blob.size < 2000) { setError(t.errorEmpty); cleanupRecorder(); return; }
       const previewUrl = URL.createObjectURL(blob);
       setMessages((prev) => [...prev, { role: 'user', audioDataUri: previewUrl } as Message]);
       const fileReader = new FileReader();
       fileReader.onloadend = () => sendToAPI({ audio: fileReader.result as string });
       fileReader.readAsDataURL(blob);
+    } catch {
+      setError(t.errorSend);
+    } finally {
       cleanupRecorder();
-    };
-    recorder.stop();
+    }
   }, [cleanupRecorder, t, sendToAPI]);
 
   const startRecording = useCallback(async () => {
     setError('');
     stopSpeaking();
-    if (!navigator.mediaDevices?.getUserMedia) {
+    const AudioCtx = (window as any).AudioContext;
+    if (!navigator.mediaDevices?.getUserMedia || typeof AudioCtx === 'undefined') {
       setError(t.micUnsupported);
       return;
     }
@@ -280,25 +327,37 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
       return;
     }
     streamRef.current = micStream;
-    const mimeType =
-      MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
-        MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' :
-          MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : '';
     try {
-      const recorder = new MediaRecorder(micStream, mimeType ? { mimeType } : {});
-      mediaRecorderRef.current = recorder;
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
-      recorder.start(200);
+      const ctx: any = new AudioCtx();
+      audioCtxRef.current = ctx;
+      if (typeof ctx.resume === 'function') ctx.resume();
+
+      const source: any = await ctx.createMediaStreamSource(micStream);
+      sourceRef.current = source;
+      const gain: any = ctx.createGainer();
+      const sink: any = await ctx.createAudioStreamSink(2);
+      sinkRef.current = sink;
+      sink.addConsumer(() => {});
+
+      try {
+        source.connect(gain).connect(sink);
+      } catch {
+        const dest: any = await ctx.createAudioStreamProcessor();
+        sinkRef.current = await ctx.createAudioStreamSink(2);
+        sinkRef.current.addConsumer(() => {});
+        source.connect(gain).connect(dest).connect(sinkRef.current);
+      }
+
       setIsRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
     } catch (e: any) {
-      console.error('MediaRecorder error:', e?.message);
+      console.error('Mic graph error:', e?.message);
       setError(t.errorMic);
-      micStream.getTracks().forEach((tr) => tr.stop());
+      streamRef.current?.getTracks().forEach((tr) => tr.stop());
+      cleanupRecorder();
     }
-  }, [stopSpeaking, t]);
+  }, [stopSpeaking, t, cleanupRecorder]);
 
   const onFileSelected = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

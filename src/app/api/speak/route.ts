@@ -27,6 +27,38 @@ function extractJSON(raw: string): { text?: string; transcript?: string } {
   return {};
 }
 
+/** Fetch real current market prices from public feeds (no keys needed) */
+async function fetchLivePrices(): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  try {
+    const [fx, gold, coins] = await Promise.allSettled([
+      fetch('https://open.er-api.com/v6/latest/USD').then((r) => r.json()),
+      fetch('https://api.gold-api.com/price/XAU').then((r) => r.json()),
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd').then((r) => r.json()),
+    ]);
+    if (fx.status === 'fulfilled') {
+      const rates = (fx.value as any)?.rates;
+      if (rates) {
+        if (rates.EUR) out['EUR/USD'] = (1 / rates.EUR).toFixed(4);
+        if (rates.GBP) out['GBP/USD'] = (1 / rates.GBP).toFixed(4);
+        if (rates.JPY) out['USD/JPY'] = rates.JPY.toFixed(2);
+        if (rates.AUD) out['AUD/USD'] = (1 / rates.AUD).toFixed(4);
+        if (rates.CAD) out['USD/CAD'] = rates.CAD.toFixed(4);
+      }
+    }
+    if (gold.status === 'fulfilled' && (gold.value as any)?.price) {
+      out['XAU/USD'] = (gold.value as any).price.toFixed(2);
+    }
+    if (coins.status === 'fulfilled' && (coins.value as any)) {
+      const c = coins.value as any;
+      if (c.bitcoin?.usd) out['BTC/USD'] = c.bitcoin.usd.toFixed(0);
+      if (c.ethereum?.usd) out['ETH/USD'] = c.ethereum.usd.toFixed(0);
+      if (c.solana?.usd) out['SOL/USD'] = c.solana.usd.toFixed(2);
+    }
+  } catch {}
+  return out;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
@@ -92,6 +124,12 @@ export async function POST(req: Request) {
 
     const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-3.6-flash';
 
+    const livePrices = await fetchLivePrices().catch(() => ({}));
+    const pricesLine =
+      Object.keys(livePrices).length > 0
+        ? `\n\nLIVE MARKET PRICES (real values from a live feed — THIS IS YOUR ONLY PRICE SOURCE): ${JSON.stringify(livePrices)}`
+        : '\n\nLIVE MARKET PRICES: unavailable right now. In such a case, DO NOT invent prices — say you cannot fetch the live price at the moment.';
+
     const systemPrompt =
       'You are AURA, an elite intraday trader and financial analyst with 15+ years across Forex, crypto, indices, and commodities. ' +
       'You are the personal AI trading advisor of this client. Speak like a trusted mentor who trades for a living. ' +
@@ -100,7 +138,8 @@ export async function POST(req: Request) {
       (profile.tradingBalance ? `, Balance=$${profile.tradingBalance}` : '') +
       (profile.pair ? `, Favorite pair=${profile.pair}` : '') +
       `\nStyle: ${chat.style || 'unknown yet'}` +
-      `\n\nRECENT HISTORY:\n${recent || '(none)'}`;
+      `\n\nRECENT HISTORY:\n${recent || '(none)'}` +
+      pricesLine;
 
     const rules =
       '\n\nRULES (follow exactly):' +
@@ -138,7 +177,10 @@ export async function POST(req: Request) {
       return out;
     };
 
-    const baseParts: any[] = [{ text: rules + inputDescription }];
+    const priceRules =
+      '\\n5. PRICES: only quote prices from the LIVE MARKET PRICES list provided. NEVER invent a number. If the requested asset is not in that list, say you do not have the live price right now. Round numbers naturally.' +
+      '\\n6. TRUTHFULNESS: never invent news, figures, or events. If you do not know, admit it honestly instead of guessing.';
+    const baseParts: any[] = [{ text: rules + priceRules + inputDescription }];
     if (!isTextMode) baseParts.push({ inlineData: { mimeType, data: base64 } });
 
     let result = '';
