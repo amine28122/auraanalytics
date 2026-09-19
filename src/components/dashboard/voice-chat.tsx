@@ -228,33 +228,6 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     }
   }, [stopSpeaking, t]);
 
-  const sendData = useCallback(
-    async (dataUri: string) => {
-      setIsSending(true);
-      setError('');
-      try {
-        const res = await fetch('/api/speak', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audio: dataUri, lang }),
-        });
-        const data = await res.json();
-        if (!data.ok) {
-          setError(t.errorSend);
-          return;
-        }
-        const aiIndex = messages.length;
-        setMessages((prev) => [...prev, { role: 'ai', text: data.text } as Message]);
-        requestAnimationFrame(() => speak(data.text, aiIndex));
-      } catch {
-        setError(t.errorSend);
-      } finally {
-        setIsSending(false);
-      }
-    },
-    [lang, messages.length, speak, t]
-  );
-
   const onFileSelected = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
