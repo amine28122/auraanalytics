@@ -12,7 +12,7 @@ import {
   Calendar,
   History,
   CandlestickChart,
-  Target,
+  MessageCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -32,7 +32,7 @@ const translations = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     simulator: 'Simulator',
-    radar: 'Aura Radar',
+    radar: 'Speak with Aura',
   },
   ar: {
     dashboard: 'لوحة التحكم',
@@ -47,7 +47,7 @@ const translations = {
     privacy: 'سياسة الخصوصية',
     terms: 'شروط الخدمة',
     simulator: 'المحاكي',
-    radar: 'رادار أورا',
+    radar: 'تحدث مع أورا',
   },
   es: {
     dashboard: 'Dashboard',
@@ -62,7 +62,7 @@ const translations = {
     privacy: 'Política de Privacidad',
     terms: 'Términos de Servicio',
     simulator: 'Simulador',
-    radar: 'Radar Aura',
+    radar: 'Hablar con Aura',
   },
 };
 
@@ -82,7 +82,7 @@ export function SidebarNav({
     { href: `/dashboard/news`, label: t.news, icon: Newspaper },
     { href: `/dashboard/history`, label: t.history, icon: History },
     { href: `/dashboard/simulator`, label: t.simulator, icon: CandlestickChart },
-    { href: `/dashboard/radar`, label: t.radar, icon: Target },
+    { href: `/dashboard/radar`, label: t.radar, icon: MessageCircle },
     { href: `/dashboard/learning`, label: t.learning, icon: BookOpen },
     { href: `/dashboard/pricing`, label: t.pricing, icon: DollarSign },
   ];
