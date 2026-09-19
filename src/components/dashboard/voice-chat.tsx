@@ -1,4 +1,5 @@
-﻿'use client';
+﻿
+'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -160,7 +161,7 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
   const cleanupRecorder = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try { mediaRecorderRef.current.stop(); } catch {}
+      try { mediaRecorderRef.current.stop(); } catch { }
     }
     mediaRecorderRef.current = null;
     chunksRef.current = [];
@@ -281,8 +282,8 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     streamRef.current = micStream;
     const mimeType =
       MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
-      MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' :
-      MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : '';
+        MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' :
+          MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : '';
     try {
       const recorder = new MediaRecorder(micStream, mimeType ? { mimeType } : {});
       mediaRecorderRef.current = recorder;

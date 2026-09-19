@@ -1,10 +1,23 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { runGeminiWithFailover } from '@/ai/failover';
 import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
 
 const DATA_URI_RE = /^data:audio\/([^;]+);base64,(.+)$/;
 const MAX_HISTORY = 10;
+
+/** Extract the first JSON object found anywhere in a string */
+function extractJSON(raw: string): { text?: string; transcript?: string } {
+  try {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+  } catch {}
+  try {
+    const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    return JSON.parse(cleaned);
+  } catch {}
+  return {};
+}
 
 export async function POST(req: Request) {
   try {
@@ -15,7 +28,6 @@ export async function POST(req: Request) {
     const userId: string = typeof body?.userId === 'string' ? body.userId : '';
     const userName: string = typeof body?.userName === 'string' ? body.userName : '';
 
-    // Must have either audio OR text
     const isTextMode = !dataUri && textInput.length > 0;
     const isAudioMode = !!dataUri;
 
@@ -34,12 +46,12 @@ export async function POST(req: Request) {
       mimeType = `audio/${match[1]}`;
       base64 = match[2];
       if (base64.length > 8 * 1024 * 1024) {
-        return NextResponse.json({ ok: false, error: 'Audio is too large (keep it under ~2 minutes).' }, { status: 413 });
+        return NextResponse.json({ ok: false, error: 'Audio too large.' }, { status: 413 });
       }
     }
 
-    // -- Load profile + conversation memory from Firestore --
-    let profile: any = { name: userName || 'friend', plan: 'Free', language: lang, tradingBalance: undefined };
+    // -- Load profile + conversation memory --
+    let profile: any = { name: userName || 'friend', plan: 'Free', language: lang };
     let chat: any = { history: [], style: '' };
     if (userId) {
       try {
@@ -60,7 +72,7 @@ export async function POST(req: Request) {
         if (!Array.isArray(chat.history)) chat.history = [];
         if (typeof chat.style !== 'string') chat.style = '';
       } catch (e: any) {
-        console.warn('Speak profile load failed:', e?.message);
+        console.warn('Profile load failed:', e?.message);
       }
     }
 
@@ -73,87 +85,65 @@ export async function POST(req: Request) {
     const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-3.6-flash';
 
     const systemPrompt =
-      'You are AURA — a razor-sharp, elite intraday trader and financial analyst with 15+ years of experience across Forex, crypto, indices, and commodities. ' +
-      'You are the personal AI trading advisor of this specific client. You know their profile, their history, and you speak to them as a trusted mentor who trades for a living. ' +
-      '\n\nYOUR TRADING PERSONALITY:' +
-      '\n- You speak like a seasoned pro: direct, confident, no fluff. You cut through noise instantly.' +
-      '\n- You give real, actionable insights: entry zones, key levels, momentum reads, risk management tips — not generic advice.' +
-      '\n- You use trader vocabulary naturally (support/resistance, breakout, liquidity grab, confluence, risk:reward, etc.).' +
-      '\n- You are warm and personal with this client — you know their name, their balance, their style.' +
-      '\n- You never say "I cannot" — you always give your best analysis and flag uncertainty when needed.' +
-      `\n\nCLIENT PROFILE:\n- Name: ${profile.name}\n- Plan: ${profile.plan}\n- Preferred language: ${langName}` +
-      (profile.tradingBalance ? `\n- Trading balance: $${profile.tradingBalance}` : '') +
-      (profile.pair ? `\n- Last analyzed pair / favorite market: ${profile.pair}` : '') +
-      `\n- Their communication style: ${chat.style || 'not known yet — detect it from their message'}` +
-      `\n\nRECENT CONVERSATION:\n${recent || '(none yet)'}`;
+      'You are AURA, an elite intraday trader and financial analyst with 15+ years across Forex, crypto, indices, and commodities. ' +
+      'You are the personal AI trading advisor of this client. Speak like a trusted mentor who trades for a living. ' +
+      'Be direct, confident, actionable. Use trader vocabulary naturally. Never say you cannot do something.' +
+      `\n\nCLIENT: Name=${profile.name}, Plan=${profile.plan}, Language=${langName}` +
+      (profile.tradingBalance ? `, Balance=$${profile.tradingBalance}` : '') +
+      (profile.pair ? `, Favorite pair=${profile.pair}` : '') +
+      `\nStyle: ${chat.style || 'unknown yet'}` +
+      `\n\nRECENT HISTORY:\n${recent || '(none)'}`;
 
-    const strictRules =
-      '\n\nSTRICT RULES:\n' +
-      '1. Detect the EXACT language AND dialect. If Moroccan Darija, reply in perfect Darija (واش، دابا، بزاف، صح، شحال — real street Darija with French loanwords). If MSA reply MSA. If French reply French. Never mix.\n' +
-      '2. Reply in the EXACT same language/dialect — zero exceptions.\n' +
-      '3. Be brief and punchy: MAX 50 words. No markdown, no bullet points, no emojis. Just clean spoken sentences.\n' +
-      '4. Sound like their personal trader, not a chatbot. Be confident, direct, and sharp.\n' +
-      '5. If they ask about a market/pair/price/setup — give your actual read: trend, key level, bias, and a quick action tip.\n' +
-      '6. If off-topic from trading, answer briefly then bring it back to markets if natural.\n';
+    const rules =
+      '\n\nRULES (follow exactly):' +
+      '\n1. Detect and match the exact language/dialect of the client. Moroccan Darija -> reply in Darija. MSA -> MSA. French -> French. Never mix.' +
+      '\n2. Reply in the SAME language/dialect. Zero exceptions.' +
+      '\n3. Max 50 words. No markdown, no lists, no emojis. Plain spoken sentences only.' +
+      '\n4. Give real trader insights: trend, key level, bias, action tip. Be specific and sharp.' +
+      '\n\nYou MUST respond with valid JSON only, nothing else. Format:\n{"transcript":"<what client said>","text":"<your reply>"}';
+
+    const inputDescription = isTextMode
+      ? `\n\nClient text message: "${textInput}"`
+      : '\n\nClient sent a voice message (audio attached).';
 
     let result: string;
 
     if (isTextMode) {
-      // TEXT mode: no audio, just text conversation
-      const textPrompt =
-        systemPrompt +
-        `\n\nNEW TEXT MESSAGE from the client: "${textInput}"` +
-        strictRules +
-        '\nRespond with STRICT JSON only — no extra text:\n{"transcript": "(repeat exactly what the client wrote)", "text": "(your spoken reply, max 50 words, in their exact language/dialect)"}';
-
       result = await runGeminiWithFailover(async (genAI) => {
-        const modelInstance = genAI.getGenerativeModel({ model });
-        const res = await modelInstance.generateContent({
-          contents: [{ role: 'user', parts: [{ text: textPrompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
+        const m = genAI.getGenerativeModel({ model, systemInstruction: systemPrompt });
+        const res = await m.generateContent({
+          contents: [{ role: 'user', parts: [{ text: rules + inputDescription }] }],
+          generationConfig: { temperature: 0.65, maxOutputTokens: 300 },
         });
         return res.response.text();
       });
     } else {
-      // AUDIO mode: send audio inline
-      const audioPrompt =
-        systemPrompt +
-        '\n\nNEW VOICE MESSAGE from the client (audio attached).' +
-        strictRules +
-        '\nRespond with STRICT JSON only — no extra text:\n{"transcript": "(<= 60 words: exactly what the client said, in their language)", "text": "(your spoken reply, max 50 words, in their exact language/dialect)"}';
-
       result = await runGeminiWithFailover(async (genAI) => {
-        const modelInstance = genAI.getGenerativeModel({ model });
-        const res = await modelInstance.generateContent({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: audioPrompt },
-                { inlineData: { mimeType, data: base64 } },
-              ],
-            },
-          ],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
+        const m = genAI.getGenerativeModel({ model, systemInstruction: systemPrompt });
+        const res = await m.generateContent({
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: rules + inputDescription },
+              { inlineData: { mimeType, data: base64 } },
+            ],
+          }],
+          generationConfig: { temperature: 0.65, maxOutputTokens: 300 },
         });
         return res.response.text();
       });
     }
 
-    let parsed: { text?: string; transcript?: string } = {};
-    try {
-      // Try to extract JSON object from response (handles markdown fences and extra text)
-      const jsonMatch = result.match(/\{[\s\S]*\}/);
-      const cleaned = jsonMatch ? jsonMatch[0] : result.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      // If JSON parse fails, use the raw text as the reply
-      parsed = { text: result.replace(/```[\s\S]*```/g, '').trim() };
-    }
-    const replyText = (parsed.text || '').trim() || result.replace(/[\{\}":\[\]]/g, '').trim().slice(0, 200);
+    const parsed = extractJSON(result);
+    const replyText = (parsed.text || '').trim();
     const transcript = isTextMode ? textInput : (parsed.transcript || '').trim().slice(0, 300);
 
-    // -- Save history + detect communication style --
+    if (!replyText) {
+      console.error('Empty reply text. Raw result:', result.slice(0, 200));
+      return NextResponse.json({ ok: false, error: 'Empty response from AI.' }, { status: 500 });
+    }
+
+    // -- Save history --
     if (userId && replyText) {
       try {
         const { firestore } = initializeServerFirebase();
@@ -171,42 +161,29 @@ export async function POST(req: Request) {
             style = await runGeminiWithFailover(async (genAI) => {
               const m = genAI.getGenerativeModel({ model });
               const r = await m.generateContent({
-                contents: [
-                  {
-                    role: 'user',
-                    parts: [
-                      {
-                        text:
-                          'Describe in at most 12 words how this client speaks (language/dialect, tone, style): ' +
-                          history.map((h) => `${h.role === 'user' ? 'C' : 'A'}: ${h.transcript || h.text || ''}`).join('; '),
-                      },
-                    ],
-                  },
-                ],
-                generationConfig: { temperature: 0.2, maxOutputTokens: 60 },
+                contents: [{
+                  role: 'user',
+                  parts: [{
+                    text: 'Describe in 10 words max how this client communicates (language, dialect, tone): ' +
+                      history.map((h) => `${h.role === 'user' ? 'C' : 'A'}: ${h.transcript || h.text || ''}`).join('; '),
+                  }],
+                }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 40 },
               });
-              return ((r.response.text() || '').trim().slice(0, 120));
+              return (r.response.text() || '').trim().slice(0, 120);
             });
-          } catch {
-            style = '';
-          }
+          } catch { style = ''; }
         }
 
-        await ref.set(
-          { history, style, count: history.length, updatedAt: timestamp },
-          { merge: true }
-        );
+        await ref.set({ history, style, count: history.length, updatedAt: timestamp }, { merge: true });
       } catch (e: any) {
-        console.warn('Speak memory save failed:', e?.message);
+        console.warn('Save failed:', e?.message);
       }
     }
 
     return NextResponse.json({ ok: true, text: replyText, transcript, lang: profile.language });
   } catch (e: any) {
     console.error('Speak route error:', e?.message);
-    return NextResponse.json(
-      { ok: false, error: e?.message || 'Something went wrong.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: e?.message || 'Something went wrong.' }, { status: 500 });
   }
 }
