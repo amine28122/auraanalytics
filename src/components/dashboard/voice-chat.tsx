@@ -25,6 +25,7 @@ const labels: Record<Lang, {
   playVoice: string;
   stopVoice: string;
   errorMic: string;
+  errorEmpty: string;
   errorSend: string;
   empty: string;
 }> = {
@@ -38,6 +39,7 @@ const labels: Record<Lang, {
     playVoice: 'Play voice',
     stopVoice: 'Stop voice',
     errorMic: 'Microphone access is required. Allow it in your browser or upload an audio file instead.',
+    errorEmpty: 'I could not hear your voice — please speak a little longer and try again.',
     errorSend: 'Sorry, I could not process that audio. Please try again or upload a shorter clip.',
     empty: 'No conversation yet — tap the mic or upload audio to begin.',
   },
@@ -51,6 +53,7 @@ const labels: Record<Lang, {
     playVoice: 'تشغيل الصوت',
     stopVoice: 'إيقاف الصوت',
     errorMic: 'يجب السماح بالوصول إلى المايك للتسجيل. اسمح به في المتصفح أو ارفع ملفاً صوتياً بدلاً منه.',
+    errorEmpty: 'لم أسمع صوتك جيداً — تحدث قليلاً أطول وحاول مجدداً.',
     errorSend: 'عذراً، لم أستطع معالجة ذلك الصوت. حاول مرة أخرى أو ارفع مقطعاً أقصر.',
     empty: 'لا توجد محادثة بعد — ابدأ بالضغط على المايك أو رفع ملف صوتي.',
   },
@@ -64,6 +67,7 @@ const labels: Record<Lang, {
     playVoice: 'Reproducir voz',
     stopVoice: 'Detener voz',
     errorMic: 'Se necesita acceso al micrófono. Permítelo en el navegador o sube un archivo de audio.',
+    errorEmpty: 'No pude escucharte bien — habla un poco más y vuelve a intentarlo.',
     errorSend: 'Lo siento, no pude procesar ese audio. Inténtalo de nuevo o sube un clip más corto.',
     empty: 'Aún no hay conversación: toca el micrófono o sube audio para empezar.',
   },
@@ -107,12 +111,19 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     setSpeakingIndex(null);
   }, []);
 
+  const pickReplyLang = useCallback(
+    (text: string) =>
+      /[\u0600-\u06FF]/.test(text) ? 'ar' : lang === 'ar' ? 'ar' : lang === 'es' ? 'es' : 'en',
+    [lang]
+  );
+
   const speak = useCallback(
-    (text: string, index: number) => {
+    (text: string, index: number, voiceLang?: string) => {
       if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
       const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = lang === 'ar' ? 'ar' : lang === 'es' ? 'es-ES' : 'en-US';
+      const target = voiceLang || lang;
+      utter.lang = target === 'ar' ? 'ar' : target === 'es' ? 'es-ES' : 'en-US';
       utter.rate = 1;
       utter.pitch = 1;
       const voices = window.speechSynthesis.getVoices();
@@ -157,15 +168,16 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
           return;
         }
         const aiIndex = messages.length;
+        const replyVoice = pickReplyLang(data.text);
         setMessages((prev) => [...prev, { role: 'ai', text: data.text } as Message]);
-        requestAnimationFrame(() => speak(data.text, aiIndex));
+        requestAnimationFrame(() => speak(data.text, aiIndex, replyVoice));
       } catch {
         setError(t.errorSend);
       } finally {
         setIsSending(false);
       }
     },
-    [lang, messages.length, speak, t]
+    [lang, messages.length, speak, t, pickReplyLang]
   );
 
   const stopRecording = useCallback(() => {
@@ -185,6 +197,10 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     recorder.stopRecording(() => {
       try {
         const blob = recorder.getBlob();
+        if (!blob || blob.size < 2000) {
+          setError(t.errorEmpty);
+          return;
+        }
         const fileReader = new FileReader();
         fileReader.onloadend = () => {
           const dataUri = fileReader.result as string;
@@ -293,7 +309,7 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
                     {msg.text && (
                       <button
                         type="button"
-                        onClick={() => (speakingIndex === index ? stopSpeaking() : speak(msg.text!, index))}
+                        onClick={() => (speakingIndex === index ? stopSpeaking() : speak(msg.text!, index, pickReplyLang(msg.text!)))}
                         className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:border-primary/50 hover:text-primary"
                       >
                         {speakingIndex === index ? (
