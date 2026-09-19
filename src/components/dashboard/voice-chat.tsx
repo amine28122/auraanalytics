@@ -54,6 +54,9 @@ const labels: Record<Lang, {
   errorEmpty: string;
   errorSend: string;
   empty: string;
+  micUnsupported: string;
+  micDenied: string;
+  micTip: string;
 }> = {
   en: {
     title: 'Speak with Aura',
@@ -64,7 +67,10 @@ const labels: Record<Lang, {
     aiThinking: 'AURA is thinking…',
     playVoice: 'Play voice',
     stopVoice: 'Stop voice',
-    errorMic: 'Microphone access is required. Allow it in your browser or upload an audio file instead.',
+    errorMic: 'Microphone access could not be started. Make sure Chrome/Edge can access the microphone.',
+    micUnsupported: 'Voice recording works in Google Chrome or Microsoft Edge. Allow the microphone in the site settings, or use "Upload audio" instead.',
+    micDenied: 'You denied microphone access. Click the mic icon (🔒/🎙) in the address bar, allow the microphone, then try again.',
+    micTip: '🎙 Tip: allow the microphone once in your browser (or OS). Otherwise upload an audio file.',
     errorEmpty: 'I could not hear your voice — please speak a little longer and try again.',
     errorSend: 'Sorry, I could not process that audio. Please try again or upload a shorter clip.',
     empty: 'No conversation yet — tap the mic or upload audio to begin.',
@@ -78,7 +84,10 @@ const labels: Record<Lang, {
     aiThinking: 'أورا تفكر…',
     playVoice: 'تشغيل الصوت',
     stopVoice: 'إيقاف الصوت',
-    errorMic: 'يجب السماح بالوصول إلى المايك للتسجيل. اسمح به في المتصفح أو ارفع ملفاً صوتياً بدلاً منه.',
+    errorMic: 'تعذر تشغيل المايك. تأكد من أن Chrome/Edge يصل إلى الميكروفون.',
+    micUnsupported: 'التسجيل الصوتي يعمل في Google Chrome أو Microsoft Edge. اسمح بالمايك في إعدادات الموقع، أو استخدم «رفع ملف صوتي».',
+    micDenied: 'رفضت الوصول إلى المايك. اضغط أيقونة المايك (🔒/🎙) في أعلى المتصفح واسمح بالميكروفون ثم أعد المحاولة.',
+    micTip: '🎙 نصيحة: اسمح بالمايك مرة واحدة في المتصفح (أو نظام التشغيل). وإلا ارفع ملفاً صوتياً.',
     errorEmpty: 'لم أسمع صوتك جيداً — تحدث قليلاً أطول وحاول مجدداً.',
     errorSend: 'عذراً، لم أستطع معالجة ذلك الصوت. حاول مرة أخرى أو ارفع مقطعاً أقصر.',
     empty: 'لا توجد محادثة بعد — ابدأ بالضغط على المايك أو رفع ملف صوتي.',
@@ -92,7 +101,10 @@ const labels: Record<Lang, {
     aiThinking: 'AURA está pensando…',
     playVoice: 'Reproducir voz',
     stopVoice: 'Detener voz',
-    errorMic: 'Se necesita acceso al micrófono. Permítelo en el navegador o sube un archivo de audio.',
+    errorMic: 'No se pudo iniciar el micrófono. Asegúrate de que Chrome/Edge tenga acceso al micrófono.',
+    micUnsupported: 'La grabación por voz funciona en Google Chrome o Microsoft Edge. Permite el micrófono en la configuración del sitio o usa «Subir audio».',
+    micDenied: 'Denegaste el acceso al micrófono. Toca el icono del micrófono (🔒/🎙) en la barra de direcciones, permite el micrófono e inténtalo de nuevo.',
+    micTip: '🎙 Consejo: permite el micrófono una vez en tu navegador (o SO). Si no, sube un archivo de audio.',
     errorEmpty: 'No pude escucharte bien — habla un poco más y vuelve a intentarlo.',
     errorSend: 'Lo siento, no pude procesar ese audio. Inténtalo de nuevo o sube un clip más corto.',
     empty: 'Aún no hay conversación: toca el micrófono o sube audio para empezar.',
@@ -282,19 +294,36 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     setError('');
     stopSpeaking();
     const AudioCtx = (window as any).AudioContext;
+    let micStream: MediaStream | null = null;
+    let micError = '';
     if (!navigator.mediaDevices?.getUserMedia || typeof AudioCtx === 'undefined') {
-      setError(t.errorMic);
+      micError = t.micUnsupported;
+    } else {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = micStream;
+      } catch (micErr: any) {
+        const detail = `${micErr?.name || ''} ${micErr?.message || ''}`.toLowerCase();
+        micError =
+          detail.includes('denied') || detail.includes('notallowed') || detail.includes('permission')
+            ? t.micDenied
+            : detail.includes('busy')
+              ? t.errorMic
+              : t.micUnsupported;
+      }
+    }
+    if (micError) {
+      setError(micError);
+      cleanupRecorder();
       return;
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
 
-      const ctx = new AudioCtx();
+    try {
+      const ctx: any = new AudioCtx();
       audioCtxRef.current = ctx;
       if (typeof ctx.resume === 'function') ctx.resume();
 
-      const source = ctx.createMediaStreamSource(stream);
+      const source = ctx.createMediaStreamSource(micStream!);
       sourceRef.current = source;
       const gain = ctx.createGainer();
       try {
@@ -474,6 +503,8 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
             </div>
           )}
         </div>
+
+        <p className="text-[11px] leading-relaxed text-muted-foreground/70">{t.micTip}</p>
       </CardContent>
     </Card>
   );
