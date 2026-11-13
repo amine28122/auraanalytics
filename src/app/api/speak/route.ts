@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server';
 import { runGeminiWithFailover } from '@/ai/failover';
-import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { HarmCategory, HarmBlockThreshold, ThinkingLevel } from '@google/genai';
 import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
 import { getEconomicCalendar, getNews } from '@/lib/actions';
 
-// Accepts data:audio/webm;codecs=opus;base64,... as well as standard data:audio/wav;base64,...
+// Accepts data:audio/webm;codecs=opus;base64,..., data:audio/wav;base64,..., etc.
 const AUDIO_DATA_URI_RE = /^data:(audio\/[a-zA-Z0-9.+_-]+)(?:;[^,]*)?;base64,(.+)$/i;
 const IMAGE_DATA_URI_RE = /^data:(image\/(?:png|jpeg|jpg|webp|gif))(?:;[^,]*)?;base64,(.+)$/i;
 const MAX_HISTORY = 25;
+
+// Cost-optimized models:
+// - Chat/Vision: gemini-3.1-flash-lite (ultra-fast, lowest token usage)
+// - Audio transcription: gemini-3.5-transcribe (accurate & low cost)
+// - Voice reply (TTS): gemini-3.8-flash-tts (flagship human voice, with flash-lite fallback)
+const CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-3.1-flash-lite';
+const CHAT_FALLBACK_MODEL = 'gemini-4-hydrogen';
+const TRANSCRIBE_MODEL = 'gemini-3.5-transcribe';
+const TTS_MODELS = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts'];
 
 export type AuraTradeSetup = {
   symbol: string;
@@ -27,6 +36,21 @@ function normalizeAudioMime(rawMime: string): string {
   if (lower === 'audio/x-m4a' || lower === 'audio/m4a') return 'audio/mp4';
   if (lower === 'audio/x-wav' || lower === 'audio/wave') return 'audio/wav';
   return lower;
+}
+
+function formatFriendlyAiError(err: any, lang: string): string {
+  const msg = String(err?.message || err || '');
+  if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid') || msg.includes('GEMINI_API_KEY is not set')) {
+    return lang === 'ar'
+      ? 'مفتاح Gemini API غير صالح أو غير مضبوط في إعدادات السيرفر (Settings > Secrets).'
+      : 'Gemini API key is invalid or not set in server Secrets.';
+  }
+  if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.toLowerCase().includes('quota')) {
+    return lang === 'ar'
+      ? 'تم تجاوز حد الطلبات مؤقتاً (Quota). انتظر لحظة وحاول مجدداً.'
+      : 'Rate limit reached temporarily. Please wait a moment and try again.';
+  }
+  return msg || (lang === 'ar' ? 'حدث خطأ مؤقت في الذكاء الاصطناعي.' : 'AI is temporarily unavailable.');
 }
 
 function normalizeTradeSetup(rawSetup: any): AuraTradeSetup | undefined {
@@ -103,6 +127,11 @@ function extractJSON(raw: string): {
       transcript: tr ? unesc(tr[1]) : undefined,
     };
   }
+  // If model returned plain readable prose without JSON braces, use it directly
+  const plain = (raw || '').trim();
+  if (plain && !plain.startsWith('{') && plain.length > 5) {
+    return { text: plain };
+  }
   return {};
 }
 
@@ -139,72 +168,106 @@ async function resolveAuthorizedUserId(req: Request, fallbackUserId: string): Pr
   return (fallbackUserId || '').trim();
 }
 
-/** Strip markdown symbols so TTS reads numbers & sentences cleanly */
+/** Clean text for natural human speech pronunciation without symbols or robotic acronyms */
 function cleanTextForSpeech(text: string): string {
   return (text || '')
     .replace(/[*_`#|>]/g, ' ')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\bXAU\/USD\b/gi, 'Gold')
+    .replace(/\bEUR\/USD\b/gi, 'Euro Dollar')
+    .replace(/\bGBP\/USD\b/gi, 'Pound Dollar')
+    .replace(/\bUSD\/JPY\b/gi, 'Dollar Yen')
+    .replace(/\bBTC\/USD\b/gi, 'Bitcoin')
+    .replace(/\bETH\/USD\b/gi, 'Ethereum')
+    .replace(/\bR:R\b/gi, 'Risk to Reward')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 750);
+    .slice(0, 500);
 }
 
-/** Generate natural WAV voice audio using Gemini 3.8 Flash Lite TTS */
-async function synthesizeSpeechWav(text: string): Promise<string | undefined> {
-  const cleanText = cleanTextForSpeech(text);
-  if (!cleanText) return undefined;
+/** Detect dominant language for voice style guidance */
+function detectSpeechLang(text: string, hintLang?: string): 'ar' | 'es' | 'en' {
+  if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+  if (hintLang === 'es') return 'es';
+  if (hintLang === 'ar') return 'ar';
+  return 'en';
+}
 
-  try {
-    const base64Audio = await withTimeout(
-      runGeminiWithFailover(async (ai) => {
-        const ttsRes = await ai.models.generateContent({
-          model: 'gemini-3.8-flash-lite-tts',
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: cleanText,
-                  speechMetadata: {
-                    style: 'Warm, confident, articulate female institutional trader speaking clearly with precise numbers',
+/** Generate natural human WAV voice audio using flagship Gemini 3.8 Flash TTS (with Lite TTS fallback) */
+async function synthesizeSpeechWav(
+  text: string,
+  hintLang?: string
+): Promise<{ audioUri?: string; error?: string }> {
+  const cleanText = cleanTextForSpeech(text);
+  if (!cleanText) return {};
+
+  const detected = detectSpeechLang(cleanText, hintLang);
+  const styleInstruction =
+    detected === 'ar'
+      ? 'Natural, warm, expressive human Arabic female voice speaking fluently with clear pronunciation, smooth pacing, and calm confidence'
+      : detected === 'es'
+        ? 'Natural, warm, expressive human Spanish female voice speaking fluently and conversationally with calm confidence'
+        : 'Natural, warm, expressive human English female voice speaking smoothly and conversationally with calm confidence';
+
+  let lastErrMsg = '';
+
+  for (const ttsModel of TTS_MODELS) {
+    try {
+      const base64Audio = await withTimeout(
+        runGeminiWithFailover(async (ai) => {
+          const ttsRes = await ai.models.generateContent({
+            model: ttsModel,
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    text: cleanText,
+                    speechMetadata: {
+                      style: styleInstruction,
+                    },
                   },
+                ],
+              },
+            ],
+            config: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: 'Zephyr' },
                 },
-              ],
-            },
-          ],
-          config: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Kore' },
               },
             },
-          },
-        });
-        return ttsRes.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      }),
-      18000
-    );
+          });
+          return ttsRes.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        }),
+        14000
+      );
 
-    if (typeof base64Audio === 'string' && base64Audio.length > 0) {
-      return `data:audio/wav;base64,${base64Audio}`;
+      if (typeof base64Audio === 'string' && base64Audio.length > 0) {
+        return { audioUri: `data:audio/wav;base64,${base64Audio}` };
+      }
+    } catch (err: any) {
+      lastErrMsg = err?.message || String(err);
+      console.warn(`TTS synthesis failed on ${ttsModel}:`, lastErrMsg);
     }
-  } catch (err: any) {
-    console.warn('TTS synthesis failed, client will use browser speech fallback:', err?.message);
   }
-  return undefined;
+
+  return { error: lastErrMsg || undefined };
 }
 
-/** In-memory cache for live market data (2 min TTL for fresh numerical accuracy) */
+/** In-memory cache for live market data (2 min fresh TTL, 10 min stale-while-revalidate) */
 const dataCache: {
   prices: Record<string, string>;
   upcoming: string;
   news: string;
   ts: number;
-} = { prices: {}, upcoming: '', news: '', ts: 0 };
+  refreshing: boolean;
+} = { prices: {}, upcoming: '', news: '', ts: 0, refreshing: false };
 const CACHE_TTL = 2 * 60 * 1000;
+const STALE_TTL = 10 * 60 * 1000;
 
-/** Fetch comprehensive real current market prices & daily % changes */
+/** Fetch real current market prices & daily % changes */
 async function fetchLivePrices(): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
 
@@ -213,18 +276,13 @@ async function fetchLivePrices(): Promise<Record<string, string>> {
     { key: 'EUR/USD', ticker: 'EURUSD=X', dec: 4 },
     { key: 'GBP/USD', ticker: 'GBPUSD=X', dec: 4 },
     { key: 'USD/JPY', ticker: 'USDJPY=X', dec: 2 },
-    { key: 'AUD/USD', ticker: 'AUDUSD=X', dec: 4 },
-    { key: 'USD/CAD', ticker: 'USDCAD=X', dec: 4 },
-    { key: 'XAU/USD (Gold)', ticker: 'GC=F', dec: 2 },
-    { key: 'XAG/USD (Silver)', ticker: 'SI=F', dec: 2 },
-    { key: 'WTI Oil', ticker: 'CL=F', dec: 2 },
-    { key: 'S&P 500', ticker: '^GSPC', dec: 2 },
-    { key: 'NASDAQ', ticker: '^IXIC', dec: 2 },
-    { key: 'US30 (Dow)', ticker: '^DJI', dec: 2 },
-    { key: 'US10Y Yield %', ticker: '^TNX', dec: 3 },
-    { key: 'BTC/USD', ticker: 'BTC-USD', dec: 0 },
-    { key: 'ETH/USD', ticker: 'ETH-USD', dec: 0 },
-    { key: 'SOL/USD', ticker: 'SOL-USD', dec: 2 },
+    { key: 'XAU/USD', ticker: 'GC=F', dec: 2 },
+    { key: 'WTI', ticker: 'CL=F', dec: 2 },
+    { key: 'SPX', ticker: '^GSPC', dec: 2 },
+    { key: 'NDX', ticker: '^IXIC', dec: 2 },
+    { key: 'US10Y', ticker: '^TNX', dec: 2 },
+    { key: 'BTC', ticker: 'BTC-USD', dec: 0 },
+    { key: 'ETH', ticker: 'ETH-USD', dec: 0 },
   ];
 
   await Promise.all(
@@ -235,7 +293,7 @@ async function fetchLivePrices(): Promise<Record<string, string>> {
             `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(item.ticker)}?interval=1d&range=2d`,
             { headers: { 'User-Agent': 'Mozilla/5.0' } }
           ),
-          3500
+          1800
         );
         if (!res || !res.ok) return;
         const json = await res.json();
@@ -247,36 +305,11 @@ async function fetchLivePrices(): Promise<Record<string, string>> {
             typeof prev === 'number' && prev > 0
               ? (((cur - prev) / prev) * 100).toFixed(2)
               : null;
-          const hi = typeof meta?.regularMarketDayHigh === 'number' ? meta.regularMarketDayHigh.toFixed(item.dec) : null;
-          const lo = typeof meta?.regularMarketDayLow === 'number' ? meta.regularMarketDayLow.toFixed(item.dec) : null;
-          out[item.key] = `${cur.toFixed(item.dec)}${pct !== null ? ` (${Number(pct) >= 0 ? '+' : ''}${pct}%)` : ''}${hi && lo ? ` [L:${lo} H:${hi}]` : ''}`;
+          out[item.key] = `${cur.toFixed(item.dec)}${pct !== null ? ` (${Number(pct) >= 0 ? '+' : ''}${pct}%)` : ''}`;
         }
       } catch {}
     })
   );
-
-  // Backup public spot feeds if Yahoo misses FX/Gold/BTC
-  if (!out['XAU/USD (Gold)'] || !out['EUR/USD'] || !out['BTC/USD']) {
-    const fetchJson = (url: string) =>
-      withTimeout(fetch(url).then((r) => r.json()), 3500).then((v) => v ?? null).catch(() => null);
-    const [fx, gold, coins] = await Promise.all([
-      !out['EUR/USD'] ? fetchJson('https://open.er-api.com/v6/latest/USD') : null,
-      !out['XAU/USD (Gold)'] ? fetchJson('https://api.gold-api.com/price/XAU') : null,
-      !out['BTC/USD'] ? fetchJson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd') : null,
-    ]);
-    const rates = fx?.rates;
-    if (rates) {
-      if (rates.EUR && !out['EUR/USD']) out['EUR/USD'] = (1 / rates.EUR).toFixed(4);
-      if (rates.GBP && !out['GBP/USD']) out['GBP/USD'] = (1 / rates.GBP).toFixed(4);
-      if (rates.JPY && !out['USD/JPY']) out['USD/JPY'] = rates.JPY.toFixed(2);
-      if (rates.AUD && !out['AUD/USD']) out['AUD/USD'] = (1 / rates.AUD).toFixed(4);
-    }
-    if (gold?.price && !out['XAU/USD (Gold)']) out['XAU/USD (Gold)'] = gold.price.toFixed(2);
-    if (coins) {
-      if (coins.bitcoin?.usd && !out['BTC/USD']) out['BTC/USD'] = coins.bitcoin.usd.toFixed(0);
-      if (coins.ethereum?.usd && !out['ETH/USD']) out['ETH/USD'] = coins.ethereum.usd.toFixed(0);
-    }
-  }
 
   return out;
 }
@@ -288,43 +321,57 @@ function buildContextLines(
 ): { pricesLine: string; contextLine: string } {
   const pricesLine =
     Object.keys(prices).length > 0
-      ? `LIVE PRICES & RANGES: ${JSON.stringify(prices)}`
-      : 'PRICES: unavailable — do not invent live quotes.';
+      ? `LIVE PRICES: ${JSON.stringify(prices)}`
+      : 'PRICES: unavailable.';
   const contextLine = [
     pricesLine,
-    upcoming ? `UPCOMING ECONOMIC EVENTS: ${upcoming}` : '',
-    news ? `NEWS HEADLINES: ${news}` : '',
+    upcoming ? `EVENTS: ${upcoming}` : '',
+    news ? `NEWS: ${news}` : '',
   ].filter(Boolean).join(' | ');
   return { pricesLine, contextLine };
 }
 
+async function refreshLiveCacheNow() {
+  if (dataCache.refreshing) return;
+  dataCache.refreshing = true;
+  try {
+    const [prices, ecoEvents, newsFeed] = await Promise.all([
+      fetchLivePrices().catch(() => ({} as Record<string, string>)),
+      withTimeout(getEconomicCalendar(), 2000).catch(() => [] as any[]),
+      withTimeout(getNews('en'), 2000).catch(() => ({ items: [] } as any)),
+    ]);
+
+    const upcoming = (Array.isArray(ecoEvents) ? ecoEvents : [])
+      .slice(0, 4)
+      .map((e: any) => `${e.title || e.event || ''}(${e.impact || '?'})`)
+      .join(', ');
+    const news = (((newsFeed as any)?.items) || [])
+      .slice(0, 2)
+      .map((n: any) => n.title || '')
+      .join(' | ');
+
+    if (Object.keys(prices).length > 0) dataCache.prices = prices;
+    if (upcoming) dataCache.upcoming = upcoming;
+    if (news) dataCache.news = news;
+    dataCache.ts = Date.now();
+  } finally {
+    dataCache.refreshing = false;
+  }
+}
+
 async function getLiveContext(): Promise<{ pricesLine: string; contextLine: string }> {
-  const now = Date.now();
-  if (now - dataCache.ts < CACHE_TTL && Object.keys(dataCache.prices).length > 0) {
+  const age = Date.now() - dataCache.ts;
+  const hasPrices = Object.keys(dataCache.prices).length > 0;
+
+  if (hasPrices && age < CACHE_TTL) {
     return buildContextLines(dataCache.prices, dataCache.upcoming, dataCache.news);
   }
-
-  const [prices, ecoEvents, newsFeed] = await Promise.all([
-    fetchLivePrices().catch(() => ({} as Record<string, string>)),
-    withTimeout(getEconomicCalendar(), 4500).catch(() => [] as any[]),
-    withTimeout(getNews('en'), 4500).catch(() => ({ items: [] } as any)),
-  ]);
-
-  const upcoming = (Array.isArray(ecoEvents) ? ecoEvents : [])
-    .slice(0, 6)
-    .map((e: any) => `${e.title || e.event || ''} (${e.currency || ''} - ${e.impact || '?'})`)
-    .join(', ');
-  const news = (((newsFeed as any)?.items) || [])
-    .slice(0, 3)
-    .map((n: any) => n.title || '')
-    .join(' | ');
-
-  dataCache.prices = prices;
-  dataCache.upcoming = upcoming;
-  dataCache.news = news;
-  dataCache.ts = now;
-
-  return buildContextLines(prices, upcoming, news);
+  if (hasPrices && age < STALE_TTL) {
+    void refreshLiveCacheNow();
+    return buildContextLines(dataCache.prices, dataCache.upcoming, dataCache.news);
+  }
+  await withTimeout(refreshLiveCacheNow(), 2000);
+  return buildContextLines(dataCache.prices, dataCache.upcoming, dataCache.news);
 }
 
 /** Load persisted chat history for the authenticated user */
@@ -409,18 +456,19 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
 
-    // On-demand TTS mode (e.g. replaying older messages loaded from Firestore history)
+    // Dedicated flagship TTS endpoint (called asynchronously after text appears)
     if (body?.ttsOnly === true && typeof body?.text === 'string' && body.text.trim()) {
-      const ttsAudioUri = await synthesizeSpeechWav(body.text.trim());
-      return NextResponse.json({ ok: true, ttsAudioUri });
+      const hintLang = typeof body?.lang === 'string' ? body.lang : undefined;
+      const { audioUri, error } = await synthesizeSpeechWav(body.text.trim(), hintLang);
+      return NextResponse.json({ ok: true, ttsAudioUri: audioUri, ttsError: error });
     }
 
     const audioUri: string = typeof body?.audio === 'string' ? body.audio : '';
     const imageUri: string = typeof body?.image === 'string' ? body.image : '';
     const textInput: string = typeof body?.text === 'string' ? body.text.trim() : '';
     const lang: string = typeof body?.lang === 'string' ? body.lang : 'en';
-    const userId: string = await resolveAuthorizedUserId(req, typeof body?.userId === 'string' ? body.userId : '');
     const userName: string = typeof body?.userName === 'string' ? body.userName : '';
+    const rawUserId: string = typeof body?.userId === 'string' ? body.userId : '';
 
     const isAudioMode = !!audioUri;
     const isImageMode = !!imageUri;
@@ -461,13 +509,18 @@ export async function POST(req: Request) {
       }
     }
 
-    // -- Load profile + conversation memory --
-    let profile: any = { name: userName || 'friend', plan: 'Free', language: lang };
-    let chat: any = { history: [], style: '' };
-    if (userId) {
+    const userId = await resolveAuthorizedUserId(req, rawUserId);
+
+    const profilePromise = (async () => {
+      let profile: any = { name: userName || 'friend', plan: 'Free', language: lang };
+      let chat: any = { history: [] };
+      if (!userId) return { profile, chat };
       try {
         const { firestore } = initializeServerFirebase();
-        const userDoc = await firestore.collection('users').doc(userId).get();
+        const [userDoc, chatDoc] = await Promise.all([
+          firestore.collection('users').doc(userId).get(),
+          firestore.collection('users').doc(userId).collection('chat').doc('session').get(),
+        ]);
         if (userDoc.exists) {
           const u = userDoc.data();
           profile = {
@@ -481,231 +534,170 @@ export async function POST(req: Request) {
                   ? u.simulatorBalance
                   : undefined,
             pair: typeof u?.lastAnalysisPair === 'string' ? u.lastAnalysisPair : undefined,
-            schools: Array.isArray(u?.preferredAnalysisSchools) ? u.preferredAnalysisSchools : undefined,
           };
         }
-        const chatDoc = await firestore.collection('users').doc(userId).collection('chat').doc('session').get();
         if (chatDoc.exists) chat = chatDoc.data() || {};
         if (!Array.isArray(chat.history)) chat.history = [];
-        if (typeof chat.style !== 'string') chat.style = '';
       } catch (e: any) {
         console.warn('Profile load failed:', e?.message);
       }
-    }
+      return { profile, chat };
+    })();
 
-    // -- Step 1: If audio was sent, transcribe accurately via gemini-3.5-transcribe --
-    let preTranscript = '';
-    if (isAudioMode) {
-      try {
-        const transcribed = await withTimeout(
+    // Run profile load, live market data, AND lightweight audio transcription IN PARALLEL!
+    const transcribePromise = isAudioMode
+      ? withTimeout(
           runGeminiWithFailover(async (ai) => {
             const trRes = await ai.models.generateContent({
-              model: 'gemini-3.5-transcribe',
+              model: TRANSCRIBE_MODEL,
               contents: {
                 parts: [
                   { inlineData: { mimeType: audioMimeType, data: audioBase64 } },
-                  {
-                    text: 'Transcribe this audio accurately in its original spoken language (Arabic, Moroccan Darija, English, French, or Spanish). Return ONLY the exact spoken words.',
-                  },
+                  { text: 'Transcribe this audio accurately in its original language (Arabic, Darija, English, French, or Spanish). Return ONLY the spoken words.' },
                 ],
               },
             });
             return (trRes.text || '').trim();
           }),
-          12000
-        );
-        if (typeof transcribed === 'string' && transcribed.trim()) {
-          preTranscript = transcribed.trim();
-        }
-      } catch (trErr: any) {
-        console.warn('Dedicated audio transcription fallback to multimodal:', trErr?.message);
-      }
-    }
+          10000
+        ).catch((trErr: any) => {
+          console.warn('Transcribe step error:', trErr?.message);
+          return '';
+        })
+      : Promise.resolve('');
+
+    const [{ profile, chat }, { contextLine }, preTranscript] = await Promise.all([
+      profilePromise,
+      getLiveContext().catch(() => ({ pricesLine: '', contextLine: 'PRICES: unavailable.' })),
+      transcribePromise,
+    ]);
 
     const langName = profile.language === 'ar' ? 'Arabic' : profile.language === 'es' ? 'Spanish' : 'English';
     const recent = (chat.history as any[])
-      .slice(-8)
-      .map((m) => `${m.role === 'user' ? 'CLIENT' : 'AURA'}: ${m.text || m.transcript || ''}`)
+      .slice(-4)
+      .map((m) => `${m.role === 'user' ? 'C' : 'A'}: ${String(m.text || m.transcript || '').slice(0, 180)}`)
       .join('\n');
-
-    const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-4-hydrogen';
-
-    const { contextLine } = await getLiveContext().catch(() => ({
-      pricesLine: '',
-      contextLine: 'PRICES: unavailable.',
-    }));
 
     const accountRiskInfo =
       typeof profile.tradingBalance === 'number' && profile.tradingBalance > 0
-        ? ` | Client Account Balance: $${profile.tradingBalance.toLocaleString()} (1% risk = $${(profile.tradingBalance * 0.01).toFixed(2)})`
+        ? ` | Bal: $${profile.tradingBalance} (1%=$${(profile.tradingBalance * 0.01).toFixed(1)})`
         : '';
 
-    const schoolsInfo =
-      profile.schools?.length ? ` | Preferred Schools: ${profile.schools.join(', ')}` : ' | Methodology: Institutional SMC/ICT, Market Structure, Liquidity & Price Action';
-
+    // Compact token-efficient system prompt
     const systemPrompt =
-      'You are AURA, an elite institutional hedge fund trader and macro strategist with 20+ years across Forex, Gold, Indices, Oil, Bonds, and Crypto. ' +
-      'You answer EVERY question with precision, institutional logic, and CONCRETE NUMBERS (exact prices, % moves, key support/resistance levels, ATR/ranges, risk-reward ratios, lot/risk math when balance is known). Never give vague or generic answers. ' +
-      `Client: ${profile.name} | Preferred Language: ${langName} | Style: ${chat.style || 'adapt naturally to client dialect/language'}` +
-      accountRiskInfo +
-      schoolsInfo +
-      (profile.pair ? ` | Primary market: ${profile.pair}` : '') +
-      (recent ? `\nRecent conversation:\n${recent}` : '') +
-      `\n\nLIVE MARKET CONTEXT: ${contextLine}` +
-      '\n\nCORE RULES:' +
-      '\n1. NUMBERS FIRST: Always quantify your answer with real numbers — current prices, daily highs/lows, % changes, exact key levels, targets, stops, and probabilities.' +
-      '\n2. NO HALLUCINATION: For general market questions without a chart image, only cite live prices from LIVE MARKET CONTEXT. When a CHART IMAGE is attached, read the symbol, timeframe, candles, and exact price-axis numbers directly from the screenshot!' +
-      '\n3. CHART ANALYSIS & TRADE SETUPS: Whenever the user attaches a chart screenshot OR asks for a trade setup ("صفقة", "trade", "setup", "تحليل", etc.):' +
-      '   - Read the visible price axis carefully and extract exact Entry, Stop Loss, TP1, TP2, TP3, and Risk:Reward.' +
-      '   - Fill the `tradeSetup` JSON object accurately.' +
-      '   - In `text`, write a structured, professional analysis explaining: (a) Market Bias & Structure (BOS/CHoCH/Trend), (b) Liquidity & Institutional Zones (OB/FVG/S&R), (c) Exact Trade Parameters (Entry, SL, TPs, R:R, and 1% risk sizing if balance is available), and (d) Invalidation/Risk scenario.' +
-      '\n4. LANGUAGE MATCH: Reply in the EXACT language/dialect of the client message (Arabic MSA -> professional Arabic, Moroccan Darija -> clear Darija with technical terms, English -> English, French -> French, Spanish -> Spanish).' +
-      '\n5. SPOKEN SUMMARY (`spokenSummary`): Also write a clean 40-65 word spoken version of your core conclusion and key numbers with NO bullet points, NO asterisks, NO markdown symbols so it sounds completely natural when read aloud by voice!';
+      `You are AURA, an elite macro & technical trader. Give decisive numerical answers (prices, %, S/R levels, SL/TP, R:R). ` +
+      `Client: ${profile.name} (${langName}${accountRiskInfo}). ` +
+      `${contextLine}` +
+      (recent ? `\nRecent:\n${recent}` : '') +
+      `\nRules: 1) Always cite exact numbers. 2) If a chart screenshot is attached or user requests a trade setup, fill tradeSetup using chart price-axis numbers & explain Structure, Liquidity/Zones, SL/TP, R:R. ` +
+      `3) Match client language/dialect strictly. 4) spokenSummary: 25-40 natural spoken words with NO English letters/symbols inside Arabic (write "الذهب","الدخول","وقف الخسارة","الهدف الأول" instead of XAU/USD/SL/TP1) so TTS sounds 100% human.`;
 
     const jsonSchemaInstructions =
-      '\n\nOUTPUT STRICT VALID JSON ONLY (no text outside JSON):' +
-      '\n{"transcript":"<transcribed words if client sent audio, else empty string>","text":"<complete professional numerical explanation in clean plain text with line breaks, no markdown hashtags/asterisks>","spokenSummary":"<40-65 words natural spoken summary reading the key numbers and conclusion aloud>","tradeSetup":null}' +
-      '\nIf a chart screenshot is attached OR the client asks for a trade setup, replace `"tradeSetup":null` with:' +
-      '\n{"symbol":"XAU/USD","timeframe":"M15","direction":"BUY","entry":"2650.50","stopLoss":"2642.00","takeProfits":["2665.00","2678.00"],"riskReward":"1 : 2.8","confidence":84,"setupType":"Liquidity Sweep + FVG"}';
+      'Output valid JSON only: {"transcript":"<spoken words if audio else empty>","text":"<professional numerical reply, plain text>","spokenSummary":"<25-40 natural spoken words, no symbols/markdown>","tradeSetup":null}' +
+      '\nIf chart attached or trade requested, set tradeSetup:{"symbol":"XAU/USD","timeframe":"M15","direction":"BUY|SELL|WAIT","entry":"...","stopLoss":"...","takeProfits":["...","..."],"riskReward":"1 : 2.5","confidence":84,"setupType":"..."}';
 
     const effectiveTextRequest =
       textInput ||
-      (isImageMode && !isAudioMode
+      preTranscript ||
+      (isImageMode
         ? (profile.language === 'ar'
-            ? 'حلل هذا الشارت بدقة وأعطني صفقة مكتوبة باحترافية مع الأرقام الكاملة (الدخول، وقف الخسارة، الأهداف، نسبة العائد للمخاطرة) والشرح المفصل.'
-            : 'Analyze this chart screenshot thoroughly and give me a professional trade setup with exact numbers (Entry, Stop Loss, TPs, Risk:Reward) and full explanation.')
+            ? 'حلل الشارت وأعطني صفقة احترافية بالأرقام مع الشرح.'
+            : 'Analyze this chart and give a professional trade setup with exact numbers and explanation.')
         : '');
 
     const inputDescription = isImageMode
-      ? `\n\nClient sent a CHART SCREENSHOT (attached).` +
-        (effectiveTextRequest ? `\nClient written message: "${effectiveTextRequest}"` : '') +
-        (preTranscript ? `\nClient spoken voice message: "${preTranscript}"` : '')
-      : isTextMode
-        ? `\n\nClient question: "${textInput}"`
-        : preTranscript
-          ? `\n\nClient spoken voice message: "${preTranscript}" (audio attached).`
-          : '\nClient sent a voice message (attached). Transcribe what they said and reply thoroughly with exact numbers.';
+      ? `\nChart attached.${effectiveTextRequest ? ` Request: "${effectiveTextRequest}"` : ''}`
+      : `\nRequest: "${effectiveTextRequest}"`;
 
-    const callAI = async (parts: any[]) => {
-      let out = '';
-      let lastErr: any = null;
-      for (let attempt = 1; attempt <= 3 && !out.trim(); attempt++) {
-        try {
-          out = await runGeminiWithFailover(async (ai) => {
-            const res = await ai.models.generateContent({
-              model,
-              contents: [{ role: 'user', parts }],
-              config: {
-                systemInstruction: systemPrompt,
-                maxOutputTokens: 2048,
-                safetySettings: [
-                  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                ],
-              },
-            });
-            return res.text || '';
-          });
-        } catch (e: any) {
-          lastErr = e;
-        }
-        if (!out.trim() && attempt < 3) {
-          await new Promise((r) => setTimeout(r, 700 * attempt));
-        }
-      }
-      if (!out.trim() && lastErr) throw lastErr;
-      return out;
+    // Use cost-efficient gemini-3.1-flash-lite (MINIMAL thinking for instant low-token text, LOW thinking for chart vision)
+    // Automatically fallback to CHAT_FALLBACK_MODEL if needed
+    const runChatModel = async (targetModel: string, parts: any[], includeAudioInline: boolean) => {
+      const modelParts = includeAudioInline
+        ? [...parts, { inlineData: { mimeType: audioMimeType, data: audioBase64 } }]
+        : parts;
+
+      const isLite = targetModel.includes('lite');
+      const thinkingLevel = isImageMode
+        ? ThinkingLevel.LOW
+        : isLite
+          ? ThinkingLevel.MINIMAL
+          : ThinkingLevel.LOW;
+
+      return runGeminiWithFailover(async (ai) => {
+        const res = await ai.models.generateContent({
+          model: targetModel,
+          contents: [{ role: 'user', parts: modelParts }],
+          config: {
+            systemInstruction: systemPrompt,
+            thinkingConfig: { thinkingLevel },
+            maxOutputTokens: 900,
+            safetySettings: [
+              { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+              { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+              { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+              { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            ],
+          },
+        });
+        return res.text || '';
+      });
     };
 
     const baseParts: any[] = [{ text: jsonSchemaInstructions + inputDescription }];
     if (isImageMode) {
       baseParts.push({ inlineData: { mimeType: imageMimeType, data: imageBase64 } });
     }
-    if (isAudioMode) {
-      baseParts.push({ inlineData: { mimeType: audioMimeType, data: audioBase64 } });
-    }
+
+    // Only attach raw audio to chat model if dedicated transcription came back empty
+    const needsInlineAudio = isAudioMode && !preTranscript;
 
     let result = '';
+    let lastError: any = null;
     try {
-      result = await callAI(baseParts);
-    } catch (e: any) {
-      console.error('AI call failed after retries:', e?.message);
-      if (isAudioMode && preTranscript) {
-        const fallbackParts: any[] = [{ text: jsonSchemaInstructions + inputDescription }];
-        if (isImageMode) fallbackParts.push({ inlineData: { mimeType: imageMimeType, data: imageBase64 } });
-        try {
-          result = await callAI(fallbackParts);
-        } catch {}
+      result = await runChatModel(CHAT_MODEL, baseParts, needsInlineAudio);
+    } catch (e1: any) {
+      lastError = e1;
+      console.warn(`Primary model ${CHAT_MODEL} failed, trying fallback:`, e1?.message);
+      try {
+        result = await runChatModel(CHAT_FALLBACK_MODEL, baseParts, needsInlineAudio);
+      } catch (e2: any) {
+        lastError = e2;
       }
-      if (!result) {
-        return NextResponse.json(
-          { ok: false, error: e?.message || 'AI is temporarily unavailable. Please try again.' },
-          { status: 502 }
-        );
-      }
+    }
+
+    if (!result.trim()) {
+      return NextResponse.json(
+        { ok: false, error: formatFriendlyAiError(lastError, profile.language) },
+        { status: 502 }
+      );
     }
 
     const parsed = extractJSON(result);
-    let replyText = (parsed.text || '').trim();
-    let spokenSummary = (parsed.spokenSummary || '').trim();
-    let tradeSetup = parsed.tradeSetup;
-    let transcript = isTextMode
+    const replyText = (parsed.text || '').trim();
+    const spokenSummary = (parsed.spokenSummary || '').trim();
+    const tradeSetup = parsed.tradeSetup;
+    const transcript = isTextMode
       ? textInput
-      : (parsed.transcript || preTranscript || '').trim().slice(0, 400);
-
-    // Retry briefly if output wasn't valid JSON
-    if (!replyText) {
-      for (let i = 0; i < 2 && !replyText; i++) {
-        await new Promise((r) => setTimeout(r, 500 * (i + 1)));
-        const retryParts: any[] = [
-          {
-            text:
-              jsonSchemaInstructions +
-              '\nCRITICAL: Respond with ONE valid JSON object only. No code fences.' +
-              inputDescription,
-          },
-        ];
-        if (isImageMode) retryParts.push({ inlineData: { mimeType: imageMimeType, data: imageBase64 } });
-        if (isAudioMode && !preTranscript) retryParts.push({ inlineData: { mimeType: audioMimeType, data: audioBase64 } });
-        try {
-          result = await callAI(retryParts);
-        } catch {}
-        const p2 = extractJSON(result);
-        if (p2.text && p2.text.trim()) {
-          replyText = p2.text.trim();
-          spokenSummary = (p2.spokenSummary || '').trim();
-          tradeSetup = p2.tradeSetup || tradeSetup;
-          transcript = isTextMode ? textInput : (p2.transcript || preTranscript || '').trim().slice(0, 400);
-        }
-      }
-    }
+      : (preTranscript || parsed.transcript || '').trim().slice(0, 400);
 
     if (!replyText) {
-      console.error('Empty reply text after retries. Raw:', (result || '').slice(0, 200));
       const fallback =
         profile.language === 'ar'
-          ? 'عذراً، الخدمة مشغولة في هذه اللحظة. حاول إعادة إرسال طلبك بعد ثوانٍ.'
-          : profile.language === 'es'
-            ? 'Disculpa, el servicio está ocupado ahora. Vuelve a intentarlo en unos segundos.'
-            : 'Sorry, the service is busy at this moment. Please try again in a few seconds.';
-      const ttsAudioUri = await synthesizeSpeechWav(fallback);
+          ? 'عذراً، تعذر فهم الرسالة. حاول التحدث بوضوح أو إرسال طلبك نصياً.'
+          : 'Sorry, could not understand clearly. Please speak clearly or try typing.';
       return NextResponse.json({
         ok: true,
         text: fallback,
         spokenSummary: fallback,
-        transcript: isTextMode ? textInput : preTranscript,
+        transcript: isTextMode ? textInput : transcript,
         lang: profile.language,
-        ttsAudioUri,
       });
     }
 
     const speechTarget = spokenSummary || replyText;
 
-    // -- Step 2 & 3 in parallel: Generate natural voice audio (WAV) AND save chat history --
-    const savePromise = (async (): Promise<boolean> => {
-      if (!userId || !replyText) return false;
+    let saved = false;
+    if (userId && replyText) {
       try {
         const { firestore } = initializeServerFirebase();
         const ref = firestore.collection('users').doc(userId).collection('chat').doc('session');
@@ -730,56 +722,19 @@ export async function POST(req: Request) {
           },
         ].slice(-(MAX_HISTORY * 2));
 
-        let style = chat.style;
-        if (!style && history.length >= 2) {
-          try {
-            style = await runGeminiWithFailover(async (ai) => {
-              const r = await ai.models.generateContent({
-                model,
-                contents: [{
-                  role: 'user',
-                  parts: [{
-                    text: 'Describe in 10 words max how this client communicates (language, dialect, tone): ' +
-                      history.slice(-6).map((h) => `${h.role === 'user' ? 'C' : 'A'}: ${h.transcript || h.text || ''}`).join('; '),
-                  }],
-                }],
-                config: {
-                  maxOutputTokens: 60,
-                  safetySettings: [
-                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                  ],
-                },
-              });
-              return (r.text || '').trim().slice(0, 120);
-            });
-          } catch {
-            style = '';
-          }
-        }
-
         await ref.set(
           {
             history,
-            style,
             count: history.length,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
         );
-        return true;
+        saved = true;
       } catch (e: any) {
         console.warn('Speak history save failed:', e?.message);
-        return false;
       }
-    })();
-
-    const [ttsAudioUri, saved] = await Promise.all([
-      synthesizeSpeechWav(speechTarget),
-      savePromise,
-    ]);
+    }
 
     return NextResponse.json({
       ok: true,
@@ -788,11 +743,10 @@ export async function POST(req: Request) {
       tradeSetup,
       transcript,
       lang: profile.language,
-      ttsAudioUri,
       saved,
     });
   } catch (e: any) {
     console.error('Speak route error:', e?.message);
-    return NextResponse.json({ ok: false, error: e?.message || 'Something went wrong.' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: formatFriendlyAiError(e, 'en') }, { status: 500 });
   }
 }

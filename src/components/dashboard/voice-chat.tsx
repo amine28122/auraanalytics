@@ -282,6 +282,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
   const [error, setError] = useState('');
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   const [loadingTtsIndex, setLoadingTtsIndex] = useState<number | null>(null);
+  const [audioBlockedIndex, setAudioBlockedIndex] = useState<number | null>(null);
   const [seconds, setSeconds] = useState(0);
   const [textInput, setTextInput] = useState('');
   const [pendingChartImage, setPendingChartImage] = useState<string | null>(null);
@@ -420,17 +421,26 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
       setSpeakingIndex(null);
       return;
     }
+    const isArabic = /[\u0600-\u06FF]/.test(text);
+    const prefix = isArabic ? 'ar' : lang === 'es' ? 'es' : 'en';
+    const voices = window.speechSynthesis.getVoices();
+    const langVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith(prefix));
+    if (isArabic && langVoices.length === 0) {
+      // Avoid robotic English voice trying to read Arabic script
+      setSpeakingIndex(null);
+      return;
+    }
+    const preferred =
+      langVoices.find((v) => /natural|neural|google|microsoft|samantha|laila|maged|tarik|salma|zahra/i.test(v.name)) ||
+      langVoices[0] ||
+      voices.find((v) => v.default);
+
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang === 'ar' ? 'ar-SA' : lang === 'es' ? 'es-ES' : 'en-US';
-    utter.rate = 1.02;
+    utter.lang = isArabic ? 'ar-SA' : lang === 'es' ? 'es-ES' : 'en-US';
+    utter.rate = 1.0;
     utter.pitch = 1;
-    const voices = window.speechSynthesis.getVoices();
-    const prefix = lang === 'ar' ? 'ar' : lang === 'es' ? 'es' : 'en';
-    const match =
-      voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(prefix)) ||
-      voices.find((v) => v.default);
-    if (match) utter.voice = match;
+    if (preferred) utter.voice = preferred;
     utter.onend = () => setSpeakingIndex((cur) => (cur === index ? null : cur));
     utter.onerror = () => setSpeakingIndex(null);
     setSpeakingIndex(index);
@@ -440,6 +450,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
   const playTTS = useCallback(
     async (ttsAudioUri: string | undefined, speechText: string, index: number) => {
       stopSpeaking();
+      setAudioBlockedIndex(null);
       let audioUri = ttsAudioUri;
 
       if (!audioUri && speechText) {
@@ -470,6 +481,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
       if (audioUri && audioElRef.current) {
         const el = audioElRef.current;
         el.src = audioUri;
+        el.muted = false;
         el.volume = 1;
         setSpeakingIndex(index);
         el.onended = () => setSpeakingIndex((cur) => (cur === index ? null : cur));
@@ -480,7 +492,9 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
         try {
           await el.play();
         } catch {
-          speakFallback(speechText, index);
+          // Autoplay blocked by browser: preserve real Gemini human audio and let user tap Play instead of downgrading to robotic TTS
+          setSpeakingIndex(null);
+          setAudioBlockedIndex(index);
         }
       } else {
         speakFallback(speechText, index);
@@ -528,11 +542,27 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
             userName: user?.displayName || '',
           }),
         });
-        const data = await res.json();
-        if (!data.ok) {
-          setError(typeof data.error === 'string' && data.error ? data.error : t.errorSend);
+        const rawText = await res.text();
+        let data: any = null;
+        try {
+          data = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          data = null;
+        }
+
+        if (!res.ok || !data?.ok) {
+          const serverErr =
+            typeof data?.error === 'string' && data.error
+              ? data.error
+              : res.status === 413
+                ? (lang === 'ar' ? 'حجم الصوت كبير جداً. حاول تسجيل رسالة أقصر.' : 'Audio recording is too large. Try a shorter message.')
+                : !res.ok
+                  ? `${t.errorSend} (HTTP ${res.status})`
+                  : t.errorSend;
+          setError(serverErr);
           return;
         }
+
         const transcript = typeof data.transcript === 'string' ? data.transcript : '';
         const spokenSummary = typeof data.spokenSummary === 'string' ? data.spokenSummary : undefined;
         const ttsAudioUri: string | undefined =
@@ -568,8 +598,8 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
             }
           });
         }
-      } catch {
-        setError(t.errorSend);
+      } catch (err: any) {
+        setError(err?.message ? `${t.errorSend} (${err.message})` : t.errorSend);
       } finally {
         setIsSending(false);
       }
@@ -723,6 +753,9 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
     }
 
     try {
+      if (recorder.state === 'recording' && typeof recorder.requestData === 'function') {
+        try { recorder.requestData(); } catch {}
+      }
       recorder.stop();
     } catch {
       cleanupStreams();
@@ -776,11 +809,18 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
 
     try {
       const preferredMime = pickRecorderMimeType();
-      const recorder = preferredMime
-        ? new MediaRecorder(micStream, { mimeType: preferredMime })
-        : new MediaRecorder(micStream);
+      const recorderOpts: MediaRecorderOptions = preferredMime
+        ? { mimeType: preferredMime, audioBitsPerSecond: 32000 }
+        : { audioBitsPerSecond: 32000 };
+      let recorder: MediaRecorder;
+      try {
+        recorder = new MediaRecorder(micStream, recorderOpts);
+      } catch {
+        recorder = preferredMime ? new MediaRecorder(micStream, { mimeType: preferredMime }) : new MediaRecorder(micStream);
+      }
 
-      const baseMime = (recorder.mimeType || preferredMime || 'audio/webm').split(';')[0].trim() || 'audio/webm';
+      const rawBase = (recorder.mimeType || preferredMime || 'audio/webm').split(';')[0].trim().toLowerCase();
+      const baseMime = rawBase.startsWith('audio/') ? rawBase : 'audio/webm';
 
       recorder.ondataavailable = (ev: BlobEvent) => {
         if (ev.data && ev.data.size > 0) {
@@ -799,8 +839,13 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
         const recordedChunks = [...chunksRef.current];
         cleanupStreams();
 
+        if (recordedChunks.length === 0) {
+          setError(t.errorEmpty);
+          return;
+        }
+
         const blob = new Blob(recordedChunks, { type: baseMime });
-        if (durationMs < 400 || blob.size < 400) {
+        if (durationMs < 350 || blob.size < 300) {
           setError(t.errorEmpty);
           return;
         }
@@ -823,10 +868,15 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
 
         const fileReader = new FileReader();
         fileReader.onloadend = () => {
-          const dataUrl = typeof fileReader.result === 'string' ? fileReader.result : '';
-          if (!dataUrl || !dataUrl.includes(',')) {
-            setError(t.errorSend);
+          let dataUrl = typeof fileReader.result === 'string' ? fileReader.result : '';
+          const commaIdx = dataUrl.indexOf(',');
+          if (!dataUrl || commaIdx === -1) {
+            setError(t.errorEmpty);
             return;
+          }
+          // Guarantee clean audio/... MIME prefix even on browsers returning data:;base64, or data:application/octet-stream;base64,
+          if (!/^data:audio\//i.test(dataUrl)) {
+            dataUrl = `data:${baseMime};base64,${dataUrl.slice(commaIdx + 1)}`;
           }
           sendToAPI({
             audio: dataUrl,
@@ -1059,6 +1109,17 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
                   {msg.tradeSetup && <TradeSetupCard setup={msg.tradeSetup} t={t} />}
 
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+
+                  {audioBlockedIndex === index && speakingIndex !== index && (
+                    <button
+                      type="button"
+                      onClick={() => playTTS(msg.ttsAudioUri, msg.spokenSummary || msg.text!, index)}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
+                    >
+                      <Volume2 className="h-3.5 w-3.5" />
+                      {lang === 'ar' ? 'الصوت جاهز — اضغط للاستماع بصوت أورا' : lang === 'es' ? 'Voz lista — Toca para escuchar' : 'Voice ready — Tap to listen'}
+                    </button>
+                  )}
 
                   {speakingIndex === index && (
                     <div className="mt-2 flex items-center gap-1 text-primary">
