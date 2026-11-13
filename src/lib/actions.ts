@@ -704,43 +704,99 @@ export async function getSharedPrices(requestedPairs: string[]) {
 
 export async function getMarketCorrelations() {
   const apiKey = process.env.FINNHUB_API_KEY;
-  if (!apiKey) return null;
 
-  const symbols = [
-    { key: 'EURUSD', id: 'IC MARKETS:EURUSD' }, // Using a broker prefix often helps with Finnhub forex if plain pair fails, but let's try standard first or OANDA
-    // Actually, Finnhub uses 'OANDA:EUR_USD' or just 'BINANCE:BTCUSDT'. 
-    // Let's use generic symbols that usually map well or specific ones.
-    { key: 'EURUSD', id: 'EUR/USD' },
-    { key: 'GOLD', id: 'XAU/USD' },
-    { key: 'SPY', id: 'SPY' },
-    { key: 'BTC', id: 'BTC/USD' }
+  const yahooSymbols = [
+    { key: 'EURUSD', ticker: 'EURUSD=X' },
+    { key: 'GOLD', ticker: 'GC=F' },
+    { key: 'OIL', ticker: 'CL=F' },
+    { key: 'YIELDS', ticker: '^TNX' },
+    { key: 'SPY', ticker: '^GSPC' },
+    { key: 'BTC', ticker: 'BTC-USD' },
   ];
 
-  try {
-    const promises = symbols.map(async (sym) => {
-      let querySymbol = sym.id;
-      // Finnhub symbol normalization
-      if (sym.key === 'BTC') querySymbol = 'BINANCE:BTCUSDT';
-      else if (sym.key === 'GOLD') querySymbol = 'OANDA:XAU_USD';
-      else if (sym.key === 'EURUSD') querySymbol = 'OANDA:EUR_USD';
-      // SPY is just SPY
+  const changes: Record<string, number> = {};
 
-      const url = `https://finnhub.io/api/v1/quote?symbol=${querySymbol}&token=${apiKey}`;
-      const res = await fetch(url, { next: { revalidate: 5 } }); // Update every 5s (Aggressive)
-      const data = await res.json();
-
-      return {
-        key: sym.key,
-        change: typeof data.dp === 'number' ? data.dp : 0
-      };
-    });
-
-    const results = await Promise.all(promises);
-    return results;
-  } catch (error) {
-    console.error("Failed to fetch correlations", error);
-    return [];
+  // 1. Try Finnhub first if API key is configured
+  if (apiKey) {
+    const finnhubSymbols = [
+      { key: 'EURUSD', querySymbol: 'OANDA:EUR_USD' },
+      { key: 'GOLD', querySymbol: 'OANDA:XAU_USD' },
+      { key: 'SPY', querySymbol: 'SPY' },
+      { key: 'BTC', querySymbol: 'BINANCE:BTCUSDT' },
+    ];
+    try {
+      await Promise.all(
+        finnhubSymbols.map(async (sym) => {
+          const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym.querySymbol)}&token=${apiKey}`;
+          const res = await fetch(url, { next: { revalidate: 15 } });
+          if (res.ok) {
+            const data = await res.json();
+            if (typeof data?.dp === 'number' && !Number.isNaN(data.dp) && data.dp !== 0) {
+              changes[sym.key] = data.dp;
+            }
+          }
+        })
+      );
+    } catch (error) {
+      console.warn('Finnhub correlation fetch partial failure, using fallback:', error);
+    }
   }
+
+  // 2. Fill any missing markets (including OIL & YIELDS) from live public Yahoo Finance feed
+  const missingYahoo = yahooSymbols.filter((s) => changes[s.key] === undefined);
+  if (missingYahoo.length > 0) {
+    await Promise.all(
+      missingYahoo.map(async (sym) => {
+        try {
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym.ticker)}?interval=1d&range=2d`;
+          const res = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            next: { revalidate: 15 },
+          });
+          if (!res.ok) return;
+          const json = await res.json();
+          const meta = json?.chart?.result?.[0]?.meta;
+          const prev = meta?.chartPreviousClose ?? meta?.previousClose;
+          const cur = meta?.regularMarketPrice;
+          if (typeof cur === 'number' && typeof prev === 'number' && prev > 0) {
+            changes[sym.key] = ((cur - prev) / prev) * 100;
+          }
+        } catch {
+          // Ignore individual ticker failures; Binance fallback below handles crypto/gold/fx
+        }
+      })
+    );
+  }
+
+  // 3. Final Binance 24hr fallback for BTC / GOLD (PAXG) / EURUSD if still missing
+  if (changes['BTC'] === undefined || changes['GOLD'] === undefined || changes['EURUSD'] === undefined) {
+    try {
+      const symbolsParam = encodeURIComponent('["BTCUSDT","PAXGUSDT","EURUSDT"]');
+      const bRes = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${symbolsParam}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        next: { revalidate: 15 },
+      });
+      if (bRes.ok) {
+        const bData = await bRes.json();
+        if (Array.isArray(bData)) {
+          for (const item of bData) {
+            const pct = parseFloat(item.priceChangePercent);
+            if (Number.isNaN(pct)) continue;
+            if (item.symbol === 'BTCUSDT' && changes['BTC'] === undefined) changes['BTC'] = pct;
+            if (item.symbol === 'PAXGUSDT' && changes['GOLD'] === undefined) changes['GOLD'] = pct;
+            if (item.symbol === 'EURUSDT' && changes['EURUSD'] === undefined) changes['EURUSD'] = pct;
+          }
+        }
+      }
+    } catch {
+      // Ignore fallback errors
+    }
+  }
+
+  return yahooSymbols.map((sym) => ({
+    key: sym.key,
+    change: Number((changes[sym.key] ?? 0).toFixed(3)),
+  }));
 }
 
 export async function getNews(lang: 'en' | 'ar' | 'es' = 'en') {

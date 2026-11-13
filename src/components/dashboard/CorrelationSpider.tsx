@@ -20,7 +20,7 @@ const translations = {
         riskOffDesc: 'Money is fleeing to cash (USD). Good for Selling Risk Assets.',
         divergence: 'Divergence (Danger)',
         divergenceDesc: 'If Gold & DXY both extend, the market is broken. Stay safe.',
-        liveData: 'Live Data (Finnhub)',
+        liveData: 'Live Market Feed',
         dxy: 'DXY (Est)',
         gold: 'Gold',
         oil: 'Oil',
@@ -39,7 +39,7 @@ const translations = {
         riskOffDesc: 'السيولة تهرب نحو الكاش (الدولار). وقت جيد لبيع الأصول الخطرة.',
         divergence: 'تشتت (خطر)',
         divergenceDesc: 'إذا ارتفع الذهب والدولار معاً، السوق في حالة غير طبيعية. كن حذراً.',
-        liveData: 'بيانات حية (Finnhub)',
+        liveData: 'بيانات السوق الحية',
         dxy: 'الدولار (تقديري)',
         gold: 'الذهب',
         oil: 'النفط',
@@ -50,12 +50,12 @@ const translations = {
 };
 
 const defaultData = [
-    { id: 'dxy', subject: 'DXY (Est)', A: 50, fullMark: 100 },
-    { id: 'gold', subject: 'Gold', A: 50, fullMark: 100 },
-    { id: 'oil', subject: 'Oil', A: 50, fullMark: 100 },
-    { id: 'yields', subject: 'Yields', A: 50, fullMark: 100 },
-    { id: 'btc', subject: 'BTC', A: 50, fullMark: 100 },
-    { id: 'sp500', subject: 'SP500', A: 50, fullMark: 100 },
+    { id: 'dxy', subject: 'DXY (Est)', A: 50, rawChange: 0, fullMark: 100 },
+    { id: 'gold', subject: 'Gold', A: 50, rawChange: 0, fullMark: 100 },
+    { id: 'oil', subject: 'Oil', A: 50, rawChange: 0, fullMark: 100 },
+    { id: 'yields', subject: 'Yields', A: 50, rawChange: 0, fullMark: 100 },
+    { id: 'btc', subject: 'BTC', A: 50, rawChange: 0, fullMark: 100 },
+    { id: 'sp500', subject: 'SP500', A: 50, rawChange: 0, fullMark: 100 },
 ];
 
 export function CorrelationSpider() {
@@ -76,48 +76,72 @@ export function CorrelationSpider() {
     const fetchData = async () => {
         try {
             const results = await getMarketCorrelations();
-            if (!results || results.length === 0) return;
+            if (!results || results.length === 0) {
+                setLoading(false);
+                return;
+            }
 
             const newData = defaultData.map(item => {
                 let score = 50;
-                const multiplier = 30; // Sensitivity
+                let rawChange = 0;
+                const multiplier = 25;
 
                 if (item.id === 'dxy') {
                     const eur = results.find(r => r.key === 'EURUSD');
-                    if (eur) score = 50 - (eur.change * multiplier);
+                    if (eur) {
+                        rawChange = -eur.change;
+                        score = 50 + (rawChange * multiplier);
+                    }
                 } else if (item.id === 'gold') {
                     const gold = results.find(r => r.key === 'GOLD');
-                    if (gold) score = 50 + (gold.change * multiplier);
+                    if (gold) {
+                        rawChange = gold.change;
+                        score = 50 + (rawChange * multiplier);
+                    }
+                } else if (item.id === 'oil') {
+                    const oil = results.find(r => r.key === 'OIL');
+                    if (oil) {
+                        rawChange = oil.change;
+                        score = 50 + (rawChange * 15);
+                    }
+                } else if (item.id === 'yields') {
+                    const yields = results.find(r => r.key === 'YIELDS');
+                    if (yields) {
+                        rawChange = yields.change;
+                        score = 50 + (rawChange * 15);
+                    }
                 } else if (item.id === 'btc') {
                     const btc = results.find(r => r.key === 'BTC');
-                    if (btc) score = 50 + (btc.change * 10);
+                    if (btc) {
+                        rawChange = btc.change;
+                        score = 50 + (rawChange * 8);
+                    }
                 } else if (item.id === 'sp500') {
                     const spy = results.find(r => r.key === 'SPY');
-                    if (spy) score = 50 + (spy.change * multiplier);
-                } else {
-                    const dxyScore = 50 - ((results.find(r => r.key === 'EURUSD')?.change || 0) * multiplier);
-                    if (item.id === 'yields') score = dxyScore * 0.9 + (Math.random() * 10);
-
-                    const spyChange = results.find(r => r.key === 'SPY')?.change || 0;
-                    if (item.id === 'oil') score = 50 + (spyChange * 20) + (Math.random() * 5);
+                    if (spy) {
+                        rawChange = spy.change;
+                        score = 50 + (rawChange * multiplier);
+                    }
                 }
 
                 return {
                     ...item,
-                    A: Math.min(100, Math.max(0, score))
+                    rawChange: Number(rawChange.toFixed(2)),
+                    A: Number(Math.min(100, Math.max(5, score)).toFixed(1))
                 };
             });
 
             setData(newData);
-            setLoading(false);
         } catch (err) {
             console.error("Failed to update spider", err);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 5000);
+        const interval = setInterval(fetchData, 15000);
         return () => clearInterval(interval);
     }, []);
 
@@ -136,11 +160,11 @@ export function CorrelationSpider() {
     const moodLabel = marketMood === 'Risk On' ? t.riskOn : (marketMood === 'Risk Off' ? t.riskOff : t.neutral);
 
     return (
-        <Card className="w-full h-full border-none shadow-none bg-transparent overflow-hidden relative" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <Card className="w-full h-full border-none shadow-none bg-transparent overflow-visible relative" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
             {/* Gradient removed for seamless look */}
 
             <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <CardTitle className="flex items-center gap-2 text-lg font-bold">
                             <Network className="w-5 h-5 text-primary" />
@@ -172,7 +196,7 @@ export function CorrelationSpider() {
                             </div>
                         </div>
                         {loading && <RefreshCcw className='w-3 h-3 animate-spin text-muted-foreground' />}
-                        <Badge variant={marketMood === 'Risk On' ? 'default' : marketMood === 'Risk Off' ? 'destructive' : 'secondary'} className="animate-pulse whitespace-nowrap">
+                        <Badge variant={marketMood === 'Risk On' ? 'default' : marketMood === 'Risk Off' ? 'destructive' : 'secondary'} className="whitespace-nowrap">
                             {moodLabel}
                         </Badge>
                     </div>
@@ -194,8 +218,13 @@ export function CorrelationSpider() {
                             fillOpacity={0.3}
                         />
                         <Tooltip
-                            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px', color: '#fff' }}
+                            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', border: 'none', borderRadius: '8px', color: '#fff' }}
                             itemStyle={{ color: '#fff' }}
+                            formatter={(_val: any, _name: any, props: any) => {
+                                const pct = props?.payload?.rawChange ?? 0;
+                                const sign = pct > 0 ? '+' : '';
+                                return [`${sign}${pct}% (${props?.payload?.A ?? 50}/100)`, lang === 'ar' ? 'التغير اليومي' : 'Daily Change'];
+                            }}
                         />
                     </RadarChart>
                 </ResponsiveContainer>

@@ -45,11 +45,11 @@ function DashboardLayoutContent({
       <FinancialTicker isFixed={false} theme={theme} />
 
       {/* Sidebar and Main Content below Header */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-w-0 overflow-hidden">
         <Sidebar />
 
         {/* Main Content Area - with left margin for fixed sidebar ONLY on desktop */}
-        <div className="flex flex-1 flex-col overflow-hidden ml-0 md:ml-20">
+        <div className="flex flex-1 flex-col min-w-0 overflow-hidden ml-0 md:ml-20">
           <main className="flex-1 overflow-y-auto p-4 md:p-8">
             <ErrorBoundary>
               {children}
