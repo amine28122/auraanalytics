@@ -1,23 +1,31 @@
+'use client';
+
+import { useSearchParams } from 'next/navigation';
 import { VoiceChat } from '@/components/dashboard/voice-chat';
+import { useLanguage } from '@/context/LanguageContext';
 
 const titles = {
   en: {
     title: 'Speak with Aura',
-    subtitle: 'Ask anything about the markets by voice — AURA listens and replies in her own voice.',
+    subtitle: 'Ask anything about the markets by voice or text — AURA listens and replies in her own voice.',
   },
   ar: {
     title: 'تحدث مع أورا',
-    subtitle: 'اسأل أورا عن الأسواق بصوتك — تسمعك وترد عليك بصوتها.',
+    subtitle: 'اسأل أورا عن الأسواق بالصوت أو الكتابة — تسمعك وترد عليك بصوتها وتحفظ محادثتك.',
   },
   es: {
     title: 'Habla con Aura',
-    subtitle: 'Pregunta lo que quieras sobre los mercados por voz — AURA te escucha y responde con su propia voz.',
+    subtitle: 'Pregunta lo que quieras sobre los mercados por voz o texto — AURA te escucha y responde con su propia voz.',
   },
 };
 
-export default async function RadarPage(props: { searchParams: Promise<{ lang?: string }> }) {
-  const searchParams = await props.searchParams;
-  const lang = (searchParams.lang || 'en') as 'en' | 'ar' | 'es';
+export default function RadarPage() {
+  const searchParams = useSearchParams();
+  const { lang: contextLang } = useLanguage();
+  const urlLang = searchParams.get('lang');
+  const lang = (urlLang === 'en' || urlLang === 'ar' || urlLang === 'es'
+    ? urlLang
+    : contextLang || 'en') as 'en' | 'ar' | 'es';
   const t = titles[lang] ?? titles.en;
 
   return (

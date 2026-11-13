@@ -1,12 +1,15 @@
-﻿
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BrainCircuit, Mic, Square, Loader2, Play, Pause, Volume2, UploadCloud, AlertCircle, Send } from 'lucide-react';
+import {
+  BrainCircuit, Mic, Square, Loader2, Play, Pause, Volume2, VolumeX,
+  UploadCloud, AlertCircle, Send, Trash2
+} from 'lucide-react';
 import { useAuth } from '@/firebase';
+import { useLanguage } from '@/context/LanguageContext';
 
 type Lang = 'en' | 'ar' | 'es';
 
@@ -14,120 +17,239 @@ type Message = {
   role: 'user' | 'ai';
   text?: string;
   audioDataUri?: string;
+  hasAudio?: boolean;
   transcript?: string;
   ttsAudioUri?: string;
+  ts?: string;
 };
 
+// Tiny valid silent WAV used to unlock HTMLAudioElement inside user gesture handlers
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+
 const labels: Record<Lang, {
-  title: string; subtitle: string; recordBtn: string; uploadBtn: string;
-  aiThinking: string; playVoice: string; stopVoice: string; errorMic: string;
-  errorEmpty: string; errorSend: string; empty: string; micUnsupported: string;
-  micDenied: string; micTip: string; placeholder: string; sendBtn: string;
+  title: string; subtitle: string; recordBtn: string; stopRecBtn: string; uploadBtn: string;
+  aiThinking: string; playVoice: string; stopVoice: string; loadingVoice: string;
+  errorMic: string; errorEmpty: string; errorSend: string; empty: string;
+  micUnsupported: string; micDenied: string; micTip: string; placeholder: string;
+  sendBtn: string; clearChat: string; voiceOn: string; voiceOff: string;
+  savedLabel: string; voiceMsgLabel: string; heardLabel: string; loadingChat: string;
 }> = {
   en: {
     title: 'Speak with AURA',
     subtitle: 'Type or speak — AURA replies like an elite pro trader.',
-    recordBtn: 'Record',
+    recordBtn: 'Record Voice',
+    stopRecBtn: 'Stop & Send',
     uploadBtn: 'Upload audio',
     aiThinking: 'AURA is analyzing...',
     playVoice: 'Play',
     stopVoice: 'Stop',
-    errorMic: 'Microphone blocked. Click the lock icon in your browser address bar, allow Microphone, then try again.',
-    micUnsupported: 'Voice recording works in Chrome or Edge. Allow the microphone in site settings, or use Upload audio.',
-    micDenied: 'Microphone denied. Click the lock icon in the address bar, allow Microphone, then try again.',
-    micTip: 'Tip: allow the mic once in your browser. You can also type your question or upload an audio file.',
-    errorEmpty: 'No audio detected — please speak louder or longer and try again.',
+    loadingVoice: 'Loading voice...',
+    errorMic: 'Microphone blocked. Allow Microphone permission in your browser address bar, then try again.',
+    micUnsupported: 'Voice recording is not supported in this browser. Try Chrome/Edge or use Upload audio.',
+    micDenied: 'Microphone denied. Click the lock/mic icon in the address bar, allow Microphone, then try again.',
+    micTip: 'Chat history is saved automatically. Allow the mic once to send voice messages — AURA listens and replies in her own voice.',
+    errorEmpty: 'Recording was too short or silent — please speak clearly and try again.',
     errorSend: 'Could not process your message. Please try again.',
-    empty: 'No conversation yet — type a message, tap the mic, or upload audio.',
+    empty: 'No conversation yet — type a message, tap Record Voice, or upload audio.',
     placeholder: 'Ask AURA about a market, pair, or setup...',
     sendBtn: 'Send',
+    clearChat: 'New Chat',
+    voiceOn: 'Auto-Voice On',
+    voiceOff: 'Auto-Voice Off',
+    savedLabel: 'Saved',
+    voiceMsgLabel: 'Voice message',
+    heardLabel: 'What I heard:',
+    loadingChat: 'Loading conversation...',
   },
   ar: {
     title: 'تحدث مع أورا',
-    subtitle: 'اكتب أو تكلم — أورا ترد كمتداول محترف.',
-    recordBtn: 'سجل',
+    subtitle: 'اكتب أو تكلم — أورا تسمعك وترد عليك بصوتها كمتداول محترف.',
+    recordBtn: 'تسجيل صوتي',
+    stopRecBtn: 'إيقاف وإرسال',
     uploadBtn: 'رفع ملف صوتي',
-    aiThinking: 'أورا تحلل...',
-    playVoice: 'تشغيل',
+    aiThinking: 'أورا تفكر وتحضر الرد الصوتي...',
+    playVoice: 'استماع',
     stopVoice: 'إيقاف',
-    errorMic: 'المايك محظور. اضغط على أيقونة القفل في شريط العنوان، اسمح للميكروفون ثم حاول مجدداً.',
-    micUnsupported: 'التسجيل يعمل في Chrome أو Edge. اسمح بالمايك أو استخدم رفع ملف صوتي.',
-    micDenied: 'رفض الوصول للمايك. اضغط أيقونة القفل في شريط العنوان، اسمح بالميكروفون ثم أعد المحاولة.',
-    micTip: 'نصيحة: اسمح بالمايك مرة واحدة. يمكنك أيضاً كتابة سؤالك أو رفع ملف صوتي.',
-    errorEmpty: 'لم أسمع صوتاً — تحدث بصوت أعلى أو لفترة أطول وحاول مجدداً.',
+    loadingVoice: 'جاري تحميل الصوت...',
+    errorMic: 'تعذر تشغيل الميكروفون. تأكد من السماح بالمايك من أيقونة المتصفح وحاول مجدداً.',
+    micUnsupported: 'التسجيل الصوتي غير مدعوم في هذا المتصفح. استخدم Chrome أو Edge أو ارفع ملفاً صوتياً.',
+    micDenied: 'تم رفض إذن الميكروفون. اضغط على أيقونة القفل/المايك بجانب الرابط، اسمح بالمايك ثم أعد المحاولة.',
+    micTip: 'يتم حفظ المحادثة تلقائياً. اسمح بالميكروفون لإرسال رسائل صوتية وستسمعك أورا وترد عليك بصوتها.',
+    errorEmpty: 'التسجيل قصير جداً أو بدون صوت — تحدث بوضوح لفترة أطول ثم أعد المحاولة.',
     errorSend: 'تعذرت معالجة رسالتك. حاول مرة أخرى.',
-    empty: 'لا توجد محادثة بعد — اكتب رسالة، أو اضغط المايك، أو ارفع ملفاً صوتياً.',
-    placeholder: 'اسأل أورا عن سوق أو زوج أو إعداد...',
+    empty: 'لا توجد محادثة بعد — اكتب رسالة، أو اضغط تسجيل صوتي، أو ارفع ملفاً صوتياً.',
+    placeholder: 'اسأل أورا عن سوق أو زوج أو صفقة...',
     sendBtn: 'إرسال',
+    clearChat: 'محادثة جديدة',
+    voiceOn: 'الصوت التلقائي: مفعل',
+    voiceOff: 'الصوت التلقائي: صامت',
+    savedLabel: 'محفوظة',
+    voiceMsgLabel: 'رسالة صوتية',
+    heardLabel: 'ما سمعته أورا:',
+    loadingChat: 'جاري تحميل المحادثة المحفوظة...',
   },
   es: {
     title: 'Habla con AURA',
-    subtitle: 'Escribe o habla — AURA responde como un trader pro.',
-    recordBtn: 'Grabar',
+    subtitle: 'Escribe o habla — AURA te escucha y responde con su voz.',
+    recordBtn: 'Grabar voz',
+    stopRecBtn: 'Detener y enviar',
     uploadBtn: 'Subir audio',
-    aiThinking: 'AURA analizando...',
-    playVoice: 'Reproducir',
+    aiThinking: 'AURA está analizando...',
+    playVoice: 'Escuchar',
     stopVoice: 'Detener',
-    errorMic: 'Microfono bloqueado. Haz clic en el icono de candado, permite el microfono.',
-    micUnsupported: 'La grabacion funciona en Chrome o Edge. Permite el microfono o usa Subir audio.',
-    micDenied: 'Microfono denegado. Haz clic en el icono de candado, permite el microfono.',
-    micTip: 'Consejo: permite el mic una vez. Tambien puedes escribir tu pregunta o subir un archivo de audio.',
-    errorEmpty: 'No se detecto audio — habla mas fuerte o mas tiempo.',
-    errorSend: 'No se pudo procesar tu mensaje. Intentalo de nuevo.',
-    empty: 'Sin conversacion — escribe un mensaje, toca el microfono o sube audio.',
+    loadingVoice: 'Cargando voz...',
+    errorMic: 'Micrófono bloqueado. Permite el acceso al micrófono en tu navegador e inténtalo de nuevo.',
+    micUnsupported: 'La grabación no es compatible aquí. Usa Chrome/Edge o Subir audio.',
+    micDenied: 'Micrófono denegado. Permite el micrófono en la barra de direcciones e inténtalo de nuevo.',
+    micTip: 'El chat se guarda automáticamente. Permite el micrófono para enviar notas de voz.',
+    errorEmpty: 'Grabación demasiado corta o vacía — habla más claro e inténtalo de nuevo.',
+    errorSend: 'No se pudo procesar tu mensaje. Inténtalo de nuevo.',
+    empty: 'Sin conversación — escribe un mensaje, graba voz o sube un audio.',
     placeholder: 'Pregunta a AURA sobre un mercado, par o setup...',
     sendBtn: 'Enviar',
+    clearChat: 'Nuevo chat',
+    voiceOn: 'Voz auto: Activa',
+    voiceOff: 'Voz auto: Silencio',
+    savedLabel: 'Guardado',
+    voiceMsgLabel: 'Mensaje de voz',
+    heardLabel: 'Lo que escuché:',
+    loadingChat: 'Cargando conversación...',
   },
 };
 
-function pcmToWav(pcm: Int16Array, sampleRate: number): Uint8Array {
-  const n = pcm.length;
-  const dataSize = n * 2;
-  const buf = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buf);
-  const writeStr = (off: number, s: string) => {
-    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
-  };
-  writeStr(0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeStr(8, 'WAVE');
-  writeStr(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, 1, true); // mono
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, 'data');
-  view.setUint32(40, dataSize, true);
-  for (let i = 0; i < n; i++) view.setInt16(44 + i * 2, pcm[i], true);
-  return new Uint8Array(buf);
+function pickRecorderMimeType(): string {
+  if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+    return '';
+  }
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ];
+  for (const type of candidates) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
+  return '';
 }
 
-export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
+export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
+  const { lang: contextLang } = useLanguage();
+  const lang: Lang = propLang || (contextLang as Lang) || 'en';
   const t = labels[lang] ?? labels.en;
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
   const { user } = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const [error, setError] = useState('');
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
+  const [loadingTtsIndex, setLoadingTtsIndex] = useState<number | null>(null);
   const [seconds, setSeconds] = useState(0);
   const [textInput, setTextInput] = useState('');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const audioCtxRef = useRef<any>(null);
-  const sourceRef = useRef<any>(null);
-  const sinkRef = useRef<any>(null);
+  const recordStartMsRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const storageKey = user?.uid ? `aura_voice_chat_${user.uid}` : null;
+
+  // Prime persistent HTMLAudioElement inside user gesture handlers so async TTS playback isn't blocked by browser autoplay rules
+  const unlockAudioPlayback = useCallback(() => {
+    const el = audioElRef.current;
+    if (!el) return;
+    try {
+      el.pause();
+      el.src = SILENT_WAV;
+      el.volume = 0;
+      const p = el.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => {
+          el.pause();
+          el.volume = 1;
+        }).catch(() => {
+          el.volume = 1;
+        });
+      } else {
+        el.volume = 1;
+      }
+    } catch {
+      el.volume = 1;
+    }
+  }, []);
+
+  // Persist local lightweight copy of chat messages (without massive base64 audio URIs)
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const compact = messages.slice(-50).map((m) => ({
+        role: m.role,
+        text: m.text,
+        hasAudio: m.hasAudio || Boolean(m.audioDataUri),
+        transcript: m.transcript,
+        ts: m.ts,
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(compact));
+    } catch {
+      // Ignore quota errors
+    }
+  }, [messages, storageKey]);
+
+  // Load persisted conversation from localStorage + Firestore on mount / user change
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.uid) {
+      setLoadingHistory(false);
+      return;
+    }
+
+    if (storageKey) {
+      try {
+        const cached = localStorage.getItem(storageKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+          }
+        }
+      } catch {}
+    }
+
+    (async () => {
+      setLoadingHistory(true);
+      try {
+        const token = await user.getIdToken().catch(() => '');
+        const res = await fetch(`/api/speak?userId=${encodeURIComponent(user.uid)}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        const data = await res.json();
+        if (!cancelled && data?.ok && Array.isArray(data.history)) {
+          if (data.history.length > 0) {
+            setMessages(data.history);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load chat history:', err);
+      } finally {
+        if (!cancelled) setLoadingHistory(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, storageKey]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -141,15 +263,18 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     return () => {
       window.speechSynthesis.removeEventListener('voiceschanged', load);
       window.speechSynthesis.cancel();
-      if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; }
+      if (audioElRef.current) {
+        audioElRef.current.pause();
+      }
     };
   }, []);
 
   const stopSpeaking = useCallback(() => {
-    if (ttsAudioRef.current) {
-      ttsAudioRef.current.pause();
-      ttsAudioRef.current.currentTime = 0;
-      ttsAudioRef.current = null;
+    if (audioElRef.current) {
+      audioElRef.current.pause();
+      try {
+        audioElRef.current.currentTime = 0;
+      } catch {}
     }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -158,13 +283,20 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
   }, []);
 
   const speakFallback = useCallback((text: string, index: number) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setSpeakingIndex(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang === 'ar' ? 'ar' : lang === 'es' ? 'es-ES' : 'en-US';
-    utter.rate = 1.05;
+    utter.lang = lang === 'ar' ? 'ar-SA' : lang === 'es' ? 'es-ES' : 'en-US';
+    utter.rate = 1.02;
     utter.pitch = 1;
     const voices = window.speechSynthesis.getVoices();
-    const match = voices.find((v) => v.lang && v.lang.startsWith(utter.lang)) || voices.find((v) => v.default);
+    const prefix = lang === 'ar' ? 'ar' : lang === 'es' ? 'es' : 'en';
+    const match =
+      voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(prefix)) ||
+      voices.find((v) => v.default);
     if (match) utter.voice = match;
     utter.onend = () => setSpeakingIndex((cur) => (cur === index ? null : cur));
     utter.onerror = () => setSpeakingIndex(null);
@@ -172,38 +304,78 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
     window.speechSynthesis.speak(utter);
   }, [lang]);
 
-  const playTTS = useCallback((ttsAudioUri: string | undefined, text: string, index: number) => {
-    stopSpeaking();
-    if (ttsAudioUri) {
-      const audio = new Audio(ttsAudioUri);
-      ttsAudioRef.current = audio;
-      setSpeakingIndex(index);
-      audio.onended = () => setSpeakingIndex((cur) => (cur === index ? null : cur));
-      audio.onerror = () => { setSpeakingIndex(null); speakFallback(text, index); };
-      audio.play().catch(() => speakFallback(text, index));
-    } else {
-      speakFallback(text, index);
-    }
-  }, [stopSpeaking, speakFallback]);
+  const playTTS = useCallback(
+    async (ttsAudioUri: string | undefined, text: string, index: number) => {
+      stopSpeaking();
+      let audioUri = ttsAudioUri;
 
-  const cleanupRecorder = useCallback(() => {
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try { mediaRecorderRef.current.stop(); } catch { }
+      // On-demand synthesis for older messages loaded from Firestore history
+      if (!audioUri && text) {
+        setLoadingTtsIndex(index);
+        try {
+          const token = user ? await user.getIdToken().catch(() => '') : '';
+          const res = await fetch('/api/speak', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ ttsOnly: true, text, lang }),
+          });
+          const data = await res.json();
+          if (data?.ok && typeof data.ttsAudioUri === 'string' && data.ttsAudioUri) {
+            audioUri = data.ttsAudioUri;
+            setMessages((prev) =>
+              prev.map((m, idx) => (idx === index ? { ...m, ttsAudioUri: audioUri } : m))
+            );
+          }
+        } catch {
+          // Fall back to browser speech below
+        } finally {
+          setLoadingTtsIndex((cur) => (cur === index ? null : cur));
+        }
+      }
+
+      if (audioUri && audioElRef.current) {
+        const el = audioElRef.current;
+        el.src = audioUri;
+        el.volume = 1;
+        setSpeakingIndex(index);
+        el.onended = () => setSpeakingIndex((cur) => (cur === index ? null : cur));
+        el.onerror = () => {
+          setSpeakingIndex(null);
+          speakFallback(text, index);
+        };
+        try {
+          await el.play();
+        } catch {
+          speakFallback(text, index);
+        }
+      } else {
+        speakFallback(text, index);
+      }
+    },
+    [stopSpeaking, speakFallback, user, lang]
+  );
+
+  const cleanupStreams = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-    mediaRecorderRef.current = null;
-    chunksRef.current = [];
-    try { if (sinkRef.current) sinkRef.current.disconnect(); } catch {}
-    try { if (sourceRef.current) sourceRef.current.stop(); } catch {}
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((tr) => tr.stop());
       streamRef.current = null;
     }
-    try { if (audioCtxRef.current && typeof audioCtxRef.current.close === 'function') audioCtxRef.current.close(); } catch {}
-    audioCtxRef.current = null;
-    sourceRef.current = null;
-    sinkRef.current = null;
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
   }, []);
+
+  useEffect(() => {
+    return () => {
+      cleanupStreams();
+    };
+  }, [cleanupStreams]);
 
   // Core send function — handles both text and audio
   const sendToAPI = useCallback(
@@ -211,9 +383,13 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
       setIsSending(true);
       setError('');
       try {
+        const token = user ? await user.getIdToken().catch(() => '') : '';
         const res = await fetch('/api/speak', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({
             ...payload,
             lang,
@@ -222,42 +398,63 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
           }),
         });
         const data = await res.json();
-        if (!data.ok) { setError(typeof data.error === 'string' && data.error ? data.error : t.errorSend); return; }
+        if (!data.ok) {
+          setError(typeof data.error === 'string' && data.error ? data.error : t.errorSend);
+          return;
+        }
         const transcript = typeof data.transcript === 'string' ? data.transcript : '';
-        const ttsAudioUri: string | undefined = data.ttsAudioUri;
+        const ttsAudioUri: string | undefined =
+          typeof data.ttsAudioUri === 'string' && data.ttsAudioUri ? data.ttsAudioUri : undefined;
+
         let aiMsgIndex = -1;
         setMessages((prev) => {
           const next = [...prev];
           if (transcript && !payload.text) {
             const last = next[next.length - 1];
-            if (last && last.role === 'user') next[next.length - 1] = { ...last, transcript };
+            if (last && last.role === 'user') {
+              next[next.length - 1] = { ...last, transcript, hasAudio: true };
+            }
           }
           aiMsgIndex = next.length;
-          next.push({ role: 'ai', text: data.text, ttsAudioUri } as Message);
+          next.push({
+            role: 'ai',
+            text: data.text,
+            ttsAudioUri,
+            ts: new Date().toISOString(),
+          });
           return next;
         });
-        requestAnimationFrame(() => {
-          if (aiMsgIndex >= 0) playTTS(ttsAudioUri, data.text, aiMsgIndex);
-        });
+
+        if (autoSpeak && data.text) {
+          requestAnimationFrame(() => {
+            if (aiMsgIndex >= 0) {
+              playTTS(ttsAudioUri, data.text, aiMsgIndex);
+            }
+          });
+        }
       } catch {
         setError(t.errorSend);
       } finally {
         setIsSending(false);
       }
     },
-    [lang, playTTS, t, user]
+    [lang, playTTS, autoSpeak, t, user]
   );
 
   // Send text message
   const sendText = useCallback(() => {
     const msg = textInput.trim();
-    if (!msg || isSending) return;
+    if (!msg || isSending || isRecording) return;
+    unlockAudioPlayback();
     setTextInput('');
     stopSpeaking();
-    setMessages((prev) => [...prev, { role: 'user', text: msg } as Message]);
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', text: msg, ts: new Date().toISOString() },
+    ]);
     sendToAPI({ text: msg });
     textareaRef.current?.focus();
-  }, [textInput, isSending, stopSpeaking, sendToAPI]);
+  }, [textInput, isSending, isRecording, unlockAudioPlayback, stopSpeaking, sendToAPI]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -270,54 +467,60 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
   );
 
   const stopRecording = useCallback(() => {
+    unlockAudioPlayback();
     setIsRecording(false);
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    setSeconds(0);
-    const sink = sinkRef.current;
-    if (!sink) { cleanupRecorder(); return; }
-    try {
-      const samples = (sink.getSamples as any)(0) as any;
-      const sampleRate = sink.sampleRate || sourceRef.current?.sampleRate || 48000;
-      const n = samples?.length || 0;
-      if (n < sampleRate / 2) { setError(t.errorEmpty); cleanupRecorder(); return; }
-      const pcm = new Int16Array(n);
-      for (let i = 0; i < n; i++) {
-        const v = samples.getFloat(i) as number;
-        const c = v !== v ? 0 : Math.max(-1, Math.min(1, v));
-        pcm[i] = Math.round(c * 32767);
-      }
-      const wav = pcmToWav(pcm, sampleRate);
-      const blob = new Blob([wav.buffer as ArrayBuffer], { type: 'audio/wav' });
-      if (blob.size < 2000) { setError(t.errorEmpty); cleanupRecorder(); return; }
-      const previewUrl = URL.createObjectURL(blob);
-      setMessages((prev) => [...prev, { role: 'user', audioDataUri: previewUrl } as Message]);
-      const fileReader = new FileReader();
-      fileReader.onloadend = () => sendToAPI({ audio: fileReader.result as string });
-      fileReader.readAsDataURL(blob);
-    } catch {
-      setError(t.errorSend);
-    } finally {
-      cleanupRecorder();
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-  }, [cleanupRecorder, t, sendToAPI]);
+    setSeconds(0);
+
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === 'inactive') {
+      cleanupStreams();
+      return;
+    }
+
+    try {
+      recorder.stop();
+    } catch {
+      cleanupStreams();
+      setError(t.errorSend);
+    }
+  }, [unlockAudioPlayback, cleanupStreams, t]);
 
   const startRecording = useCallback(async () => {
     setError('');
     stopSpeaking();
-    const AudioCtx = (window as any).AudioContext;
-    if (!navigator.mediaDevices?.getUserMedia || typeof AudioCtx === 'undefined') {
+    unlockAudioPlayback();
+
+    if (
+      typeof window === 'undefined' ||
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === 'undefined'
+    ) {
       setError(t.micUnsupported);
       return;
     }
+
     let micStream: MediaStream;
     try {
       micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
     } catch (micErr: any) {
       const name = (micErr?.name || '').toLowerCase();
       const msg2 = (micErr?.message || '').toLowerCase();
-      if (name === 'notallowederror' || name === 'permissiondeniederror' || msg2.includes('denied') || msg2.includes('permission')) {
+      if (
+        name === 'notallowederror' ||
+        name === 'permissiondeniederror' ||
+        msg2.includes('denied') ||
+        msg2.includes('permission')
+      ) {
         setError(t.micDenied);
       } else if (name === 'notfounderror' || msg2.includes('not found')) {
         setError(t.micUnsupported);
@@ -326,52 +529,135 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
       }
       return;
     }
+
     streamRef.current = micStream;
+    chunksRef.current = [];
+
     try {
-      const ctx: any = new AudioCtx();
-      audioCtxRef.current = ctx;
-      if (typeof ctx.resume === 'function') ctx.resume();
+      const preferredMime = pickRecorderMimeType();
+      const recorder = preferredMime
+        ? new MediaRecorder(micStream, { mimeType: preferredMime })
+        : new MediaRecorder(micStream);
 
-      const source: any = await ctx.createMediaStreamSource(micStream);
-      sourceRef.current = source;
-      const gain: any = ctx.createGainer();
-      const sink: any = await ctx.createAudioStreamSink(2);
-      sinkRef.current = sink;
-      sink.addConsumer(() => {});
+      const baseMime = (recorder.mimeType || preferredMime || 'audio/webm').split(';')[0].trim() || 'audio/webm';
 
-      try {
-        source.connect(gain).connect(sink);
-      } catch {
-        const dest: any = await ctx.createAudioStreamProcessor();
-        sinkRef.current = await ctx.createAudioStreamSink(2);
-        sinkRef.current.addConsumer(() => {});
-        source.connect(gain).connect(dest).connect(sinkRef.current);
-      }
+      recorder.ondataavailable = (ev: BlobEvent) => {
+        if (ev.data && ev.data.size > 0) {
+          chunksRef.current.push(ev.data);
+        }
+      };
 
+      recorder.onerror = () => {
+        setIsRecording(false);
+        setError(t.errorMic);
+        cleanupStreams();
+      };
+
+      recorder.onstop = () => {
+        const durationMs = Date.now() - recordStartMsRef.current;
+        const recordedChunks = [...chunksRef.current];
+        cleanupStreams();
+
+        const blob = new Blob(recordedChunks, { type: baseMime });
+        if (durationMs < 400 || blob.size < 400) {
+          setError(t.errorEmpty);
+          return;
+        }
+
+        const previewUrl = URL.createObjectURL(blob);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'user',
+            audioDataUri: previewUrl,
+            hasAudio: true,
+            ts: new Date().toISOString(),
+          },
+        ]);
+
+        const fileReader = new FileReader();
+        fileReader.onloadend = () => {
+          const dataUrl = typeof fileReader.result === 'string' ? fileReader.result : '';
+          if (!dataUrl || !dataUrl.includes(',')) {
+            setError(t.errorSend);
+            return;
+          }
+          sendToAPI({ audio: dataUrl });
+        };
+        fileReader.onerror = () => setError(t.errorSend);
+        fileReader.readAsDataURL(blob);
+      };
+
+      mediaRecorderRef.current = recorder;
+      recordStartMsRef.current = Date.now();
+      recorder.start(250);
       setIsRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
     } catch (e: any) {
-      console.error('Mic graph error:', e?.message);
+      console.error('MediaRecorder start error:', e?.message);
       setError(t.errorMic);
-      streamRef.current?.getTracks().forEach((tr) => tr.stop());
-      cleanupRecorder();
+      cleanupStreams();
     }
-  }, [stopSpeaking, t, cleanupRecorder]);
+  }, [stopSpeaking, unlockAudioPlayback, t, cleanupStreams, sendToAPI]);
 
   const onFileSelected = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      unlockAudioPlayback();
+      stopSpeaking();
       setError('');
-      setMessages((prev) => [...prev, { role: 'user', text: file.name } as Message]);
+
+      const previewUrl = URL.createObjectURL(file);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'user',
+          text: file.name,
+          audioDataUri: previewUrl,
+          hasAudio: true,
+          ts: new Date().toISOString(),
+        },
+      ]);
+
       const fileReader = new FileReader();
-      fileReader.onloadend = () => sendToAPI({ audio: fileReader.result as string });
+      fileReader.onloadend = () => {
+        const resultStr = typeof fileReader.result === 'string' ? fileReader.result : '';
+        if (!resultStr) {
+          setError(t.errorSend);
+          return;
+        }
+        sendToAPI({ audio: resultStr });
+      };
+      fileReader.onerror = () => setError(t.errorSend);
       fileReader.readAsDataURL(file);
       e.target.value = '';
     },
-    [sendToAPI]
+    [unlockAudioPlayback, stopSpeaking, sendToAPI, t]
   );
+
+  const handleClearChat = useCallback(async () => {
+    if (isClearing || isSending || isRecording) return;
+    stopSpeaking();
+    setIsClearing(true);
+    setError('');
+    try {
+      if (user?.uid) {
+        const token = await user.getIdToken().catch(() => '');
+        await fetch(`/api/speak?userId=${encodeURIComponent(user.uid)}`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+      }
+      if (storageKey) localStorage.removeItem(storageKey);
+      setMessages([]);
+    } catch {
+      setError(t.errorSend);
+    } finally {
+      setIsClearing(false);
+    }
+  }, [isClearing, isSending, isRecording, stopSpeaking, user, storageKey, t]);
 
   const fmtTime = (total: number) =>
     `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
@@ -379,42 +665,94 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
   return (
     <Card className="card-glow mx-auto w-full max-w-2xl">
       <CardContent className="flex flex-col gap-4 p-4 sm:p-6" dir={dir}>
+        {/* Hidden persistent audio element for reliable TTS playback */}
+        <audio ref={audioElRef} className="hidden" preload="auto" />
+
+        {/* Top status & action bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="gap-1.5 text-[11px] font-medium">
+              <BrainCircuit className="h-3.5 w-3.5 text-primary" />
+              AURA Live Advisor
+            </Badge>
+            {messages.length > 0 && (
+              <span className="text-[11px] text-emerald-500/90 font-medium">
+                • {t.savedLabel}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={autoSpeak ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => {
+                if (autoSpeak) stopSpeaking();
+                setAutoSpeak((v) => !v);
+              }}
+              className="h-7 gap-1.5 px-2.5 text-xs"
+            >
+              {autoSpeak ? <Volume2 className="h-3.5 w-3.5 text-primary" /> : <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />}
+              {autoSpeak ? t.voiceOn : t.voiceOff}
+            </Button>
+
+            {messages.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClearChat}
+                disabled={isClearing || isSending || isRecording}
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+              >
+                {isClearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                {t.clearChat}
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Conversation area */}
         <div
           ref={scrollRef}
           className="flex max-h-[55vh] min-h-[280px] flex-col gap-3 overflow-y-auto rounded-xl border border-border/50 bg-muted/30 p-3 custom-scrollbar"
         >
-          {messages.length === 0 && !isSending && (
+          {loadingHistory && messages.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center text-xs text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span>{t.loadingChat}</span>
+            </div>
+          ) : messages.length === 0 && !isSending ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                 <BrainCircuit className="h-7 w-7 text-primary" />
               </div>
               <p className="max-w-xs text-sm text-muted-foreground">{t.empty}</p>
             </div>
-          )}
+          ) : null}
 
           {messages.map((msg, index) =>
             msg.role === 'user' ? (
               <div key={index} className="flex justify-end">
-                <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary/15 px-4 py-2.5 text-sm">
+                <div className="max-w-[82%] rounded-2xl rounded-br-sm bg-primary/15 px-4 py-2.5 text-sm">
                   {msg.text && <p className="font-medium">{msg.text}</p>}
-                  {!msg.text && msg.audioDataUri && (
+                  {!msg.text && (msg.audioDataUri || msg.hasAudio) && (
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <span className="flex items-end gap-0.5">
                         {[4, 8, 6, 9, 5].map((h, i) => (
                           <span key={i} style={{ height: h }} className="w-0.5 rounded bg-foreground/70" />
                         ))}
                       </span>
-                      {lang === 'ar' ? 'رسالة صوتية' : lang === 'es' ? 'Mensaje de voz' : 'Voice message'}
+                      {t.voiceMsgLabel}
                     </span>
                   )}
                   {msg.audioDataUri && (
-                    <audio src={msg.audioDataUri} controls className="mt-2 h-8 w-full" preload="none" />
+                    <audio src={msg.audioDataUri} controls className="mt-2 h-8 w-full min-w-[210px]" preload="metadata" />
                   )}
                   {msg.transcript && (
-                    <p className="mt-1.5 text-[11px] italic text-muted-foreground/80">
-                      {lang === 'ar' ? 'فهمت:' : lang === 'es' ? 'Lo que escuche:' : 'What I heard:'} {msg.transcript}
+                    <p className="mt-1.5 text-[11px] italic text-muted-foreground/90">
+                      {t.heardLabel} {msg.transcript}
                     </p>
                   )}
                 </div>
@@ -429,14 +767,17 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
                     {msg.text && (
                       <button
                         type="button"
+                        disabled={loadingTtsIndex === index}
                         onClick={() =>
                           speakingIndex === index
                             ? stopSpeaking()
                             : playTTS(msg.ttsAudioUri, msg.text!, index)
                         }
-                        className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                        className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
                       >
-                        {speakingIndex === index ? (
+                        {loadingTtsIndex === index ? (
+                          <><Loader2 className="h-3 w-3 animate-spin" /> {t.loadingVoice}</>
+                        ) : speakingIndex === index ? (
                           <><Pause className="h-3 w-3" /> {t.stopVoice}</>
                         ) : (
                           <><Play className="h-3 w-3" /> {t.playVoice}</>
@@ -520,8 +861,8 @@ export function VoiceChat({ lang = 'en' }: { lang?: Lang }) {
           <div className="flex items-center gap-2">
             {isRecording ? (
               <Button size="lg" variant="destructive" className="animate-pulse gap-2" onClick={stopRecording}>
-                <Square className="h-5 w-5" />
-                {fmtTime(seconds)}
+                <Square className="h-4 w-4 fill-current" />
+                <span>{t.stopRecBtn} ({fmtTime(seconds)})</span>
               </Button>
             ) : (
               <Button size="lg" variant="outline" className="gap-2" onClick={startRecording} disabled={isSending}>

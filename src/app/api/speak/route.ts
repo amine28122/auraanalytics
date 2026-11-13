@@ -5,8 +5,16 @@ import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
 import { getEconomicCalendar, getNews } from '@/lib/actions';
 
-const DATA_URI_RE = /^data:audio\/([^;]+);base64,(.+)$/;
-const MAX_HISTORY = 10;
+// Accepts data:audio/webm;codecs=opus;base64,... as well as standard data:audio/wav;base64,...
+const DATA_URI_RE = /^data:(audio\/[a-zA-Z0-9.+_-]+)(?:;[^,]*)?;base64,(.+)$/i;
+const MAX_HISTORY = 25;
+
+function normalizeAudioMime(rawMime: string): string {
+  const lower = rawMime.toLowerCase().trim();
+  if (lower === 'audio/x-m4a' || lower === 'audio/m4a') return 'audio/mp4';
+  if (lower === 'audio/x-wav' || lower === 'audio/wave') return 'audio/wav';
+  return lower;
+}
 
 /** Extract text/transcript from Gemini output even when JSON is fenced or slightly truncated */
 function extractJSON(raw: string): { text?: string; transcript?: string } {
@@ -30,18 +38,82 @@ function extractJSON(raw: string): { text?: string; transcript?: string } {
 }
 
 /** Race a promise with a timeout so external calls can never hang the route */
-async function withTimeout(p: Promise<unknown> | PromiseLike<unknown>, ms: number): Promise<any> {
+async function withTimeout<T>(p: Promise<T> | PromiseLike<T>, ms: number): Promise<T | undefined> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       Promise.resolve(p),
-      new Promise((resolve) => {
+      new Promise<undefined>((resolve) => {
         timer = setTimeout(() => resolve(undefined), ms);
       }),
     ]);
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+/** Verify Bearer ID token when provided, falling back safely to supplied userId */
+async function resolveAuthorizedUserId(req: Request, fallbackUserId: string): Promise<string> {
+  const authHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+  if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token) {
+      try {
+        const { app } = initializeServerFirebase();
+        const decoded = await admin.auth(app).verifyIdToken(token);
+        if (decoded?.uid) return decoded.uid;
+      } catch (err: any) {
+        console.warn('Speak auth token verify skipped:', err?.message);
+      }
+    }
+  }
+  return (fallbackUserId || '').trim();
+}
+
+/** Generate natural WAV voice audio using Gemini 3.8 Flash Lite TTS */
+async function synthesizeSpeechWav(text: string): Promise<string | undefined> {
+  const cleanText = (text || '').trim();
+  if (!cleanText) return undefined;
+
+  try {
+    const base64Audio = await withTimeout(
+      runGeminiWithFailover(async (ai) => {
+        const ttsRes = await ai.models.generateContent({
+          model: 'gemini-3.8-flash-lite-tts',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: cleanText,
+                  speechMetadata: {
+                    style: 'Warm, confident, articulate female macro trader and financial advisor speaking naturally',
+                  },
+                },
+              ],
+            },
+          ],
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: 'Kore' },
+              },
+            },
+          },
+        });
+        return ttsRes.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      }),
+      15000
+    );
+
+    if (typeof base64Audio === 'string' && base64Audio.length > 0) {
+      return `data:audio/wav;base64,${base64Audio}`;
+    }
+  } catch (err: any) {
+    console.warn('TTS synthesis failed, client will use browser speech fallback:', err?.message);
+  }
+  return undefined;
 }
 
 /** In-memory cache for live market data (30 min TTL) */
@@ -51,7 +123,7 @@ const dataCache: {
   news: string;
   ts: number;
 } = { prices: {}, upcoming: '', news: '', ts: 0 };
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 30 * 60 * 1000;
 
 /** Fetch real current market prices from public feeds */
 async function fetchLivePrices(): Promise<Record<string, string>> {
@@ -78,11 +150,27 @@ async function fetchLivePrices(): Promise<Record<string, string>> {
   return out;
 }
 
+function buildContextLines(
+  prices: Record<string, string>,
+  upcoming: string,
+  news: string
+): { pricesLine: string; contextLine: string } {
+  const pricesLine =
+    Object.keys(prices).length > 0
+      ? `PRICES: ${JSON.stringify(prices)}`
+      : 'PRICES: unavailable — do not invent numbers.';
+  const contextLine = [
+    pricesLine,
+    upcoming ? `UPCOMING EVENTS: ${upcoming}` : '',
+    news ? `NEWS: ${news}` : '',
+  ].filter(Boolean).join(' | ');
+  return { pricesLine, contextLine };
+}
+
 /** Refresh cache if stale, otherwise return cached data */
 async function getLiveContext(): Promise<{ pricesLine: string; contextLine: string }> {
   const now = Date.now();
   if (now - dataCache.ts < CACHE_TTL && Object.keys(dataCache.prices).length > 0) {
-    // Return cached
     return buildContextLines(dataCache.prices, dataCache.upcoming, dataCache.news);
   }
 
@@ -101,7 +189,6 @@ async function getLiveContext(): Promise<{ pricesLine: string; contextLine: stri
     .map((n: any) => n.title || '')
     .join(' | ');
 
-  // Update cache
   dataCache.prices = prices;
   dataCache.upcoming = upcoming;
   dataCache.news = news;
@@ -110,31 +197,95 @@ async function getLiveContext(): Promise<{ pricesLine: string; contextLine: stri
   return buildContextLines(prices, upcoming, news);
 }
 
-function buildContextLines(
-  prices: Record<string, string>,
-  upcoming: string,
-  news: string
-): { pricesLine: string; contextLine: string } {
-  const pricesLine =
-    Object.keys(prices).length > 0
-      ? `PRICES: ${JSON.stringify(prices)}`
-      : 'PRICES: unavailable — do not invent numbers.';
-  const contextLine = [
-    pricesLine,
-    upcoming ? `UPCOMING EVENTS: ${upcoming}` : '',
-    news ? `NEWS: ${news}` : '',
-  ].filter(Boolean).join(' | ');
-  return { pricesLine, contextLine };
+/** Load persisted chat history for the authenticated user */
+export async function GET(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const paramUid = url.searchParams.get('userId') || '';
+    const userId = await resolveAuthorizedUserId(req, paramUid);
+
+    if (!userId) {
+      return NextResponse.json({ ok: true, history: [] });
+    }
+
+    const { firestore } = initializeServerFirebase();
+    const chatDoc = await firestore.collection('users').doc(userId).collection('chat').doc('session').get();
+    if (!chatDoc.exists) {
+      return NextResponse.json({ ok: true, history: [] });
+    }
+
+    const rawHistory = Array.isArray(chatDoc.data()?.history) ? chatDoc.data()?.history : [];
+    const history = rawHistory.map((item: any) => {
+      const role = item?.role === 'user' ? 'user' : 'ai';
+      const ts =
+        typeof item?.ts === 'string'
+          ? item.ts
+          : item?.ts?.toDate
+            ? item.ts.toDate().toISOString()
+            : undefined;
+      if (role === 'user') {
+        const textVal = typeof item?.text === 'string' ? item.text : '';
+        const transcriptVal = typeof item?.transcript === 'string' ? item.transcript : '';
+        return {
+          role: 'user',
+          text: textVal || transcriptVal,
+          transcript: item?.hasAudio && transcriptVal ? transcriptVal : undefined,
+          hasAudio: Boolean(item?.hasAudio),
+          ts,
+        };
+      }
+      return {
+        role: 'ai',
+        text: typeof item?.text === 'string' ? item.text : '',
+        ts,
+      };
+    }).filter((m: any) => (m.text && m.text.trim()) || (m.transcript && m.transcript.trim()));
+
+    return NextResponse.json({ ok: true, history });
+  } catch (e: any) {
+    console.error('Speak GET error:', e?.message);
+    return NextResponse.json({ ok: false, error: e?.message || 'Failed to load chat history.' }, { status: 500 });
+  }
 }
 
+/** Clear saved chat session */
+export async function DELETE(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const paramUid = url.searchParams.get('userId') || '';
+    const userId = await resolveAuthorizedUserId(req, paramUid);
+
+    if (!userId) {
+      return NextResponse.json({ ok: false, error: 'Missing user session.' }, { status: 400 });
+    }
+
+    const { firestore } = initializeServerFirebase();
+    await firestore.collection('users').doc(userId).collection('chat').doc('session').set(
+      { history: [], count: 0, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    console.error('Speak DELETE error:', e?.message);
+    return NextResponse.json({ ok: false, error: e?.message || 'Failed to clear chat.' }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
+
+    // On-demand TTS mode (e.g. replaying older messages loaded from Firestore history)
+    if (body?.ttsOnly === true && typeof body?.text === 'string' && body.text.trim()) {
+      const ttsAudioUri = await synthesizeSpeechWav(body.text.trim());
+      return NextResponse.json({ ok: true, ttsAudioUri });
+    }
+
     const dataUri: string = typeof body?.audio === 'string' ? body.audio : '';
     const textInput: string = typeof body?.text === 'string' ? body.text.trim() : '';
     const lang: string = typeof body?.lang === 'string' ? body.lang : 'en';
-    const userId: string = typeof body?.userId === 'string' ? body.userId : '';
+    const userId: string = await resolveAuthorizedUserId(req, typeof body?.userId === 'string' ? body.userId : '');
     const userName: string = typeof body?.userName === 'string' ? body.userName : '';
 
     const isTextMode = !dataUri && textInput.length > 0;
@@ -150,10 +301,13 @@ export async function POST(req: Request) {
     if (isAudioMode) {
       const match = dataUri.match(DATA_URI_RE);
       if (!match) {
-        return NextResponse.json({ ok: false, error: 'Invalid audio data.' }, { status: 400 });
+        return NextResponse.json({ ok: false, error: 'Invalid audio data format.' }, { status: 400 });
       }
-      mimeType = `audio/${match[1]}`;
+      mimeType = normalizeAudioMime(match[1]);
       base64 = match[2];
+      if (!base64 || base64.length < 100) {
+        return NextResponse.json({ ok: false, error: 'Recorded audio is empty.' }, { status: 400 });
+      }
       if (base64.length > 8 * 1024 * 1024) {
         return NextResponse.json({ ok: false, error: 'Audio too large.' }, { status: 413 });
       }
@@ -185,16 +339,44 @@ export async function POST(req: Request) {
       }
     }
 
+    // -- Step 1: If audio was sent, transcribe accurately via gemini-3.5-transcribe --
+    let preTranscript = '';
+    if (isAudioMode) {
+      try {
+        const transcribed = await withTimeout(
+          runGeminiWithFailover(async (ai) => {
+            const trRes = await ai.models.generateContent({
+              model: 'gemini-3.5-transcribe',
+              contents: {
+                parts: [
+                  { inlineData: { mimeType, data: base64 } },
+                  {
+                    text: 'Transcribe this audio accurately in its original spoken language (Arabic, Moroccan Darija, English, French, or Spanish). Return ONLY the exact spoken words.',
+                  },
+                ],
+              },
+            });
+            return (trRes.text || '').trim();
+          }),
+          12000
+        );
+        if (typeof transcribed === 'string' && transcribed.trim()) {
+          preTranscript = transcribed.trim();
+        }
+      } catch (trErr: any) {
+        console.warn('Dedicated audio transcription fallback to multimodal:', trErr?.message);
+      }
+    }
+
     const langName = profile.language === 'ar' ? 'Arabic' : profile.language === 'es' ? 'Spanish' : 'English';
     const recent = (chat.history as any[])
-      .slice(-6)
+      .slice(-8)
       .map((m) => `${m.role === 'user' ? 'CLIENT' : 'AURA'}: ${m.text || m.transcript || ''}`)
       .join('\n');
 
     const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-4-hydrogen';
 
     const { contextLine } = await getLiveContext().catch(() => ({ pricesLine: '', contextLine: 'PRICES: unavailable.' }));
-
 
     const systemPrompt =
       'You are AURA, an elite hedge fund manager and macro trader with 20+ years across Forex, crypto, commodities, and equities. ' +
@@ -215,15 +397,15 @@ export async function POST(req: Request) {
       'Speak in first person, as if physically present.';
 
     const rules =
-      '\nLANGUAGE: match exactly — Moroccan Darija (واش/دابا/بزاف) → Darija, MSA → MSA, French → French, English → English. Never mix.' +
-      '\nFORMAT: max 65 words, spoken sentences only, no bullets/markdown/emojis.' +
+      '\nLANGUAGE: match the client message language/dialect — Moroccan Darija -> Darija, Arabic -> Arabic, French -> French, Spanish -> Spanish, English -> English. Never mix unless the client mixes.' +
+      '\nFORMAT: max 65 words, natural spoken sentences only, no bullet points, no markdown, no emojis.' +
       '\nOUTPUT: valid JSON only, no text outside it: {"transcript":"<what client said>","text":"<your reply>"}';
 
     const inputDescription = isTextMode
       ? `\n\nClient: "${textInput}"`
-      : '\nClient sent a voice message (attached).';
-
-
+      : preTranscript
+        ? `\n\nClient voice message transcript: "${preTranscript}" (audio also attached for tone/confirmation).`
+        : '\nClient sent a voice message (attached). Transcribe what they said and reply naturally.';
 
     const callAI = async (parts: any[]) => {
       let out = '';
@@ -236,7 +418,7 @@ export async function POST(req: Request) {
               contents: [{ role: 'user', parts }],
               config: {
                 systemInstruction: systemPrompt,
-                maxOutputTokens: 800,
+                maxOutputTokens: 1024,
                 safetySettings: [
                   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                   { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -251,7 +433,7 @@ export async function POST(req: Request) {
           lastErr = e;
         }
         if (!out.trim() && attempt < 3) {
-          await new Promise((r) => setTimeout(r, 900 * attempt));
+          await new Promise((r) => setTimeout(r, 700 * attempt));
         }
       }
       if (!out.trim() && lastErr) throw lastErr;
@@ -259,45 +441,56 @@ export async function POST(req: Request) {
     };
 
     const priceRules =
-      '\\n5. PRICES: only quote prices from the LIVE MARKET PRICES list provided. NEVER invent a number. If the requested asset is not in that list, say you do not have the live price right now. Round numbers naturally.' +
-      '\\n6. TRUTHFULNESS: never invent news, figures, or events. If you do not know, admit it honestly instead of guessing.' +
-      '\\n7. ECONOMIC EVENTS: use the UPCOMING ECONOMIC EVENTS and NEWS provided above whenever relevant — warn the client when a high-impact event is approaching instead of pretending it does not exist (e.g., CPI/NFP/FED). If the lists are empty, simply give the important technical view and never invent events.';
+      '\nPRICES RULE: only quote prices from the LIVE DATA list provided above. NEVER invent a number. If the requested asset is not in that list, say you do not have the live price right now.' +
+      '\nTRUTHFULNESS RULE: never invent news, figures, or events.' +
+      '\nEVENTS RULE: warn the client when an upcoming high-impact event is relevant.';
+
     const baseParts: any[] = [{ text: rules + priceRules + inputDescription }];
-    if (!isTextMode) baseParts.push({ inlineData: { mimeType, data: base64 } });
+    if (isAudioMode) {
+      baseParts.push({ inlineData: { mimeType, data: base64 } });
+    }
 
     let result = '';
     try {
       result = await callAI(baseParts);
     } catch (e: any) {
       console.error('AI call failed after retries:', e?.message);
-      return NextResponse.json(
-        { ok: false, error: e?.message || 'AI is temporarily unavailable. Please try again.' },
-        { status: 502 }
-      );
+      // If multimodal audio inlineData caused an issue on retry, fall back cleanly using preTranscript if available
+      if (isAudioMode && preTranscript) {
+        try {
+          result = await callAI([{ text: rules + priceRules + `\n\nClient: "${preTranscript}"` }]);
+        } catch {}
+      }
+      if (!result) {
+        return NextResponse.json(
+          { ok: false, error: e?.message || 'AI is temporarily unavailable. Please try again.' },
+          { status: 502 }
+        );
+      }
     }
 
-    let parsed = extractJSON(result);
+    const parsed = extractJSON(result);
     let replyText = (parsed.text || '').trim();
-    let transcript = isTextMode ? textInput : (parsed.transcript || '').trim().slice(0, 300);
+    let transcript = isTextMode
+      ? textInput
+      : (parsed.transcript || preTranscript || '').trim().slice(0, 400);
 
-    // The model occasionally returns a broken/empty snippet — retry briefly with a shorter prompt
+    // Retry briefly if the model returned non-JSON or empty text
     if (!replyText) {
       for (let i = 0; i < 2 && !replyText; i++) {
-        await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+        await new Promise((r) => setTimeout(r, 500 * (i + 1)));
         const shortRules =
           rules +
-          '\nCRITICAL: reply with ONE single line of valid JSON only. No code fences, no markdown. Keep the reply under 20 words so the JSON is never cut off.';
+          '\nCRITICAL: reply with ONE single line of valid JSON only. No code fences, no markdown. Keep the reply under 35 words.';
         const shortParts: any[] = [{ text: shortRules + inputDescription }];
-        if (!isTextMode) shortParts.push({ inlineData: { mimeType, data: base64 } });
+        if (isAudioMode && !preTranscript) shortParts.push({ inlineData: { mimeType, data: base64 } });
         try {
           result = await callAI(shortParts);
-        } catch {
-          // ignore; outer guard reports it
-        }
+        } catch {}
         const p2 = extractJSON(result);
         if (p2.text && p2.text.trim()) {
           replyText = p2.text.trim();
-          transcript = isTextMode ? textInput : (p2.transcript || '').trim().slice(0, 300);
+          transcript = isTextMode ? textInput : (p2.transcript || preTranscript || '').trim().slice(0, 400);
         }
       }
     }
@@ -306,23 +499,44 @@ export async function POST(req: Request) {
       console.error('Empty reply text after retries. Raw:', (result || '').slice(0, 200));
       const fallback =
         profile.language === 'ar'
-          ? 'عذراً، الخدمة مشغولة في هاد اللحظة. جرب تعاود السؤال بعد ثواني.'
+          ? 'عذراً، الخدمة مشغولة في هذه اللحظة. حاول إعادة إرسال سؤالك بعد ثوانٍ.'
           : profile.language === 'es'
             ? 'Disculpa, el servicio está ocupado ahora. Vuelve a intentarlo en unos segundos.'
             : 'Sorry, the service is busy at this moment. Please try again in a few seconds.';
-      return NextResponse.json({ ok: true, text: fallback, transcript: isTextMode ? textInput : '', lang: profile.language });
+      const ttsAudioUri = await synthesizeSpeechWav(fallback);
+      return NextResponse.json({
+        ok: true,
+        text: fallback,
+        transcript: isTextMode ? textInput : preTranscript,
+        lang: profile.language,
+        ttsAudioUri,
+      });
     }
 
-    // -- Save history --
-    if (userId && replyText) {
+    // -- Step 2 & 3 in parallel: Generate natural voice audio (WAV) AND save chat history --
+    const savePromise = (async (): Promise<boolean> => {
+      if (!userId || !replyText) return false;
       try {
         const { firestore } = initializeServerFirebase();
         const ref = firestore.collection('users').doc(userId).collection('chat').doc('session');
-        const timestamp = admin.firestore.FieldValue.serverTimestamp();
+        const nowIso = new Date().toISOString();
+
+        // NOTE: Firestore does NOT allow FieldValue.serverTimestamp() inside arrays.
+        // Using ISO strings inside history items prevents silent save failures.
         const history = [
           ...(chat.history as any[]),
-          { role: 'user', transcript, ts: timestamp },
-          { role: 'assistant', text: replyText, ts: timestamp },
+          {
+            role: 'user',
+            text: isTextMode ? textInput : '',
+            transcript,
+            hasAudio: isAudioMode,
+            ts: nowIso,
+          },
+          {
+            role: 'assistant',
+            text: replyText,
+            ts: nowIso,
+          },
         ].slice(-(MAX_HISTORY * 2));
 
         let style = chat.style;
@@ -335,11 +549,11 @@ export async function POST(req: Request) {
                   role: 'user',
                   parts: [{
                     text: 'Describe in 10 words max how this client communicates (language, dialect, tone): ' +
-                      history.map((h) => `${h.role === 'user' ? 'C' : 'A'}: ${h.transcript || h.text || ''}`).join('; '),
+                      history.slice(-6).map((h) => `${h.role === 'user' ? 'C' : 'A'}: ${h.transcript || h.text || ''}`).join('; '),
                   }],
                 }],
                 config: {
-                  maxOutputTokens: 40,
+                  maxOutputTokens: 60,
                   safetySettings: [
                     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -350,16 +564,40 @@ export async function POST(req: Request) {
               });
               return (r.text || '').trim().slice(0, 120);
             });
-          } catch { style = ''; }
+          } catch {
+            style = '';
+          }
         }
 
-        await ref.set({ history, style, count: history.length, updatedAt: timestamp }, { merge: true });
+        await ref.set(
+          {
+            history,
+            style,
+            count: history.length,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+        return true;
       } catch (e: any) {
-        console.warn('Save failed:', e?.message);
+        console.warn('Speak history save failed:', e?.message);
+        return false;
       }
-    }
+    })();
 
-    return NextResponse.json({ ok: true, text: replyText, transcript, lang: profile.language });
+    const [ttsAudioUri, saved] = await Promise.all([
+      synthesizeSpeechWav(replyText),
+      savePromise,
+    ]);
+
+    return NextResponse.json({
+      ok: true,
+      text: replyText,
+      transcript,
+      lang: profile.language,
+      ttsAudioUri,
+      saved,
+    });
   } catch (e: any) {
     console.error('Speak route error:', e?.message);
     return NextResponse.json({ ok: false, error: e?.message || 'Something went wrong.' }, { status: 500 });
