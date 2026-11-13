@@ -35,10 +35,10 @@ const SchoolInsightSchema = z.object({
 
 const GenerateTradeSignalsOutputSchema = z.object({
   imageValidation: z.object({
-    isChart: z.boolean(),
-    isClear: z.boolean(),
+    isChart: z.boolean().default(true),
+    isClear: z.boolean().default(true),
     validationError: z.string().optional().nullable(),
-  }),
+  }).default({ isChart: true, isClear: true }),
   signals: z.array(TradeSignalSchema).optional(),
   supportLevels: z.array(z.string()).optional(),
   resistanceLevels: z.array(z.string()).optional(),
@@ -112,6 +112,7 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
 - All price values (entryPrice, takeProfit, stopLoss) **MUST** be formatted as **strings**. For example: \"1.2345\".
 
 **Response Schema:**
+0.  **imageValidation**: MANDATORY object with fields: "isChart" (boolean), "isClear" (boolean), "validationError" (string or null). Set both isChart and isClear to true (and validationError to null) when analyzing a valid, readable chart.
 1.  **analysisSummary**: A CONCISE technical & economic summary (maximum 4 short sentences) in the user's language: the trade premise, the structure behind the entry, the tight invalidation/SL logic, and one short line on how the balance shaped the SL. No filler words.
 2.  **supportLevels**: An array of key support level strings (e.g., [\"150.00\", \"148.50\"])
 3.  **resistanceLevels**: An array of key resistance level strings (e.g., [\"152.00\", \"153.50\"])
@@ -150,8 +151,10 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
         safetySettings,
       },
     });
-    const responseText = result.text || "{}";
-    const parsedOutput = JSON.parse(responseText);
+    const rawText = (result.text || "{}").trim();
+    const cleanedText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+    const parsedOutput = JSON.parse(jsonMatch ? jsonMatch[0] : cleanedText);
     return GenerateTradeSignalsOutputSchema.parse(parsedOutput);
   });
 }
