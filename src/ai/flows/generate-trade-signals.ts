@@ -1,6 +1,6 @@
 'use server';
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, Part } from '@google/generative-ai';
+import { HarmCategory, HarmBlockThreshold, type Part } from '@google/genai';
 import { z } from 'zod';
 import { runGeminiWithFailover } from '@/ai/failover';
 
@@ -134,10 +134,6 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
 **Final Instruction**: Generate the JSON output. If no valid trading setup can be identified at all, you may return an empty \"signals\" array, but you MUST explain why in the \"analysisSummary\". If validation fails, only populate the 'imageValidation' object.`}
   );
 
-  const generationConfig = {
-    responseMimeType: "application/json",
-  };
-
   const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -145,10 +141,16 @@ export async function generateTradeSignals(input: GenerateTradeSignalsInput): Pr
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
   ];
 
-  return await runGeminiWithFailover(async (genAI) => {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
-    const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig, safetySettings });
-    const responseText = result.response.text();
+  return await runGeminiWithFailover(async (ai) => {
+    const result = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-lite',
+      contents: [{ role: "user", parts: promptParts }],
+      config: {
+        responseMimeType: "application/json",
+        safetySettings,
+      },
+    });
+    const responseText = result.text || "{}";
     const parsedOutput = JSON.parse(responseText);
     return GenerateTradeSignalsOutputSchema.parse(parsedOutput);
   });

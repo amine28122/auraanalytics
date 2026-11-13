@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { initializeServerFirebase } from '@/firebase/server-init';
 import { getSharedPrices } from '@/lib/actions';
 import { runGeminiWithFailover } from '@/ai/failover';

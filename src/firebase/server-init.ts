@@ -8,22 +8,29 @@ if (!admin.apps.length) {
       projectId: "aura-analytics-d2902",
     };
 
-    // الطريقة الأولى: البحث عن ملف فعلي (هذه أسهل طريقة لك)
-    const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
-
-    if (fs.existsSync(serviceAccountPath)) {
-      const fileContent = fs.readFileSync(serviceAccountPath, 'utf8');
-      adminConfig.credential = admin.credential.cert(JSON.parse(fileContent));
-      console.log("✅ [Firebase Admin] SUCCESS: Loaded from service-account.json file.");
-    }
-    // الطريقة الثانية: البحث في متغيرات البيئة (للمواقع المرفوعة أونلاين)
-    else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    // Priority 1: Load from Environment Variable (Secrets)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       try {
-        const cleanJson = process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\n/g, '').trim();
-        adminConfig.credential = admin.credential.cert(JSON.parse(cleanJson));
-        console.log("✅ [Firebase Admin] SUCCESS: Loaded from Environment Variable.");
+        const raw = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+        adminConfig.credential = admin.credential.cert(JSON.parse(raw));
+        console.log("✅ [Firebase Admin] SUCCESS: Loaded from FIREBASE_SERVICE_ACCOUNT Environment Variable.");
       } catch (e) {
-        console.error("❌ [Firebase Admin] ERROR: Failed to parse FIREBASE_SERVICE_ACCOUNT env var.");
+        try {
+          const cleanJson = process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\r?\n/g, '').trim();
+          adminConfig.credential = admin.credential.cert(JSON.parse(cleanJson));
+          console.log("✅ [Firebase Admin] SUCCESS: Loaded from FIREBASE_SERVICE_ACCOUNT Environment Variable.");
+        } catch (e2) {
+          console.error("❌ [Firebase Admin] ERROR: Failed to parse FIREBASE_SERVICE_ACCOUNT env var.");
+        }
+      }
+    }
+    // Priority 2: Fallback to local service-account.json file if present
+    else {
+      const serviceAccountPath = path.join(process.cwd(), 'service-account.json');
+      if (fs.existsSync(serviceAccountPath)) {
+        const fileContent = fs.readFileSync(serviceAccountPath, 'utf8');
+        adminConfig.credential = admin.credential.cert(JSON.parse(fileContent));
+        console.log("✅ [Firebase Admin] SUCCESS: Loaded from service-account.json file.");
       }
     }
 

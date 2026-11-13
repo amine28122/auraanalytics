@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { runGeminiWithFailover } from '@/ai/failover';
-import { HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { initializeServerFirebase } from '@/firebase/server-init';
 import * as admin from 'firebase-admin';
 import { getEconomicCalendar, getNews } from '@/lib/actions';
@@ -191,7 +191,7 @@ export async function POST(req: Request) {
       .map((m) => `${m.role === 'user' ? 'CLIENT' : 'AURA'}: ${m.text || m.transcript || ''}`)
       .join('\n');
 
-    const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-3.6-flash';
+    const model = process.env.GEMINI_AUDIO_MODEL || 'gemini-4-hydrogen';
 
     const { contextLine } = await getLiveContext().catch(() => ({ pricesLine: '', contextLine: 'PRICES: unavailable.' }));
 
@@ -230,19 +230,22 @@ export async function POST(req: Request) {
       let lastErr: any = null;
       for (let attempt = 1; attempt <= 3 && !out.trim(); attempt++) {
         try {
-          out = await runGeminiWithFailover(async (genAI) => {
-            const m = genAI.getGenerativeModel({ model, systemInstruction: systemPrompt });
-            const res = await m.generateContent({
+          out = await runGeminiWithFailover(async (ai) => {
+            const res = await ai.models.generateContent({
+              model,
               contents: [{ role: 'user', parts }],
-              generationConfig: { temperature: 0.65, maxOutputTokens: 800 },
-              safetySettings: [
-                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-              ],
+              config: {
+                systemInstruction: systemPrompt,
+                maxOutputTokens: 800,
+                safetySettings: [
+                  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                ],
+              },
             });
-            return res.response.text() || '';
+            return res.text || '';
           });
         } catch (e: any) {
           lastErr = e;
@@ -325,9 +328,9 @@ export async function POST(req: Request) {
         let style = chat.style;
         if (!style && history.length >= 2) {
           try {
-            style = await runGeminiWithFailover(async (genAI) => {
-              const m = genAI.getGenerativeModel({ model });
-              const r = await m.generateContent({
+            style = await runGeminiWithFailover(async (ai) => {
+              const r = await ai.models.generateContent({
+                model,
                 contents: [{
                   role: 'user',
                   parts: [{
@@ -335,15 +338,17 @@ export async function POST(req: Request) {
                       history.map((h) => `${h.role === 'user' ? 'C' : 'A'}: ${h.transcript || h.text || ''}`).join('; '),
                   }],
                 }],
-                generationConfig: { temperature: 0.2, maxOutputTokens: 40 },
-                safetySettings: [
-                  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                ],
+                config: {
+                  maxOutputTokens: 40,
+                  safetySettings: [
+                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  ],
+                },
               });
-              return (r.response.text() || '').trim().slice(0, 120);
+              return (r.text || '').trim().slice(0, 120);
             });
           } catch { style = ''; }
         }

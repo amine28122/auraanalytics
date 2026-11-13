@@ -5,7 +5,7 @@ import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 export const firebaseConfig = {
-  apiKey: "AIzaSyCixfnelhBuxvaSlDQiCldJyIZOhXU2E_Q",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyCixfnelhBuxvaSlDQiCldJyIZOhXU2E_Q",
   authDomain: "aura-analytics-d2902.firebaseapp.com",
   projectId: "aura-analytics-d2902",
   storageBucket: "aura-analytics-d2902.appspot.com",

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 /**
  * Parses the GEMINI_API_KEY environment variable.
@@ -14,7 +14,7 @@ export function getGeminiKeys(): string[] {
  * If a key fails with a 429 Rate Limit / Quota Exceeded error, it automatically tries the next key in the pool.
  */
 export async function runGeminiWithFailover<T>(
-  fn: (genAI: GoogleGenerativeAI) => Promise<T>
+  fn: (ai: GoogleGenAI) => Promise<T>
 ): Promise<T> {
   const keys = getGeminiKeys();
   if (keys.length === 0) {
@@ -26,8 +26,15 @@ export async function runGeminiWithFailover<T>(
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     try {
-      const genAI = new GoogleGenerativeAI(key);
-      const result = await fn(genAI);
+      const ai = new GoogleGenAI({
+        apiKey: key,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+      const result = await fn(ai);
       
       // If we used a key other than the first one, log it for monitoring
       if (i > 0) {
