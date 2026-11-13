@@ -6,20 +6,37 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   BrainCircuit, Mic, Square, Loader2, Play, Pause, Volume2, VolumeX,
-  UploadCloud, AlertCircle, Send, Trash2
+  UploadCloud, AlertCircle, Send, Trash2, Camera, ImagePlus, X,
+  TrendingUp, TrendingDown, ShieldAlert, Target, Sparkles
 } from 'lucide-react';
 import { useAuth } from '@/firebase';
 import { useLanguage } from '@/context/LanguageContext';
 
 type Lang = 'en' | 'ar' | 'es';
 
+export type AuraTradeSetup = {
+  symbol: string;
+  timeframe: string;
+  direction: 'BUY' | 'SELL' | 'WAIT';
+  entry: string;
+  stopLoss: string;
+  takeProfits: string[];
+  riskReward: string;
+  confidence: number;
+  setupType?: string;
+};
+
 type Message = {
   role: 'user' | 'ai';
   text?: string;
+  spokenSummary?: string;
   audioDataUri?: string;
+  imageDataUri?: string;
   hasAudio?: boolean;
+  hasImage?: boolean;
   transcript?: string;
   ttsAudioUri?: string;
+  tradeSetup?: AuraTradeSetup;
   ts?: string;
 };
 
@@ -28,93 +45,117 @@ const SILENT_WAV =
   'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 const labels: Record<Lang, {
-  title: string; subtitle: string; recordBtn: string; stopRecBtn: string; uploadBtn: string;
+  recordBtn: string; stopRecBtn: string; uploadAudioBtn: string;
+  captureChartBtn: string; uploadChartBtn: string; analyzeChartNow: string;
   aiThinking: string; playVoice: string; stopVoice: string; loadingVoice: string;
   errorMic: string; errorEmpty: string; errorSend: string; empty: string;
-  micUnsupported: string; micDenied: string; micTip: string; placeholder: string;
-  sendBtn: string; clearChat: string; voiceOn: string; voiceOff: string;
-  savedLabel: string; voiceMsgLabel: string; heardLabel: string; loadingChat: string;
+  micUnsupported: string; micDenied: string; captureDenied: string;
+  micTip: string; placeholder: string; clearChat: string;
+  voiceOn: string; voiceOff: string; savedLabel: string; voiceMsgLabel: string;
+  chartMsgLabel: string; heardLabel: string; loadingChat: string;
+  entryLabel: string; slLabel: string; tpLabel: string; rrLabel: string; confLabel: string;
 }> = {
   en: {
-    title: 'Speak with AURA',
-    subtitle: 'Type or speak — AURA replies like an elite pro trader.',
-    recordBtn: 'Record Voice',
+    recordBtn: 'Voice',
     stopRecBtn: 'Stop & Send',
-    uploadBtn: 'Upload audio',
-    aiThinking: 'AURA is analyzing...',
+    uploadAudioBtn: 'Audio file',
+    captureChartBtn: 'Capture Chart',
+    uploadChartBtn: 'Chart Image',
+    analyzeChartNow: 'Analyze Chart & Give Setup',
+    aiThinking: 'AURA is calculating numbers & setup...',
     playVoice: 'Play',
     stopVoice: 'Stop',
     loadingVoice: 'Loading voice...',
     errorMic: 'Microphone blocked. Allow Microphone permission in your browser address bar, then try again.',
-    micUnsupported: 'Voice recording is not supported in this browser. Try Chrome/Edge or use Upload audio.',
+    micUnsupported: 'Voice recording is not supported in this browser. Try Chrome/Edge or use Audio file.',
     micDenied: 'Microphone denied. Click the lock/mic icon in the address bar, allow Microphone, then try again.',
-    micTip: 'Chat history is saved automatically. Allow the mic once to send voice messages — AURA listens and replies in her own voice.',
+    captureDenied: 'Screen capture was cancelled or blocked here. Use "Chart Image" or paste any screenshot directly with Ctrl+V.',
+    micTip: 'Ask any question for exact numerical insights, or capture / upload / paste (Ctrl+V) a chart screenshot to receive a complete trade setup with full explanation.',
     errorEmpty: 'Recording was too short or silent — please speak clearly and try again.',
-    errorSend: 'Could not process your message. Please try again.',
-    empty: 'No conversation yet — type a message, tap Record Voice, or upload audio.',
-    placeholder: 'Ask AURA about a market, pair, or setup...',
-    sendBtn: 'Send',
+    errorSend: 'Could not process your request. Please try again.',
+    empty: 'Ask AURA anything with live numbers, or attach/capture a chart screenshot for a full trade setup.',
+    placeholder: 'Ask about any market, or paste (Ctrl+V) a chart screenshot and ask for a setup...',
     clearChat: 'New Chat',
     voiceOn: 'Auto-Voice On',
     voiceOff: 'Auto-Voice Off',
     savedLabel: 'Saved',
     voiceMsgLabel: 'Voice message',
+    chartMsgLabel: 'Chart screenshot attached',
     heardLabel: 'What I heard:',
     loadingChat: 'Loading conversation...',
+    entryLabel: 'Entry',
+    slLabel: 'Stop Loss',
+    tpLabel: 'Targets',
+    rrLabel: 'R : R',
+    confLabel: 'Confidence',
   },
   ar: {
-    title: 'تحدث مع أورا',
-    subtitle: 'اكتب أو تكلم — أورا تسمعك وترد عليك بصوتها كمتداول محترف.',
-    recordBtn: 'تسجيل صوتي',
+    recordBtn: 'رسالة صوتية',
     stopRecBtn: 'إيقاف وإرسال',
-    uploadBtn: 'رفع ملف صوتي',
-    aiThinking: 'أورا تفكر وتحضر الرد الصوتي...',
+    uploadAudioBtn: 'ملف صوتي',
+    captureChartBtn: 'لقطة شاشة للشارت',
+    uploadChartBtn: 'صورة شارت',
+    analyzeChartNow: 'تحليل الشارت واستخراج الصفقة الآن',
+    aiThinking: 'أورا تحسب الأرقام وتحلل الصفقة...',
     playVoice: 'استماع',
     stopVoice: 'إيقاف',
     loadingVoice: 'جاري تحميل الصوت...',
     errorMic: 'تعذر تشغيل الميكروفون. تأكد من السماح بالمايك من أيقونة المتصفح وحاول مجدداً.',
     micUnsupported: 'التسجيل الصوتي غير مدعوم في هذا المتصفح. استخدم Chrome أو Edge أو ارفع ملفاً صوتياً.',
     micDenied: 'تم رفض إذن الميكروفون. اضغط على أيقونة القفل/المايك بجانب الرابط، اسمح بالمايك ثم أعد المحاولة.',
-    micTip: 'يتم حفظ المحادثة تلقائياً. اسمح بالميكروفون لإرسال رسائل صوتية وستسمعك أورا وترد عليك بصوتها.',
+    captureDenied: 'تم إلغاء التقاط الشاشة أو حظره في هذا الإطار. يمكنك رفع صورة الشارت مباشرة أو لصقها بـ Ctrl+V.',
+    micTip: 'اسأل أورا أي سؤال لتعطيك إجابة بالأرقام الدقيقة، أو التقط لقطة شاشة / ارفع صورة / الصق (Ctrl+V) للشارت لتستخرج لك صفقة مكتوبة باحترافية مع الشرح وتقرأها بصوتها.',
     errorEmpty: 'التسجيل قصير جداً أو بدون صوت — تحدث بوضوح لفترة أطول ثم أعد المحاولة.',
-    errorSend: 'تعذرت معالجة رسالتك. حاول مرة أخرى.',
-    empty: 'لا توجد محادثة بعد — اكتب رسالة، أو اضغط تسجيل صوتي، أو ارفع ملفاً صوتياً.',
-    placeholder: 'اسأل أورا عن سوق أو زوج أو صفقة...',
-    sendBtn: 'إرسال',
+    errorSend: 'تعذرت معالجة طلبك. حاول مرة أخرى.',
+    empty: 'اسأل أورا عن أي سوق أو سعر، أو أرسل لقطة شاشة للشارت لتعطيك صفقة احترافية بالأرقام مع الشرح.',
+    placeholder: 'اسأل عن أي سوق بالأرقام، أو الصق لقطة شاشة للشارت (Ctrl+V) واطلب صفقة...',
     clearChat: 'محادثة جديدة',
     voiceOn: 'الصوت التلقائي: مفعل',
     voiceOff: 'الصوت التلقائي: صامت',
     savedLabel: 'محفوظة',
     voiceMsgLabel: 'رسالة صوتية',
+    chartMsgLabel: 'تم إرفاق لقطة شارت',
     heardLabel: 'ما سمعته أورا:',
     loadingChat: 'جاري تحميل المحادثة المحفوظة...',
+    entryLabel: 'الدخول',
+    slLabel: 'وقف الخسارة',
+    tpLabel: 'الأهداف',
+    rrLabel: 'العائد / المخاطرة',
+    confLabel: 'الثقة',
   },
   es: {
-    title: 'Habla con AURA',
-    subtitle: 'Escribe o habla — AURA te escucha y responde con su voz.',
     recordBtn: 'Grabar voz',
     stopRecBtn: 'Detener y enviar',
-    uploadBtn: 'Subir audio',
-    aiThinking: 'AURA está analizando...',
+    uploadAudioBtn: 'Subir audio',
+    captureChartBtn: 'Capturar gráfico',
+    uploadChartBtn: 'Subir gráfico',
+    analyzeChartNow: 'Analizar gráfico y dar setup',
+    aiThinking: 'AURA está calculando números y setup...',
     playVoice: 'Escuchar',
     stopVoice: 'Detener',
     loadingVoice: 'Cargando voz...',
     errorMic: 'Micrófono bloqueado. Permite el acceso al micrófono en tu navegador e inténtalo de nuevo.',
     micUnsupported: 'La grabación no es compatible aquí. Usa Chrome/Edge o Subir audio.',
     micDenied: 'Micrófono denegado. Permite el micrófono en la barra de direcciones e inténtalo de nuevo.',
-    micTip: 'El chat se guarda automáticamente. Permite el micrófono para enviar notas de voz.',
+    captureDenied: 'Captura cancelada o bloqueada. Usa "Subir gráfico" o pega una captura con Ctrl+V.',
+    micTip: 'Pregunta cualquier cosa para recibir cifras reales, o captura / sube / pega (Ctrl+V) un gráfico para recibir un setup completo.',
     errorEmpty: 'Grabación demasiado corta o vacía — habla más claro e inténtalo de nuevo.',
-    errorSend: 'No se pudo procesar tu mensaje. Inténtalo de nuevo.',
-    empty: 'Sin conversación — escribe un mensaje, graba voz o sube un audio.',
-    placeholder: 'Pregunta a AURA sobre un mercado, par o setup...',
-    sendBtn: 'Enviar',
+    errorSend: 'No se pudo procesar tu solicitud. Inténtalo de nuevo.',
+    empty: 'Pregunta a AURA con datos reales o adjunta una captura de gráfico para un setup profesional.',
+    placeholder: 'Pregunta por un mercado o pega (Ctrl+V) un gráfico para pedir un setup...',
     clearChat: 'Nuevo chat',
     voiceOn: 'Voz auto: Activa',
     voiceOff: 'Voz auto: Silencio',
     savedLabel: 'Guardado',
     voiceMsgLabel: 'Mensaje de voz',
+    chartMsgLabel: 'Captura de gráfico adjunta',
     heardLabel: 'Lo que escuché:',
     loadingChat: 'Cargando conversación...',
+    entryLabel: 'Entrada',
+    slLabel: 'Stop Loss',
+    tpLabel: 'Objetivos',
+    rrLabel: 'R : B',
+    confLabel: 'Confianza',
   },
 };
 
@@ -135,6 +176,95 @@ function pickRecorderMimeType(): string {
   return '';
 }
 
+/** Downscale large chart images smoothly so upload is fast and crystal-clear for Gemini Vision */
+async function compressChartImage(dataUrl: string, maxWidth = 1600): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      if (img.width <= maxWidth && dataUrl.length < 1_500_000) {
+        resolve(dataUrl);
+        return;
+      }
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+function TradeSetupCard({ setup, t }: { setup: AuraTradeSetup; t: typeof labels['en'] }) {
+  const isBuy = setup.direction === 'BUY';
+  const isSell = setup.direction === 'SELL';
+  const badgeColor = isBuy
+    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+    : isSell
+      ? 'bg-red-500/15 text-red-400 border-red-500/30'
+      : 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+
+  return (
+    <div className="my-2.5 rounded-xl border border-primary/25 bg-background/70 p-3 text-xs shadow-inner">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={`gap-1 font-bold ${badgeColor}`}>
+            {isBuy ? <TrendingUp className="h-3.5 w-3.5" /> : isSell ? <TrendingDown className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+            {setup.direction}
+          </Badge>
+          <span className="font-bold text-sm tracking-tight text-foreground">{setup.symbol}</span>
+          <Badge variant="secondary" className="text-[10px] font-mono">{setup.timeframe}</Badge>
+        </div>
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="text-muted-foreground">{t.confLabel}: <strong className="text-primary">{setup.confidence}%</strong></span>
+          <Badge variant="outline" className="border-primary/30 text-primary font-mono text-[10px]">
+            {t.rrLabel}: {setup.riskReward}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="rounded-lg bg-muted/40 p-2">
+          <span className="block text-[10px] text-muted-foreground">{t.entryLabel}</span>
+          <span className="font-mono font-bold text-foreground">{setup.entry}</span>
+        </div>
+        <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2">
+          <span className="block text-[10px] text-red-400">{t.slLabel}</span>
+          <span className="font-mono font-bold text-red-400">{setup.stopLoss}</span>
+        </div>
+        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2">
+          <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+            <Target className="h-3 w-3" /> {t.tpLabel}
+          </span>
+          <div className="font-mono font-bold text-emerald-400 space-y-0.5">
+            {setup.takeProfits.length > 0 ? (
+              setup.takeProfits.map((tp, i) => (
+                <div key={i}>TP{i + 1}: {tp}</div>
+              ))
+            ) : (
+              <div>1:2+ Structure</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {setup.setupType && (
+        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Sparkles className="h-3 w-3 text-primary shrink-0" />
+          <span>{setup.setupType}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
   const { lang: contextLang } = useLanguage();
   const lang: Lang = propLang || (contextLang as Lang) || 'en';
@@ -145,6 +275,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
@@ -153,6 +284,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
   const [loadingTtsIndex, setLoadingTtsIndex] = useState<number | null>(null);
   const [seconds, setSeconds] = useState(0);
   const [textInput, setTextInput] = useState('');
+  const [pendingChartImage, setPendingChartImage] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -162,10 +294,14 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const pendingChartRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    pendingChartRef.current = pendingChartImage;
+  }, [pendingChartImage]);
 
   const storageKey = user?.uid ? `aura_voice_chat_${user.uid}` : null;
 
-  // Prime persistent HTMLAudioElement inside user gesture handlers so async TTS playback isn't blocked by browser autoplay rules
   const unlockAudioPlayback = useCallback(() => {
     const el = audioElRef.current;
     if (!el) return;
@@ -189,24 +325,25 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
     }
   }, []);
 
-  // Persist local lightweight copy of chat messages (without massive base64 audio URIs)
+  // Persist local lightweight copy of chat messages
   useEffect(() => {
     if (!storageKey) return;
     try {
       const compact = messages.slice(-50).map((m) => ({
         role: m.role,
         text: m.text,
+        spokenSummary: m.spokenSummary,
         hasAudio: m.hasAudio || Boolean(m.audioDataUri),
+        hasImage: m.hasImage || Boolean(m.imageDataUri),
         transcript: m.transcript,
+        tradeSetup: m.tradeSetup,
         ts: m.ts,
       }));
       localStorage.setItem(storageKey, JSON.stringify(compact));
-    } catch {
-      // Ignore quota errors
-    }
+    } catch {}
   }, [messages, storageKey]);
 
-  // Load persisted conversation from localStorage + Firestore on mount / user change
+  // Load persisted conversation from localStorage + Firestore on mount
   useEffect(() => {
     let cancelled = false;
     if (!user?.uid) {
@@ -234,10 +371,8 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         const data = await res.json();
-        if (!cancelled && data?.ok && Array.isArray(data.history)) {
-          if (data.history.length > 0) {
-            setMessages(data.history);
-          }
+        if (!cancelled && data?.ok && Array.isArray(data.history) && data.history.length > 0) {
+          setMessages(data.history);
         }
       } catch (err) {
         console.warn('Failed to load chat history:', err);
@@ -263,9 +398,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
     return () => {
       window.speechSynthesis.removeEventListener('voiceschanged', load);
       window.speechSynthesis.cancel();
-      if (audioElRef.current) {
-        audioElRef.current.pause();
-      }
+      if (audioElRef.current) audioElRef.current.pause();
     };
   }, []);
 
@@ -305,12 +438,11 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
   }, [lang]);
 
   const playTTS = useCallback(
-    async (ttsAudioUri: string | undefined, text: string, index: number) => {
+    async (ttsAudioUri: string | undefined, speechText: string, index: number) => {
       stopSpeaking();
       let audioUri = ttsAudioUri;
 
-      // On-demand synthesis for older messages loaded from Firestore history
-      if (!audioUri && text) {
+      if (!audioUri && speechText) {
         setLoadingTtsIndex(index);
         try {
           const token = user ? await user.getIdToken().catch(() => '') : '';
@@ -320,7 +452,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
               'Content-Type': 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify({ ttsOnly: true, text, lang }),
+            body: JSON.stringify({ ttsOnly: true, text: speechText, lang }),
           });
           const data = await res.json();
           if (data?.ok && typeof data.ttsAudioUri === 'string' && data.ttsAudioUri) {
@@ -330,7 +462,6 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
             );
           }
         } catch {
-          // Fall back to browser speech below
         } finally {
           setLoadingTtsIndex((cur) => (cur === index ? null : cur));
         }
@@ -344,15 +475,15 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
         el.onended = () => setSpeakingIndex((cur) => (cur === index ? null : cur));
         el.onerror = () => {
           setSpeakingIndex(null);
-          speakFallback(text, index);
+          speakFallback(speechText, index);
         };
         try {
           await el.play();
         } catch {
-          speakFallback(text, index);
+          speakFallback(speechText, index);
         }
       } else {
-        speakFallback(text, index);
+        speakFallback(speechText, index);
       }
     },
     [stopSpeaking, speakFallback, user, lang]
@@ -377,9 +508,9 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
     };
   }, [cleanupStreams]);
 
-  // Core send function — handles both text and audio
+  // Core send function — handles text, audio, chart image, or combinations
   const sendToAPI = useCallback(
-    async (payload: { audio?: string; text?: string }) => {
+    async (payload: { audio?: string; text?: string; image?: string }) => {
       setIsSending(true);
       setError('');
       try {
@@ -403,8 +534,10 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           return;
         }
         const transcript = typeof data.transcript === 'string' ? data.transcript : '';
+        const spokenSummary = typeof data.spokenSummary === 'string' ? data.spokenSummary : undefined;
         const ttsAudioUri: string | undefined =
           typeof data.ttsAudioUri === 'string' && data.ttsAudioUri ? data.ttsAudioUri : undefined;
+        const tradeSetup: AuraTradeSetup | undefined = data.tradeSetup || undefined;
 
         let aiMsgIndex = -1;
         setMessages((prev) => {
@@ -412,23 +545,26 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           if (transcript && !payload.text) {
             const last = next[next.length - 1];
             if (last && last.role === 'user') {
-              next[next.length - 1] = { ...last, transcript, hasAudio: true };
+              next[next.length - 1] = { ...last, transcript, hasAudio: Boolean(payload.audio) };
             }
           }
           aiMsgIndex = next.length;
           next.push({
             role: 'ai',
             text: data.text,
+            spokenSummary,
             ttsAudioUri,
+            tradeSetup,
             ts: new Date().toISOString(),
           });
           return next;
         });
 
-        if (autoSpeak && data.text) {
+        const speechTarget = spokenSummary || data.text;
+        if (autoSpeak && speechTarget) {
           requestAnimationFrame(() => {
             if (aiMsgIndex >= 0) {
-              playTTS(ttsAudioUri, data.text, aiMsgIndex);
+              playTTS(ttsAudioUri, speechTarget, aiMsgIndex);
             }
           });
         }
@@ -441,30 +577,135 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
     [lang, playTTS, autoSpeak, t, user]
   );
 
-  // Send text message
-  const sendText = useCallback(() => {
+  // Send text (and optional attached chart screenshot) OR analyze attached chart directly
+  const sendMessage = useCallback(() => {
     const msg = textInput.trim();
-    if (!msg || isSending || isRecording) return;
+    const img = pendingChartImage;
+    if ((!msg && !img) || isSending || isRecording) return;
+
     unlockAudioPlayback();
-    setTextInput('');
     stopSpeaking();
+    setTextInput('');
+    setPendingChartImage(null);
+
     setMessages((prev) => [
       ...prev,
-      { role: 'user', text: msg, ts: new Date().toISOString() },
+      {
+        role: 'user',
+        text: msg || undefined,
+        imageDataUri: img || undefined,
+        hasImage: Boolean(img),
+        ts: new Date().toISOString(),
+      },
     ]);
-    sendToAPI({ text: msg });
+
+    sendToAPI({
+      ...(msg ? { text: msg } : {}),
+      ...(img ? { image: img } : {}),
+    });
     textareaRef.current?.focus();
-  }, [textInput, isSending, isRecording, unlockAudioPlayback, stopSpeaking, sendToAPI]);
+  }, [textInput, pendingChartImage, isSending, isRecording, unlockAudioPlayback, stopSpeaking, sendToAPI]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendText();
+        sendMessage();
       }
     },
-    [sendText]
+    [sendMessage]
   );
+
+  // Support Ctrl+V / Cmd+V screenshot paste anywhere in the composer
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const rawUrl = typeof reader.result === 'string' ? reader.result : '';
+          if (rawUrl) {
+            const compressed = await compressChartImage(rawUrl);
+            setPendingChartImage(compressed);
+            setError('');
+          }
+        };
+        reader.readAsDataURL(file);
+        break;
+      }
+    }
+  }, []);
+
+  // Capture screenshot of any open chart tab/window using browser Screen Capture
+  const handleCaptureChart = useCallback(async () => {
+    setError('');
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
+      setError(t.captureDenied);
+      return;
+    }
+
+    setIsCapturing(true);
+    let displayStream: MediaStream | null = null;
+    try {
+      displayStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+
+      const track = displayStream.getVideoTracks()[0];
+      if (!track) throw new Error('No video track');
+
+      const video = document.createElement('video');
+      video.srcObject = displayStream;
+      video.muted = true;
+      await video.play();
+
+      // Wait briefly so the captured frame renders cleanly
+      await new Promise((r) => setTimeout(r, 150));
+
+      const w = video.videoWidth || 1280;
+      const h = video.videoHeight || 720;
+      const scale = Math.min(1, 1600 / w);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas unavailable');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      setPendingChartImage(snapshotDataUrl);
+      textareaRef.current?.focus();
+    } catch {
+      setError(t.captureDenied);
+    } finally {
+      if (displayStream) {
+        displayStream.getTracks().forEach((tr) => tr.stop());
+      }
+      setIsCapturing(false);
+    }
+  }, [t]);
+
+  const onChartImageSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const rawUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (rawUrl) {
+        const compressed = await compressChartImage(rawUrl);
+        setPendingChartImage(compressed);
+        textareaRef.current?.focus();
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }, []);
 
   const stopRecording = useCallback(() => {
     unlockAudioPlayback();
@@ -564,13 +805,18 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           return;
         }
 
+        const attachedImg = pendingChartRef.current;
+        if (attachedImg) setPendingChartImage(null);
+
         const previewUrl = URL.createObjectURL(blob);
         setMessages((prev) => [
           ...prev,
           {
             role: 'user',
             audioDataUri: previewUrl,
+            imageDataUri: attachedImg || undefined,
             hasAudio: true,
+            hasImage: Boolean(attachedImg),
             ts: new Date().toISOString(),
           },
         ]);
@@ -582,7 +828,10 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
             setError(t.errorSend);
             return;
           }
-          sendToAPI({ audio: dataUrl });
+          sendToAPI({
+            audio: dataUrl,
+            ...(attachedImg ? { image: attachedImg } : {}),
+          });
         };
         fileReader.onerror = () => setError(t.errorSend);
         fileReader.readAsDataURL(blob);
@@ -601,13 +850,16 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
     }
   }, [stopSpeaking, unlockAudioPlayback, t, cleanupStreams, sendToAPI]);
 
-  const onFileSelected = useCallback(
+  const onAudioFileSelected = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       unlockAudioPlayback();
       stopSpeaking();
       setError('');
+
+      const attachedImg = pendingChartRef.current;
+      if (attachedImg) setPendingChartImage(null);
 
       const previewUrl = URL.createObjectURL(file);
       setMessages((prev) => [
@@ -616,7 +868,9 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           role: 'user',
           text: file.name,
           audioDataUri: previewUrl,
+          imageDataUri: attachedImg || undefined,
           hasAudio: true,
+          hasImage: Boolean(attachedImg),
           ts: new Date().toISOString(),
         },
       ]);
@@ -628,7 +882,10 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           setError(t.errorSend);
           return;
         }
-        sendToAPI({ audio: resultStr });
+        sendToAPI({
+          audio: resultStr,
+          ...(attachedImg ? { image: attachedImg } : {}),
+        });
       };
       fileReader.onerror = () => setError(t.errorSend);
       fileReader.readAsDataURL(file);
@@ -663,7 +920,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
     `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 
   return (
-    <Card className="card-glow mx-auto w-full max-w-2xl">
+    <Card className="card-glow mx-auto w-full max-w-3xl" onPaste={handlePaste}>
       <CardContent className="flex flex-col gap-4 p-4 sm:p-6" dir={dir}>
         {/* Hidden persistent audio element for reliable TTS playback */}
         <audio ref={audioElRef} className="hidden" preload="auto" />
@@ -673,7 +930,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="gap-1.5 text-[11px] font-medium">
               <BrainCircuit className="h-3.5 w-3.5 text-primary" />
-              AURA Live Advisor
+              AURA Institutional AI
             </Badge>
             {messages.length > 0 && (
               <span className="text-[11px] text-emerald-500/90 font-medium">
@@ -716,7 +973,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
         {/* Conversation area */}
         <div
           ref={scrollRef}
-          className="flex max-h-[55vh] min-h-[280px] flex-col gap-3 overflow-y-auto rounded-xl border border-border/50 bg-muted/30 p-3 custom-scrollbar"
+          className="flex max-h-[58vh] min-h-[300px] flex-col gap-3 overflow-y-auto rounded-xl border border-border/50 bg-muted/30 p-3 custom-scrollbar"
         >
           {loadingHistory && messages.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center text-xs text-muted-foreground">
@@ -728,15 +985,28 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                 <BrainCircuit className="h-7 w-7 text-primary" />
               </div>
-              <p className="max-w-xs text-sm text-muted-foreground">{t.empty}</p>
+              <p className="max-w-md text-sm text-muted-foreground">{t.empty}</p>
             </div>
           ) : null}
 
           {messages.map((msg, index) =>
             msg.role === 'user' ? (
               <div key={index} className="flex justify-end">
-                <div className="max-w-[82%] rounded-2xl rounded-br-sm bg-primary/15 px-4 py-2.5 text-sm">
-                  {msg.text && <p className="font-medium">{msg.text}</p>}
+                <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary/15 px-4 py-2.5 text-sm space-y-2">
+                  {msg.imageDataUri && (
+                    <img
+                      src={msg.imageDataUri}
+                      alt="Chart Screenshot"
+                      className="max-h-52 w-auto rounded-lg border border-border/60 object-contain"
+                    />
+                  )}
+                  {!msg.imageDataUri && msg.hasImage && (
+                    <div className="flex items-center gap-1.5 text-xs text-primary/80">
+                      <Camera className="h-3.5 w-3.5" />
+                      <span>{t.chartMsgLabel}</span>
+                    </div>
+                  )}
+                  {msg.text && <p className="font-medium whitespace-pre-wrap">{msg.text}</p>}
                   {!msg.text && (msg.audioDataUri || msg.hasAudio) && (
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <span className="flex items-end gap-0.5">
@@ -748,10 +1018,10 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
                     </span>
                   )}
                   {msg.audioDataUri && (
-                    <audio src={msg.audioDataUri} controls className="mt-2 h-8 w-full min-w-[210px]" preload="metadata" />
+                    <audio src={msg.audioDataUri} controls className="h-8 w-full min-w-[210px]" preload="metadata" />
                   )}
                   {msg.transcript && (
-                    <p className="mt-1.5 text-[11px] italic text-muted-foreground/90">
+                    <p className="text-[11px] italic text-muted-foreground/90">
                       {t.heardLabel} {msg.transcript}
                     </p>
                   )}
@@ -759,19 +1029,19 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
               </div>
             ) : (
               <div key={index} className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-border/60 bg-card px-4 py-3 shadow-sm">
+                <div className="max-w-[92%] rounded-2xl rounded-bl-sm border border-border/60 bg-card px-4 py-3 shadow-sm">
                   <div className="mb-1.5 flex items-center gap-2">
                     <Badge variant="secondary" className="gap-1 text-[10px]">
                       <BrainCircuit className="h-3 w-3" /> AURA
                     </Badge>
-                    {msg.text && (
+                    {(msg.spokenSummary || msg.text) && (
                       <button
                         type="button"
                         disabled={loadingTtsIndex === index}
                         onClick={() =>
                           speakingIndex === index
                             ? stopSpeaking()
-                            : playTTS(msg.ttsAudioUri, msg.text!, index)
+                            : playTTS(msg.ttsAudioUri, msg.spokenSummary || msg.text!, index)
                         }
                         className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50"
                       >
@@ -785,7 +1055,11 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
                       </button>
                     )}
                   </div>
-                  <p className="text-sm leading-relaxed">{msg.text}</p>
+
+                  {msg.tradeSetup && <TradeSetupCard setup={msg.tradeSetup} t={t} />}
+
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+
                   {speakingIndex === index && (
                     <div className="mt-2 flex items-center gap-1 text-primary">
                       <Volume2 className="h-3.5 w-3.5 animate-pulse" />
@@ -823,6 +1097,41 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           </div>
         )}
 
+        {/* Attached Chart Screenshot Preview */}
+        {pendingChartImage && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-2.5">
+            <div className="flex items-center gap-3">
+              <img
+                src={pendingChartImage}
+                alt="Pending Chart"
+                className="h-16 w-28 rounded-lg border border-border object-cover"
+              />
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-foreground">{t.chartMsgLabel}</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={sendMessage}
+                  disabled={isSending || isRecording}
+                  className="h-7 gap-1.5 text-xs"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {t.analyzeChartNow}
+                </Button>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setPendingChartImage(null)}
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         {/* Text input row */}
         <div className="flex items-end gap-2">
           <textarea
@@ -830,6 +1139,7 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={t.placeholder}
             rows={1}
             disabled={isSending || isRecording}
@@ -844,8 +1154,8 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           />
           <Button
             size="icon"
-            onClick={sendText}
-            disabled={!textInput.trim() || isSending || isRecording}
+            onClick={sendMessage}
+            disabled={(!textInput.trim() && !pendingChartImage) || isSending || isRecording}
             className="h-[42px] w-[42px] shrink-0 rounded-xl"
           >
             {isSending ? (
@@ -856,44 +1166,65 @@ export function VoiceChat({ lang: propLang }: { lang?: Lang }) {
           </Button>
         </div>
 
-        {/* Voice control bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        {/* Voice + Chart Screenshot Control Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {isRecording ? (
-              <Button size="lg" variant="destructive" className="animate-pulse gap-2" onClick={stopRecording}>
+              <Button size="sm" variant="destructive" className="animate-pulse gap-2 h-9 px-3.5" onClick={stopRecording}>
                 <Square className="h-4 w-4 fill-current" />
                 <span>{t.stopRecBtn} ({fmtTime(seconds)})</span>
               </Button>
             ) : (
-              <Button size="lg" variant="outline" className="gap-2" onClick={startRecording} disabled={isSending}>
-                <Mic className="h-5 w-5" />
+              <Button size="sm" variant="outline" className="gap-2 h-9 px-3.5" onClick={startRecording} disabled={isSending}>
+                <Mic className="h-4 w-4 text-primary" />
                 {t.recordBtn}
               </Button>
             )}
 
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-2 h-9 px-3.5"
+              onClick={handleCaptureChart}
+              disabled={isSending || isRecording || isCapturing}
+            >
+              {isCapturing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4 text-primary" />}
+              {t.captureChartBtn}
+            </Button>
+
             <label className="relative inline-flex">
-              <Button variant="outline" size="lg" asChild disabled={isSending || isRecording}>
+              <Button variant="outline" size="sm" asChild disabled={isSending || isRecording} className="h-9 px-3.5">
                 <span className="cursor-pointer gap-2">
-                  <UploadCloud className="h-5 w-5" />
-                  {t.uploadBtn}
+                  <ImagePlus className="h-4 w-4 text-primary" />
+                  {t.uploadChartBtn}
+                </span>
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                className="absolute inset-0 cursor-pointer opacity-0"
+                onChange={onChartImageSelected}
+                disabled={isSending || isRecording}
+              />
+            </label>
+
+            <label className="relative inline-flex">
+              <Button variant="outline" size="sm" asChild disabled={isSending || isRecording} className="h-9 px-3.5">
+                <span className="cursor-pointer gap-2">
+                  <UploadCloud className="h-4 w-4" />
+                  {t.uploadAudioBtn}
                 </span>
               </Button>
               <input
                 type="file"
                 accept="audio/*"
                 className="absolute inset-0 cursor-pointer opacity-0"
-                onChange={onFileSelected}
+                onChange={onAudioFileSelected}
                 disabled={isSending || isRecording}
               />
             </label>
           </div>
-
-          {isSending && (
-            <div className="flex items-center gap-2 text-xs font-medium text-primary">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {t.aiThinking}
-            </div>
-          )}
         </div>
 
         <p className="text-[11px] leading-relaxed text-muted-foreground/70">{t.micTip}</p>
