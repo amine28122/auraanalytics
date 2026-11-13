@@ -340,12 +340,12 @@ export async function updateUserPlan(userId: string, newPlan: 'Free' | 'Premium'
       }
     });
 
-    // Send Activation Email if plan upgraded
+    // Send Activation Email if plan upgraded (skip demo accounts)
     if (newPlan !== 'Free') {
       try {
         const userDocSnapshot = await userDocRef.get();
         const userData = userDocSnapshot.data();
-        if (userData && userData.email) {
+        if (userData && userData.email && !userData.isDemoUser) {
           await sendActivationEmail(userData.email, newPlan);
         }
       } catch (emailErr) {
@@ -1068,6 +1068,102 @@ export async function deletePLStatement(id: string) {
   } catch (error: any) {
     console.error("Error in deletePLStatement:", error);
     return { success: false, error: error.message };
+  }
+}
+
+const demoUserInputSchema = z.object({
+  displayName: z.string().min(1),
+  email: z.string().email(),
+  plan: z.enum(['Free', 'Premium', 'Aura Plan']),
+  language: z.enum(['en', 'ar', 'es']).default('en'),
+  daysAgo: z.number().min(0).max(365).default(7),
+  analysisCount: z.number().min(0).max(20).default(0),
+  lastAnalysisPair: z.string().optional(),
+  simulatorBalance: z.number().optional(),
+});
+
+const createDemoUsersSchema = z.array(demoUserInputSchema).min(1).max(300);
+
+export async function createDemoUsers(
+  usersList: Array<z.infer<typeof demoUserInputSchema>>
+): Promise<{ success: boolean; createdCount?: number; error?: string }> {
+  const parsed = createDemoUsersSchema.safeParse(usersList);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.errors[0]?.message || 'Invalid user data.' };
+  }
+
+  const { firestore } = initializeServerFirebase();
+
+  try {
+    const nowMs = Date.now();
+    const items = parsed.data;
+    const chunkSize = 400;
+    let createdCount = 0;
+
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize);
+      const batch = firestore.batch();
+
+      for (const item of chunk) {
+        const uid = `demo_${uuidv4().replace(/-/g, '').slice(0, 20)}`;
+        const userDocRef = firestore.collection('users').doc(uid);
+
+        const joinedOffsetMs = (item.daysAgo * 24 * 60 * 60 * 1000) + Math.floor(Math.random() * 12 * 60 * 60 * 1000);
+        const joinedTs = admin.firestore.Timestamp.fromMillis(nowMs - joinedOffsetMs);
+
+        let planStartDate: admin.firestore.Timestamp | null = null;
+        let planEndDate: admin.firestore.Timestamp | null = null;
+
+        if (item.plan !== 'Free') {
+          const activeDays = Math.min(Math.max(1, Math.floor(Math.random() * 20) + 1), Math.max(1, item.daysAgo || 15));
+          const startMs = nowMs - activeDays * 24 * 60 * 60 * 1000;
+          planStartDate = admin.firestore.Timestamp.fromMillis(startMs);
+          if (item.plan === 'Premium') {
+            planEndDate = admin.firestore.Timestamp.fromMillis(startMs + 30 * 24 * 60 * 60 * 1000);
+          }
+        }
+
+        const hasAnalyzedToday = item.analysisCount > 0;
+        const lastAnalysisDate = hasAnalyzedToday
+          ? admin.firestore.Timestamp.fromMillis(nowMs - Math.floor(Math.random() * 6 * 60 * 60 * 1000))
+          : null;
+
+        batch.set(userDocRef, {
+          uid,
+          email: item.email.trim().toLowerCase(),
+          displayName: item.displayName.trim(),
+          photoURL: null,
+          plan: item.plan,
+          joined: joinedTs,
+          language: item.language,
+          planStartDate,
+          planEndDate,
+          analysisCount: item.plan === 'Aura Plan' ? 0 : item.analysisCount,
+          lastAnalysisDate,
+          lastAnalysisPair: hasAnalyzedToday ? (item.lastAnalysisPair || 'XAU/USD') : null,
+          todayAnalyses: [],
+          learningProgress: {},
+          preferredAnalysisSchools: ['ICT', 'SMC'],
+          referralCode: uid.substring(5, 13).toUpperCase(),
+          referredBy: null,
+          totalReferrals: 0,
+          activeReferrals: 0,
+          totalEarnings: 0,
+          pendingEarnings: 0,
+          simulatorBalance: item.simulatorBalance ?? 10000,
+          isDemoUser: true,
+        });
+
+        createdCount++;
+      }
+
+      await batch.commit();
+    }
+
+    return { success: true, createdCount };
+  } catch (error: any) {
+    console.error("Error creating demo users:", error);
+    return { success: false, error: error.message || 'Failed to create demo users.' };
   }
 }
 
